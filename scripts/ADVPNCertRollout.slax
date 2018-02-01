@@ -1,0 +1,73 @@
+/*
+ * Author        : C.Klewar
+ * Version       : 1.0
+ * Last Modified : 15 Feb, 2016
+ * Modified by   : Christian
+ * Platform      : SRX
+ * Release       : 9.4 and above
+ * License       : Public Domain
+ *
+ * Description   : Trigger certificate rollout for ADVPN enviornment
+ *                 request security pki generate-key-pair certificate-id
+ *                 request security pki ca-certificate enroll ca-profile
+ *                 request security pki local-certificate enroll ca-profile
+ * Revisions:
+ * 1.0 - Initial script
+ */
+
+version 1.0;
+ns junos = "http://xml.juniper.net/junos/*/junos";
+ns xnm = "http://xml.juniper.net/xnm/1.1/xnm";
+ns jcs = "http://xml.juniper.net/junos/commit-scripts/1.0";
+
+import "../import/junos.xsl";
+
+match / {
+
+    <event-script-results> {
+        var $result-rpc = <command> 'request security pki ca-certificate enroll ca-profile ejbca';
+        var $result = jcs:invoke($result-rpc);
+        call print-message( $level = "notice", $message = " " );
+        call print-message( $level = "notice", $message = "########################################################" );
+        call print-message( $level = "notice", $message = $result);
+        call print-message( $level = "notice", $message = "########################################################" );
+        call print-message( $level = "notice", $message = " " );
+
+        var $result-rpc1 = <command> 'request security pki ca-certificate verify ca-profile ejbca';
+        var $result1 = jcs:invoke($result-rpc1);
+        call print-message( $level = "notice", $message = " " );
+        call print-message( $level = "notice", $message = "########################################################" );
+        call print-message( $level = "notice", $message = $result1);
+        call print-message( $level = "notice", $message = "########################################################" );
+        call print-message( $level = "notice", $message = " " );
+        
+        var $result-rpc2 = <command> 'request security pki generate-key-pair certificate-id ' _ $hostname _ ' size 2048 type rsa';
+        var $result2 = jcs:invoke($result-rpc2);
+        call print-message( $level = "notice", $message = " " );
+        call print-message( $level = "notice", $message = "########################################################" );
+        call print-message( $level = "notice", $message = $result2);
+        call print-message( $level = "notice", $message = "########################################################" );
+        call print-message( $level = "notice", $message = " " );
+        
+        var $result-rpc3 = <command> 'request security pki local-certificate enroll ca-profile ejbca certificate-id ' _ $hostname _ ' domain-name ' _ $hostname _ '.example.com subject DC=example.com,L=Berlin,O=example,OU=LAB,CN=' _ $hostname _ ' challenge-password juniper123';
+        var $result3 = jcs:invoke($result-rpc3);
+        call print-message( $level = "notice", $message = " " );
+        call print-message( $level = "notice", $message = "########################################################" );
+        call print-message( $level = "notice", $message = $result3);
+        call print-message( $level = "notice", $message = "########################################################" );
+        call print-message( $level = "notice", $message = " " );
+
+        
+    }
+}
+
+/* Template: print-message
+ *
+ * Print status message to syslog
+ *
+*/
+
+template print-message($level, $message ) {
+    expr jcs:syslog($level, $message);
+}
+

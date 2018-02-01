@@ -1,0 +1,19 @@
+test_command_version:
+  - command: show interfaces terse lo*
+  - iterate:
+      xpath: physical-interface
+      id: ['./name']
+      tests:
+        - no-diff: admin-status       # element in which test is performed
+          err: "Failed!! admin-status  got changed, PRE: <{{pre['admin-status']}}>, POST: <{{post['admin-status']}}>"
+          info: "Passed!! admin-status is same PRE: <{{pre['admin-status']}}> POST: <{{post['admin-status']}}>"
+
+test_command_version:
+  - command: show interfaces terse
+  - iterate:
+      xpath: physical-interface
+      id: ['./name']
+      tests:
+        - no-diff: admin-status       # element in which test is performed
+          err: "Failed!! admin-status  got changed, PRE: <{{pre['admin-status']}}>, POST: <{{post['admin-status']}}>"
+          info: "Passed!! admin-status is same PRE: <{{pre['admin-status']}}> POST: <{{post['admin-status']}}>"

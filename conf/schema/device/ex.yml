@@ -1,0 +1,14 @@
+---
+yapt:
+  schema:
+    device_type: {required: True, type: string}
+    device_group: {required: True, type: string}
+    service_chain: {required: True, type: list}
+  required: True
+  type: dict
+
+device:
+  schema:
+    hostname: {required: True, type: string}
+  required: True
+  type: dict

@@ -1,0 +1,63 @@
+system {
+    host-name {{ device.hostname }};
+    root-authentication {
+        encrypted-password "{{ device.encrypted_password }}"; ## SECRET-DATA
+    }
+    services {
+        ssh;
+        netconf {
+            ssh;
+        }
+        outbound-ssh {
+            client yapt {
+                device-id {{ deviceId }};
+                secret {{ device.ossh_secret }}  ## SECRET-DATA
+                services netconf;
+                {{ device.ossh_ip }} port 7804;
+            }
+        }
+    }
+}
+security {
+    zones {
+        security-zone untrust {
+            interfaces {
+                ge-0/0/1.0 {
+                    host-inbound-traffic {
+                        system-services {
+                            all;
+                        }
+                        protocols {
+                            all;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+interfaces {
+    fxp0 {
+        unit 0 {
+            family inet {
+                dhcp-client;
+            }
+        }
+    }
+    ge-0/0/0 {
+        unit 0 {
+            family inet {
+                dhcp-client;
+            }
+        }
+    }
+    ge-0/0/1 {
+        vlan-tagging;
+        unit 0 {
+            vlan-id 1;
+            family inet {
+                dhcp-client;
+            }
+        }
+    }
+}

@@ -1,0 +1,7 @@
+---
+rname      : deny-all
+srcZone    : untrust
+dstZone    : trust
+srcAddrType: ANY
+dstAddrType: ANY
+description: Default deny all rule - created by YAPT

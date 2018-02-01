@@ -1,0 +1,94 @@
+body {
+  padding-top: 80px;
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+}
+footer {
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+.navbar-default .navbar-nav > li > a:hover, .navbar-default .navbar-nav > li > a:focus {
+color: #000;  /*Sets the text hover color on navbar*/
+}
+
+.navbar-default .navbar-header .navbar-brand {
+color: white;
+}
+
+.navbar-default {
+color: #eeeeee;
+background-color: #384347;
+}
+
+.nav > li > a:hover,
+.nav > li > a:focus {
+text-decoration: none;
+background-color: silver; /*Change rollover cell color here*/
+}
+
+.navbar-default .navbar-nav > li > a {
+color: white; /*Change active text color here*/
+}
+
+.panel-default > .panel-heading {
+  color: #000000;
+  background-color: #5a6b72;
+  border-color: #ddd;
+}
+
+.table thead th {
+  background-color: #70868f;
+}
+
+#textarea-wrapper textarea {
+  resize: vertical;
+}
+
+#mainlogviewer {
+  resize: vertical;
+  width: 100%;
+}
+
+.modal .modal-dialog { width: 1000px; }
+
+/*
+ * Off Canvas
+ * --------------------------------------------------
+ */
+@media screen and (max-width: 768px) {
+  .row-offcanvas {
+    position: relative;
+    -webkit-transition: all 0.25s ease-out;
+    -moz-transition: all 0.25s ease-out;
+    transition: all 0.25s ease-out;
+    background:#ecf0f1;
+  }
+
+  .row-offcanvas-left
+  .sidebar-offcanvas {
+    left: -40%;
+  }
+
+  .row-offcanvas-left.active {
+    left: 40%;
+  }
+}
+
+/* Sticky footer styles
+-------------------------------------------------- */
+html {
+  position: relative;
+  min-height: 100%;
+}
+body {
+  /* Margin bottom by footer height */
+  margin-bottom: 60px;
+}
+.footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  /* Set the fixed height of the footer here */
+  height: 60px;
+  background-color: #f5f5f5;
+}

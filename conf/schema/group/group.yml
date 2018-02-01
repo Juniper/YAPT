@@ -1,0 +1,8 @@
+---
+TASKS:
+  schema:
+    Sequence: {required: True, type: list}
+    Provision: {required: True, type: dict}
+    Verification: {required: True, type: dict}
+  required: True
+  type: dict

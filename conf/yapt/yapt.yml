@@ -1,0 +1,134 @@
+########################################################################################################################
+# YAPT Global Section
+########################################################################################################################
+YAPT:
+  SourcePlugins: [phs, ossh, tftp]                #Source plugin list
+  PwdFile: conf/yapt/masterkey.yml                #Stores masterkey
+  DevicePwdIsRsa: false                           #use ssh rsa authentication
+  DeviceUsr: root                                 #initial device provisioning user
+                                                  #initial device provisioning user password
+  DevicePwd: gAAAAABaOtwzqu79QGrPMPK1d31hNJ4DMrMruecorE5TTBo00dzanBMK6Ld4Lvtd37ksgP7SPbkqn8ZDmzlnKUWm2WA-yz2UkQ==
+  Backend: sql                                    #Backend Type (internal / sql)
+  ConnectionProbeTimeout: 90                      #initial connection probe timeout
+  LogFileDirectory: logs                          #directory to keep the logs
+  StartWebUi: true                                #start web interface listening on port <WebUiPort>
+  WebUiAddress: 172.16.146.1                      #Webserver IP Address (Used for WebSocket Client)
+  WebUiPort: 8080                                 #Webserver Listener Port
+  WebUiIndex: index.html                          #UI index file to load
+  WebUiNat: false                                 #Enable YAPT WebUI being behind NAT
+  WebUiNatIp: 10.86.9.14                          #NAT IP
+  WebUiPlugin: amqp2ws                            #WebUI Plugin (right now only amqp2ws)
+  RestApiPort: 9090                               #YAPT Rest Api Listener Port
+  OobaUiPort: 9091                                #YAPT Internal OOBA web interface port
+  WorkerThreads: 2                                #Amount of task queue worker threads to be started
+
+########################################################################################################################
+#Config Source Section
+########################################################################################################################
+SOURCE:
+  DeviceConfOoba: true                            #Enable OOBA DB check
+  DeviceConfSrcPlugins: [cgitlab]                 #Configuration source plugin order
+
+  File:
+    DeviceGrpFilesDir: conf/groups/                 #Map device to a provisioning group
+    DeviceConfDataDir: conf/devices/data/           #device specific template data config directory
+
+  Git:
+    Address: 10.86.9.14
+    Port: 9080
+    Protocol: http
+    LoginUrl: /users/sign_in
+    User: root
+    Password: password
+    DevCfg: demo_ops/yapt_dev_conf
+    DevCfgTemplate: demo_ops/yapt_dev_conf_template
+    DevGrpCfg: demo_ops/yapt_dev_grp_conf
+    VnfBoostrapTemplate: demo_ops/yapt_vnf_boostrap_template
+
+
+########################################################################################################################
+#Backend Section (Configure Backend settings)
+########################################################################################################################
+BACKEND:
+
+  Sqlite:
+    DbName: yapt.db                                             #SQLite DB Name
+    DbPath: lib/backend/db/                                     #Path to db file
+    AutoCreateDb: true                                          #If DB not exists create it automatically
+
+########################################################################################################################
+#Source Plugins Section
+########################################################################################################################
+SERVICES:
+
+  Tftp:
+    Name: dnsmasq                                           #dnsmasq TFTP Server or hpa TFTP Server
+    LogFile: logs/testlogs/tftpd.log                        #Path to the log file being process (TFTP/DHCP/etc)
+    #dnsmasq TFTP Pattern (Ubuntu/Centos)
+    Pattern: .*?\sdnsmasq-tftp\[\d.*\]:\ssent\s/var/lib/tftpboot/init.conf\sto\s((?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3}))
+    #Pattern: '.*?\sdnsmasq-tftp\[\d.*\]:\sTFTP\ssent\s/var/lib/tftpboot/init.conf\sto\s((?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3}))'
+    #HPA TFTP Pattern
+    #Pattern: '(\d+/\d+/\d+@\d+:\d+:\d+).*?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$)'
+
+  Dhcp:
+    Name: isc                                               #dnsmasq DHCP Server or ISC DHCP Server
+    LogFile: logs/testlogs/dhcpd.leases                     #Path to the log file being processed
+
+  Ossh:
+    ServiceBindAddress: 172.16.146.1                        #SSH Server bind address
+    ServiceListenPort: 7804                                 #SSH Server listen port
+                                                            #DMI Shared Secret
+    SharedSecret: gAAAAABZVk8RuO9DYNhx92zfV5yypeMzFMFIkeY2T8GHWeBYs-BqAH7_oaGI7ktDdc9pQkxN9jlQSTtfbluMj0FxT5xlAKbLYA==
+    LocalConfigFile: conf/services/ossh/ossh.conf           #Contains mandatory options for device ssh deamon
+    RemoteConfigFile: /mfs/var/etc/sshd_config_obssh.yapt   #SSH config file on device. For outbound-ssh should be "/mfs/var/etc/sshd_config_obssh.yapt"
+    SigHubCmd: kill -HUP `cat /var/run/inetd.pid`           #Sig HUP inetd to re-read it's configuration
+
+  Phs:
+    Containerized: false                                    #Is PHS running in container env
+    ServiceBindAddress: 172.16.146.1                        #HTTP Server bind address
+    ServiceListenPort: 8082                                 #HTTP Server listen port
+    InitConfPath: conf/services/phs/                        #Inital bootstrap config file
+    EnableSSL: false                                        #HTTP or HTTPS used by PHC connection
+    SSLCertificate: conf/yapt/ssl/cert.pem                  #SSL Certificate
+    SSLPrivateKey: conf/yapt/ssl/privkey.pem                #SSL Private Key
+    DeviceAuthFile: conf/services/phs/dev_auth              #device authentication by serial number
+
+########################################################################################################################
+#Junos Space Section
+########################################################################################################################
+JUNOSSPACE:
+  Enabled: true                                     #Enable / disable Junos Space Connector (True / False)
+  Version: space151                                 #Junos Space Version (space151 / space161)
+  Ip: 10.200.200.101                                #Junos Space IP address
+  User: rest                                        #Junos Space REST API user
+                                                    #Junos Space REST API user password
+  Password: gAAAAABaIDFdOx8OcSkANaSnHYzOWLaqMIbYLWNR-eTxjYKNC7vOA3stkjlnA7L9hVMYPniwnakW2po197sHZsE3IUTT4ZYEBA==
+  TemplateDir: conf/space/templates/151/            #Junos Space REST API Templates (must be right Junos Space version)
+  RestTimeout: 3                                    #Junos Space Wait n sec for next rest call
+
+########################################################################################################################
+#Device Driver Section
+########################################################################################################################
+DEVICEDRIVER:
+  Driver: pyez                      #pyez / napa (napalm)
+  Napalm:                           #Napalm specific options
+    Module: junos                   #junos/ios/etc
+    Port: 22                        #device port connecting to
+
+########################################################################################################################
+#AMQP Related Stuff
+########################################################################################################################
+AMQP:
+  Host: 127.0.0.1
+  Port: 5672
+  Type: direct
+  Exchange: yapt
+  User: yapt
+  Password: gAAAAABZXKh1cacgc1qPE7Bc2JPcI_G0_2QaGEyr0Yu_6kIoKuVngbRBWcCuzAMrU3hKF0eSDG4lif6WpJdv0upwfWbS5eU70w==
+
+########################################################################################################################
+#Logging/Output Related Stuff
+########################################################################################################################
+EMITTER:
+  Plugins: [local, ticket]
+  MainLogFile: logs/info.log

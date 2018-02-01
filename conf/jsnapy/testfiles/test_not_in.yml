@@ -1,0 +1,8 @@
+check_show_interfaces_terse:
+  - command: show interfaces terse
+  - iterate:
+      xpath: //physical-interface
+      tests:
+        - not-in: oper-status, down, up
+          info: "Test Succeeded!! Physical operational status is-in down-up, it is: <{{post['oper-status']}}> with admin status <{{post['admin-status']}}>"
+          err: "Test Failed!!! Physical operational status is not in downoo-up, it is: <{{post['oper-status']}}> with admin status <{{post['admin-status']}}> "

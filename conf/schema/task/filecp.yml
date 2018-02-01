@@ -1,0 +1,7 @@
+Filecp:
+  schema:
+    Files: {'required': True, 'type': 'list'}
+    FileLocalDir: {'required': True, 'type': 'string'}
+    FileRemoteDir: {'required': True, 'type': 'string'}
+  required: True
+  type: 'dict'

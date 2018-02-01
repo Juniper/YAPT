@@ -1,0 +1,33 @@
+version 1.0;
+ns junos = "http://xml.juniper.net/junos/*/junos";
+ns xnm = "http://xml.juniper.net/xnm/1.1/xnm";
+ns jcs = "http://xml.juniper.net/junos/commit-scripts/1.0";
+import "../import/junos.xsl";
+
+
+match / {
+ <op-script-results> {
+    var $configuration-change = <configuration> {
+        <system> {
+            <services> {
+                <outbound-ssh> {
+                    <client delete=delete> {
+                        <name>"yapt";
+                    }
+                }
+            }
+        }
+    }
+
+    var $connection = jcs:open();
+    var $results := { call jcs:load-configuration( $connection, $configuration = $configuration-change ); }
+
+    if( $results//xnm:error ) {
+        for-each( $results//xnm:error ) {
+            <output> message;
+        }
+    }
+
+    var $close-results = jcs:close($connection);
+ }
+}

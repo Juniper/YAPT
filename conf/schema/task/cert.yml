@@ -1,0 +1,10 @@
+Cert:
+  schema:
+    PortForwarding: {'required': True, 'type': 'boolean'}
+    LocalFwdPort: {'required': True, 'type': 'integer'}
+    RemoteFwdHost: {'required': True, 'type': 'string'}
+    RemoteFwdHostPort: {'required': True, 'type': 'integer'}
+    EnrollmentUrl: {'required': True, 'type': 'string'}
+    RevocationUrl: {'required': True, 'type': 'string'}
+  required: True
+  type: 'dict'

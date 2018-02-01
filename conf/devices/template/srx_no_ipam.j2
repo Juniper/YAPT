@@ -1,0 +1,338 @@
+{{ heading }}
+system {
+    host-name {{ device.hostname }};
+    time-zone {{ device.timezone }};
+    domain-name {{ device.domain_name }};
+    root-authentication {
+        encrypted-password "{{ device.encrypted_password }}"; ## SECRET-DATA
+        ssh-rsa "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDNRZHZGfeKpivvJxvcLEFbn37+m9HaAAjX5yPdHR/p9YBme+S7P9OcQv3Y5aRLsDjmGI3jqnEDDtw8XxS/Ky2DQ9g/uVb++MWTOu739iJiF6wwOJXUvFLbFzG8TF1i0mrGYyZ/5UtPL1YWrKnRO86mhbQDPie9H8dIoZb1AYBEugm0GwOqA0luRuAgvoAuOr15qYu0zDcwXF3f5ZpRh8TcVgWsPQ/HQK/WaWjOyeUz6a7iC1VtcmXn3LY6RG2iTCSxQz6n1Z/JBEUQfjKG9o9XEZ7Pf3eN8tGbTWXtiQVsfJ1VXTOPm/YUaABIhY5t72K3F7mMwoQmVS2GpG2PwRgr cklewar@cklewar-mbp"; ## SECRET-DATA
+    }
+    services {
+        ssh {
+            protocol-version v2;
+        }
+        netconf {
+            ssh;
+        }
+        outbound-ssh {
+            client yapt {
+                device-id abc123;
+                secret "$9$jckmT69pRhrz3hrev7Nik.Pz3/CtOIE"; ## SECRET-DATA
+                services netconf;
+                172.16.146.1 port 7804;
+            }
+        }
+    }
+    syslog {
+        user * {
+            any emergency;
+        }
+        file messages {
+            any any;
+            authorization info;
+        }
+        file interactive-commands {
+            interactive-commands any;
+        }
+    }
+    license {
+        autoupdate {
+            url https://ae1.juniper.net/junos/key_retrieval;
+        }
+    }
+    ntp {
+        server {{ device.ntp_server }};
+    }
+    scripts {
+        op {
+            file cleanup.slax
+        }
+    }
+}
+interfaces {
+    {% for interface in device.interfaces %}
+    {% if interface.address == "dhcp" %}
+    {{ interface.name }} {
+        description "{{ interface.description }}";
+        unit 0 {
+            family {{ interface.family }} {
+                dhcp-client;
+            }
+        }
+    }
+    {% else %}
+    {{ interface.name }} {
+        description "{{ interface.description }}";
+        unit 0 {
+            family {{ interface.family }} {
+                address {{ interface.address }}/{{ interface.mask }};
+            }
+        }
+    }
+    {% endif %}
+    {% endfor %}
+    {{ device.tunnel_int.name }} {
+        unit {{ device.tunnel_int.unit }} {
+            family {{ device.tunnel_int.family }} {
+                address 10.100.200.254/{{ device.tunnel_int.mask }};
+            }
+        }
+    }
+}
+snmp {
+    community {{ device.community }} {
+        authorization read-only;
+    }
+}
+routing-options {
+    router-id 10.100.200.254;
+}
+protocols {
+    ospf {
+        export AutoVPN;
+        area 0.0.0.0 {
+            interface {{ device.tunnel_int.name }}.{{ device.tunnel_int.unit }} {
+                interface-type p2p;
+            }
+        }
+    }
+}
+policy-options {
+    policy-statement AutoVPN {
+        term direct_term {
+            from {
+                protocol direct;
+                {% for interface in device.interfaces %}
+                {% if interface.description == "trust" %}
+                interface {{ interface.name }}.0;
+                {% endif %}
+                {% endfor %}
+            }
+            then accept;
+        }
+        term ospf_term {
+            from protocol ospf;
+            then accept;
+        }
+    }
+}
+security {
+    pki {
+        ca-profile {{ device.cert.ca_profile }} {
+            ca-identity {{ device.cert.ca_identity }};
+            enrollment {
+                url {{ device.cert.enrollment_url }};
+            }
+            revocation-check {
+                disable;
+            }
+        }
+        auto-re-enrollment {
+            certificate-id {{ device.hostname }} {
+                ca-profile-name {{ device.cert.ca_profile }};
+                challenge-password "{{ device.cert.challenge_password }}"; ## SECRET-DATA
+                re-enroll-trigger-time-percentage 10;
+                re-generate-keypair;
+                scep-encryption-algorithm {
+                    des3;
+                }
+            }
+        }
+    }
+    ike {
+        proposal P1 {
+            authentication-method rsa-signatures;
+            dh-group group14;
+            authentication-algorithm sha-256;
+            encryption-algorithm aes-256-cbc;
+            lifetime-seconds 28800;
+        }
+        policy AutoVPN {
+            mode main;
+            proposals P1;
+            certificate {
+                local-certificate {{ device.hostname }};
+            }
+        }
+        gateway VSRX01 {
+            ike-policy AutoVPN;
+            address 10.11.111.115;
+            dead-peer-detection {
+                interval 10;
+                threshold 1;
+            }
+            no-nat-traversal;
+            local-identity distinguished-name;
+            remote-identity distinguished-name;
+            {% for interface in device.interfaces %}
+            {% if interface.description == "untrust" %}
+            external-interface {{ interface.name }};
+            {% endif %}
+            {% endfor %}
+            version v2-only;
+        }
+    }
+    ipsec {
+        proposal P2 {
+            protocol esp;
+            authentication-algorithm hmac-sha1-96;
+            encryption-algorithm aes-256-cbc;
+            lifetime-seconds 3600;
+        }
+        policy AutoVPN {
+            perfect-forward-secrecy {
+                keys group14;
+            }
+            proposals P2;
+        }
+        vpn AutoVPN {
+            bind-interface {{ device.tunnel_int.name }}.{{ device.tunnel_int.unit }};
+            ike {
+                gateway VSRX01;
+                ipsec-policy AutoVPN;
+            }
+            establish-tunnels immediately;
+        }
+    }
+    flow {
+        tcp-mss {
+            ipsec-vpn {
+                mss 1350;
+            }
+        }
+    }
+    screen {
+        ids-option untrust-screen {
+            icmp {
+                ping-death;
+            }
+            ip {
+                source-route-option;
+                tear-drop;
+            }
+            tcp {
+                syn-flood {
+                    alarm-threshold 1024;
+                    attack-threshold 200;
+                    source-threshold 1024;
+                    destination-threshold 2048;
+                    queue-size 2000;
+                    timeout 20;
+                }
+                land;
+            }
+        }
+    }
+    policies {
+        from-zone trust to-zone untrust {
+            policy default-permit {
+                match {
+                    source-address any;
+                    destination-address any;
+                    application any;
+                }
+                then {
+                    permit;
+                }
+            }
+        }
+        from-zone untrust to-zone trust {
+            policy default-deny {
+                match {
+                    source-address any;
+                    destination-address any;
+                    application any;
+                }
+                then {
+                    deny;
+                }
+            }
+        }
+        from-zone trust to-zone vpn {
+            policy default-permit {
+                match {
+                    source-address any;
+                    destination-address any;
+                    application any;
+                }
+                then {
+                    permit;
+                }
+            }
+        }
+        from-zone vpn to-zone trust {
+            policy default-permit {
+                match {
+                    source-address any;
+                    destination-address any;
+                    application any;
+                }
+                then {
+                    permit;
+                }
+            }
+        }
+    }
+    zones {
+        security-zone trust {
+            tcp-rst;
+            interfaces {
+            {% for interface in device.interfaces %}
+                {% if interface.description == "trust" %}
+                {{ interface.name }}.0 {
+                    host-inbound-traffic {
+                        system-services {
+                            http;
+                            https;
+                            ssh;
+                            dhcp;
+                            netconf;
+                            ping;
+                            traceroute;
+                        }
+                    }
+                }
+                {% endif %}
+            {% endfor %}
+            }
+        }
+        security-zone untrust {
+            screen untrust-screen;
+            interfaces {
+            {% for interface in device.interfaces %}
+                {% if interface.description == "untrust" %}
+                {{ interface.name }}.0 {
+                    host-inbound-traffic {
+                        system-services {
+                            https;
+                            ssh;
+                            dhcp;
+                            netconf;
+                            ike;
+                            ping;
+                            traceroute;
+                            snmp;
+                        }
+                    }
+                }
+                {% endif %}
+            {% endfor %}
+            }
+        }
+        security-zone vpn {
+            interfaces {
+                {{ device.tunnel_int.name }}.{{ device.tunnel_int.unit }} {
+                    host-inbound-traffic {
+                        system-services {
+                            ping;
+                            traceroute;
+                        }
+                        protocols {
+                            ospf;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

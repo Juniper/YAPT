@@ -1,0 +1,27 @@
+---
+yapt:
+  schema:
+    device_type: {required: True, type: string}
+    device_group: {required: True, type: string}
+    service_chain: {required: True, type: list}
+  required: True
+  type: dict
+
+device:
+  schema:
+    hostname: {required: True, type: string}
+    vnfs:
+      schema:
+        name:
+          schema:
+            vnf_type: {required: True, type: string}
+            base_img_path: {required: True, type: string}
+            base_img: {required: True, type: string}
+            bootstrap_remote_dir: {required: True, type: string}
+            deviceID: {required: True, type: string}
+          required: True
+          type: dict
+      required: True
+      type: list
+  required: True
+  type: dict

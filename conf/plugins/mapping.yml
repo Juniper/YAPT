@@ -1,0 +1,16 @@
+---
+DHCP:
+  pluginName : dhcp
+  serviceName: File
+
+TFTP:
+  pluginName : tftp
+  serviceName: File
+
+OSSH:
+  pluginName : ossh
+  serviceName: Ossh
+
+PHS:
+  pluginName: phs
+  serviceName: Phs

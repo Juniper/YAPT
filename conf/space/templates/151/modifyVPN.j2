@@ -1,0 +1,40 @@
+<modify-vpn>
+<vpn-mo>
+<id>{{ vpnID }}</id>
+<version>0</version>
+<edit-version>{{ editVersion }}</edit-version>
+<name>{{ vpnName }}</name>
+<unique-key-per-tunnel>true</unique-key-per-tunnel>
+<preshared-key-type>NONE</preshared-key-type>
+<routing-type>OSPF</routing-type>
+<tunnel-multi-point-size>-1</tunnel-multi-point-size>
+<tunnel-ip-range>
+<mask>24</mask>
+<network-ip>10.200.0.0</network-ip>
+</tunnel-ip-range>
+<tunnel-interface-type>NUMBERED</tunnel-interface-type>
+<type>HUB_N_SPOKE</type>
+<vpn-tunnel-mode-types>ROUTE_BASED</vpn-tunnel-mode-types>
+<description>Modified through YAPT</description>
+</vpn-mo>
+<device-modification>
+<devices-to-add>
+<vpn-device-bean>
+<is-hub>false</is-hub>
+<external-if-name>ge-0/0/1.0</external-if-name>
+<tunnel-zone>vpn</tunnel-zone>
+<protected-network-zones total="0">
+<protected-network-zone>trust</protected-network-zone>
+</protected-network-zones>
+<export-default-routes>false</export-default-routes>
+<export-static-routes>true</export-static-routes>
+<export-ospf-routes>false</export-ospf-routes>
+<export-rip-routes>false</export-rip-routes>
+<metric>1</metric>
+<extranet-device>false</extranet-device>
+<device-name>{{  deviceName }}</device-name>
+<device-moid>net.juniper.jmp.jpa.SecurityDeviceEntity:{{ deviceMOID }}</device-moid>
+</vpn-device-bean>
+</devices-to-add>
+</device-modification>
+</modify-vpn>

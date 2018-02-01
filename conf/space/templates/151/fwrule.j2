@@ -1,0 +1,62 @@
+<modify-rules>
+<edit-version>{{ version }}</edit-version>
+<policy-id>{{ pid }}</policy-id>
+<added-rules>
+<added-rule>
+<serial-number>0</serial-number>
+<name>{{ pname }}</name>
+<source-zones>
+<source-zone>
+<name>{{ srcZone }}</name>
+<zone-type>ZONE</zone-type>
+</source-zone>
+</source-zones>
+<source-addresses>
+<source-address>
+<id>{{ srcAddrId }}</id>
+<name>{{ srcAddrName }}</name>
+<address-type>{{ srcAddrType }}</address-type>
+</source-address>
+</source-addresses>
+<source-identities/>
+<destination-zones>
+<destination-zone>
+<name>{{ dstZone }}</name>
+<zone-type>ZONE</zone-type>
+</destination-zone>
+</destination-zones>
+<destination-addresses>
+<destination-address>
+<id>{{ dstAddrId }}</id>
+<name>{{ dstAddrName }}</name>
+<address-type>{{ dstAddrType }}</address-type>
+</destination-address>
+</destination-addresses>
+<services>
+<service>
+<id>{{ serviceId }}</id>
+<name>{{ serviceName }}</name>
+</service>
+</services>
+<action>PERMIT</action>
+<vpn-tunnel-refs/>
+<application-signature-type>NONE</application-signature-type>
+<application-signatures/>
+<application-signature/>
+<rule-profile>
+<profile-type>INHERITED</profile-type>
+</rule-profile>
+<ips-mode>NONE</ips-mode>
+<ips-enabled>false</ips-enabled>
+<scheduler/>
+<description>{{ description }}</description>
+<custom-column/>
+<definition-type>CUSTOM</definition-type>
+<rule-group-type>CUSTOM</rule-group-type>
+<rule-group-id>{{ gid }}</rule-group-id>
+<rule-type>RULE</rule-type>
+<policy-name>{{ gpname }}</policy-name>
+<enabled>true</enabled>
+</added-rule>
+</added-rules>
+</modify-rules>

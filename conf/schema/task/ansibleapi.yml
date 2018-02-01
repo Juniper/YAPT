@@ -1,0 +1,22 @@
+Configuration:
+  schema:
+    Dependencies: {'required': True, 'type': 'list'}
+    DeviceConfTemplateDir: {'required': True, 'type': 'string'}
+    DeviceConfTemplateFile: {'required': True, 'type': 'string'}
+    ConfigFileHistory: {'required': True, 'type': 'string'}
+    Merge: {'required': True, 'type': 'boolean'}
+    Overwrite: {'required': True, 'type': 'boolean'}
+    Internal:
+      schema:
+        CommitTimeout: {'required': True, 'type': 'integer'}
+        ConfirmedTimeout: {'required': True, 'type': 'integer'}
+      required: True
+      type: 'dict'
+    Ansibleapi:
+        schema:
+          PlaybookPath: {'required': True, 'type': 'string'}
+          Playbook: {'required': True, 'type': 'string'}
+        required: True
+        type: 'dict'
+  required: True
+  type: 'dict'

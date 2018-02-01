@@ -1,0 +1,11 @@
+Software:
+  schema:
+    ImageDir: {'required': True, 'type': 'string'}
+    RemoteDir: {'required': True, 'type': 'string'}
+    RebootProbeCounter: {'required': True, 'type': 'integer'}
+    RebootProbeTimeout: {'required': True, 'type': 'integer'}
+    RetryProbeCounter: {'required': True, 'type': 'integer'}
+    PkgAddDevTimeout: {'required': True, 'type': 'integer'}
+    TargetVersion: {'required': True, 'type': 'dict', 'keyschema': {'type': 'string'}, 'valueschema': {'type': 'string'}}
+  required: True
+  type: 'dict'

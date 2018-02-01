@@ -1,0 +1,6 @@
+---
+configlet:
+  client: cluster_228.17.117.2
+  deviceID: 67D969
+  ip: 10.11.111.1
+  port: 7804

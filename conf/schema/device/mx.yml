@@ -1,0 +1,29 @@
+---
+yapt:
+  schema:
+    device_type: {required: True, type: string}
+    device_group: {required: True, type: string}
+    service_chain: {required: True, type: list}
+    bootstrap_template_dir: {required: True, type: string}
+    bootstrap_template_file: {required: True, type: string}
+  required: True
+  type: dict
+
+device:
+  schema:
+    hostname: {required: True, type: string}
+    ossh_secret: {required: True, type: string}
+    cert:
+      schema:
+        ca_profile: {required: True, type: string}
+        ca_identity: {required: True, type: string}
+        subject: {required: True, type: string}
+        domain_name: {required: True, type: string}
+        enrollment_url: {required: True, type: string}
+        oscp_url: {required: True, type: string}
+        challenge_password: {required: True, type: string}
+        revocation_url: {required: True, type: string}
+      required: True
+      type: dict
+  required: True
+  type: dict

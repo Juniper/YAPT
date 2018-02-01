@@ -1,0 +1,5 @@
+Init:
+  schema:
+    Dependencies: {'required': True, 'type': 'list'}
+  required: True
+  type: 'dict'

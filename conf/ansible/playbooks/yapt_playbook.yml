@@ -1,0 +1,29 @@
+---
+- name: Load merge a configuration to a device running Junos OS
+  hosts: YAPT
+  roles:
+   - Juniper.junos
+  vars:
+    ansible_python_interpreter: "/usr/bin/env python2.7"
+  connection: local
+  gather_facts: no
+
+  tasks:
+
+    - name: Checking NETCONF connectivity
+      wait_for: host={{ inventory_hostname }} port=22 timeout=30
+
+    - name: Include device specific variables
+      include_vars: file={{ device_vars }}
+
+    - name: Create device specific template
+      template: src={{ template_src }} dest={{ template_dst }}
+
+    - name: Install Junos configuration
+      junos_install_config:
+        overwrite=false
+        replace=true
+        host={{ inventory_hostname }}
+        user={{ junos_user }}
+        passwd={{ junos_password }}
+        file={{ template_dst }}

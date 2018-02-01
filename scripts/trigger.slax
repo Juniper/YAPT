@@ -1,0 +1,52 @@
+/*
+ * Author        : C.Klewar
+ * Version       : 1.0
+ * Last Modified : 15 Feb, 2016
+ * Modified by   : Christian
+ * Platform      : SRX
+ * Release       : 9.4 and above
+ * License       : Public Domain
+ *
+ * Revisions:
+ * 1.0 - Initial script
+ */
+
+version 1.0;
+ns junos = "http://xml.juniper.net/junos/*/junos";
+ns xnm = "http://xml.juniper.net/xnm/1.1/xnm";
+ns jcs = "http://xml.juniper.net/junos/commit-scripts/1.0";
+ns curl extension = "http://xml.libslax.org/curl";
+import "../import/junos.xsl";
+
+match / {
+    <op-script-results> {
+        var $myhost = "10.16.116.1";
+
+        var $interface-info = <get-interface-information> {
+            <terse>;
+            <interface-name> "ge-0/0/0.0";
+        }
+
+        var $software-info = <get-software-information>{}
+
+        var $int-info = jcs:invoke($interface-info);
+        var $deviceIP = $int-info/logical-interface/address-family/interface-address/ifa-local;
+        var $sw-info = jcs:invoke($software-info);
+        var $deviceName = $sw-info/host-name;
+
+        <output> $deviceIP;
+        <output> $deviceName;
+
+        var $url = "http://192.168.2.20:8080/api";
+
+        var $options := {
+            <url> $url;
+            <method> "post";
+            <param name="deviceIP">$deviceIP;
+            <param name="deviceName">$deviceName;
+        }
+        var $curl = curl:open();
+        var $results = curl:perform($curl, $options);
+        expr curl:close($curl);
+    }
+}

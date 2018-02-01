@@ -1,0 +1,14 @@
+------------------------------------------------------------------------------------------------------------------------
+Device Serial: {{ deviceSerial }}
+Device Name  : {{ deviceName }}
+Device Model : {{ deviceModel }}
+Device Group : {{ deviceGroup }}
+Device Status: {{ deviceStatus }}
+Last Seen    : {{ lastSeen }}
+------------------------------------------------------------------------------------------------------------------------
+{% for task, taskState in tasks.iteritems() %}
+Task Name    : {{ task }}
+Task Status  : {{ taskState.taskState }}
+Task Message : {{ taskState.taskStateMsg }}
+------------------------------------------------------------------------------------------------------------------------
+{% endfor %}

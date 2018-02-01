@@ -1,0 +1,89 @@
+---
+#**********************************************************************************************************************
+#GROUP: EX
+#***********************************************************************************************************************
+
+########################################################################################################################
+#Tasks Section (turn on/off provisioning tasks / configure specific task settings)
+########################################################################################################################
+TASKS:
+  #Enable provision tasks and set processing order within sequence
+  #Sequence: Init, Filecp, Software, Ipam, Configuration, Cert, Discovery, Policy, Assign, Rule, Publish, Cleanup
+  Sequence: [Init, Filecp, Software, Configuration, Cleanup]
+
+  Provision:
+
+    Init:
+      Dependencies: [Configuration, Software]
+
+    Configuration:
+      Dependencies: []
+      DeviceConfTemplateDir: conf/devices/template/   #device specific template config directory
+      DeviceConfTemplateFile: ex_no_ipam.j2           #device config template name
+      ConfigFileHistory: history/                     #path to dir where commited device config being saved
+      Merge: True                                     #Merge Configuration
+      Overwrite: False                                #Replace Configuration
+
+      Internal:
+        CommitTimeout: 120                            #Set Commit Timeout to x sec
+        ConfirmedTimeout: 5                           #Set Commit confirmed timeout to x min
+
+      Ansibleapi:
+        PlaybookPath: conf/ansible/playbooks/         #Set path to playbook
+        Playbook: yapt_playbook.yml                   #Set Playbook file name. Playbooks stored in conf/ansible/playbook
+
+    Cert:
+      PortForwarding: False                                         #Enable Port Forwarding for cert retrieval
+      LocalFwdPort: 5554                                            #Forwarding Port on device
+      RemoteFwdHost: 10.15.115.2                                    #Remote host to forward to
+      RemoteFwdHostPort: 8080                                       #Port on remote host to forward to
+      EnrollmentUrl: ejbca/publicweb/apply/scep/advpn/pkiclient.exe #
+      RevocationUrl: ejbca/publicweb/status/ocsp                    #
+
+    Discovery:
+      Mode: Discovery                                 #Set discovery mode to either Discovery or Configlet
+      ConnectionConfigletDir: conf/configlet/         #modeled device configlet file path
+
+    Filecp:
+      Files: [ADVPNCertRollout.slax]                  #File(s) to be copied to device (e.g. SLAX)
+      FileLocalDir: scripts/                          #source directory where to find files (defaults to script dir)
+      FileRemoteDir: /var/db/scripts/event            #Event/Commit/OP Script or any other directory path on device
+
+    Ipam:
+      Module: nipap
+      Address: 10.15.115.6
+      Port: '1337'
+      Prefixes: [10.200.0.0/24, 10.13.113.0/24]
+      User: nipap
+      Password: nipap
+
+    Software:
+      ImageDir: images/                               #device software images directory
+
+      TargetVersion:
+        EX4300-24P: 17.2R1.13
+        FIREFLY-PERIMETER: 12.1X47-D35.2
+        VSRX: 15.1X49-D100.6
+        SRX100: 12.3X48-D40
+        SRX110: 12.3X48-D40
+        SRX210: 12.3X48-D40
+        SRX220: 12.3X48-D40
+        SRX300: 15.1X49-D70
+        SRX320: 15.1X49-D70
+        SRX340: 15.1X49-D70
+        SRX345: 15.1X49-D70
+
+########################################################################################################################
+#Verification Task Section
+########################################################################################################################
+  Verification:
+
+    Ping:
+      Destination: 10.12.111.1
+      Count: '10'
+
+    Vpn:
+      SaRemoteAddress: 10.11.111.115
+
+    Jsnap:
+      Tests: [test_is_equal.yml]

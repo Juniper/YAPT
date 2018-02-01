@@ -1,0 +1,33 @@
+<device xmlns="http://juniper.net/bootstrap-server">
+    <unique-id>{{ serial }}</unique-id>
+    <activation-code>abc123</activation-code>
+    <configuration>
+        <config>
+            <configuration>
+                <system>
+                    <host-name>init</host-name>
+                    <root-authentication>
+                        <ssh-rsa>ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDNRZHZGfeKpivvJxvcLEFbn37+m9HaAAjX5yPdHR/p9YBme+S7P9OcQv3Y5aRLsDjmGI3jqnEDDtw8XxS/Ky2DQ9g/uVb++MWTOu739iJiF6wwOJXUvFLbFzG8TF1i0mrGYyZ/5UtPL1YWrKnRO86mhbQDPie9H8dIoZb1AYBEugm0GwOqA0luRuAgvoAuOr15qYu0zDcwXF3f5ZpRh8TcVgWsPQ/HQK/WaWjOyeUz6a7iC1VtcmXn3LY6RG2iTCSxQz6n1Z/JBEUQfjKG9o9XEZ7Pf3eN8tGbTWXtiQVsfJ1VXTOPm/YUaABIhY5t72K3F7mMwoQmVS2GpG2PwRgr cklewar@cklewar-mbp</ssh-rsa>
+                    </root-authentication>
+                    <services>
+                        <netconf>
+                            <ssh></ssh>
+                        </netconf>
+                        <outbound-ssh>
+                            <client>
+                                <name>yapt</name>
+                                <device-id>abc123</device-id>
+                                <secret>$9$r0/KWxbs4Di.Ndi.P56/lKM8NdwYgJUj</secret>
+                                <services>netconf</services>
+                                <servers>
+                                    <name>10.11.111.250</name>
+                                    <port>7804</port>
+                                </servers>
+                            </client>
+                        </outbound-ssh>
+                    </services>
+                </system>
+            </configuration>
+        </config>
+    </configuration>
+</device>
