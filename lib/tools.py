@@ -71,8 +71,6 @@ class Tools:
             except IOError as ioe:
                 print Tools.create_log_msg(logmsg.YAPT_CONF, '',
                                                    logmsg.YAPT_CONF_LOAD_ERR.format(ioe.strerror, ioe.filename))
-                #c.logger.info(Tools.create_log_msg(logmsg.YAPT_CONF, '',
-                #                                   logmsg.YAPT_CONF_LOAD_ERR.format(ioe.strerror, ioe.filename)))
                 sys.exit()
 
         elif config_type == 'group':
@@ -84,8 +82,6 @@ class Tools:
 
                 except IOError as ioe:
                     print Tools.create_log_msg(logmsg.YAPT_CONF, '', logmsg.__format__(filename, ioe.message))
-                    #c.logger.info(
-                    #    Tools.create_log_msg(logmsg.YAPT_CONF, '', logmsg.__format__(filename, ioe.message)))
                     return
             else:
                 return ObjectView(stream)
