@@ -14,7 +14,9 @@ from lib.tools import Tools
 
 
 class YaptBackend(object):
+
     if __name__ == '__main__':
+
         Tools.create_config_view('main')
         EmitterPlgFact()
 

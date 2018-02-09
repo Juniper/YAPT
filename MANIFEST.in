@@ -1,0 +1,19 @@
+recursive-include conf *
+recursive-include doc *
+recursive-include scripts *
+recursive-include lib/web/web *
+recursive-include lib/web/ui *
+recursive-include lib/web/ooba *
+recursive-include lib/log/templates *
+recursive-include vagrant *
+recursive-include images readme.md
+recursive-include logs readme.md
+recursive-include history readme.md
+include LICENSE
+include COPYRIGHT
+include requirements.txt
+include yapt.py
+include yaptbackend.py
+include yapttask.py
+include yaptui.py
+include readme.md

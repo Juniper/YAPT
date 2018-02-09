@@ -13,7 +13,8 @@ import lib.constants as c
 from lib.tools import Tools
 
 
-class YaptTask(object):
+class YaptSvc(object):
+
     if __name__ == '__main__':
 
         Tools.create_config_view('main')

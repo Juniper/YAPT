@@ -31,4 +31,3 @@ class YaptUi(object):
 
         p = multiprocessing.Process(target=Init, args=())
         p.start()
-
