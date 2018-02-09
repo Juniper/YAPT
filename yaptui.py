@@ -13,7 +13,8 @@ from lib.web.base import Init
 from lib.pluginfactory import EmitterPlgFact
 
 
-class Yapt(object):
+class YaptUi(object):
+
     if __name__ == '__main__':
 
         Tools.create_config_view('main')
@@ -30,3 +31,4 @@ class Yapt(object):
 
         p = multiprocessing.Process(target=Init, args=())
         p.start()
+
