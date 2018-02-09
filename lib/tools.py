@@ -61,6 +61,7 @@ class Tools:
 
     @classmethod
     def create_config_view(cls, config_type=None, filename=None, stream=None):
+
         if config_type == 'main':
 
             try:
@@ -68,8 +69,10 @@ class Tools:
                 c.conf = ObjectView(yaml.safe_load(open(c.YAPT_CONF_FILE).read()))
 
             except IOError as ioe:
-                c.logger.info(Tools.create_log_msg(logmsg.YAPT_CONF, '',
-                                                   logmsg.YAPT_CONF_LOAD_ERR.format(ioe.strerror, ioe.filename)))
+                print Tools.create_log_msg(logmsg.YAPT_CONF, '',
+                                                   logmsg.YAPT_CONF_LOAD_ERR.format(ioe.strerror, ioe.filename))
+                #c.logger.info(Tools.create_log_msg(logmsg.YAPT_CONF, '',
+                #                                   logmsg.YAPT_CONF_LOAD_ERR.format(ioe.strerror, ioe.filename)))
                 sys.exit()
 
         elif config_type == 'group':
@@ -80,8 +83,9 @@ class Tools:
                     #return yaml.safe_load(open(c.conf.SOURCE.File.DeviceGrpFilesDir + filename).read())
 
                 except IOError as ioe:
-                    c.logger.info(
-                        Tools.create_log_msg(logmsg.YAPT_CONF, '', logmsg.__format__(filename, ioe.message)))
+                    print Tools.create_log_msg(logmsg.YAPT_CONF, '', logmsg.__format__(filename, ioe.message))
+                    #c.logger.info(
+                    #    Tools.create_log_msg(logmsg.YAPT_CONF, '', logmsg.__format__(filename, ioe.message)))
                     return
             else:
                 return ObjectView(stream)
@@ -923,3 +927,4 @@ class Tools:
             c.active_log_plgs['Local'].emit(task_name=task_name, sample_device=sample_device, grp_cfg=grp_cfg,
                                             shared=shared,
                                             message=message, level=level)
+
