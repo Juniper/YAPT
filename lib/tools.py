@@ -81,7 +81,7 @@ class Tools:
                     #return yaml.safe_load(open(c.conf.SOURCE.File.DeviceGrpFilesDir + filename).read())
 
                 except IOError as ioe:
-                    print Tools.create_log_msg(logmsg.YAPT_CONF, '', logmsg.__format__(filename, ioe.message))
+                    c.logger.info(Tools.create_log_msg(logmsg.YAPT_CONF, '', logmsg.__format__(filename, ioe.message)))
                     return
             else:
                 return ObjectView(stream)
@@ -834,7 +834,7 @@ class Tools:
         return config_source_plugins
 
     @classmethod
-    def load_log_plugins(cls):
+    def load_emitter_plugins(cls):
 
         log_re = re.compile('.py$', re.IGNORECASE)
         pluginfiles = filter(log_re.search, os.listdir(os.path.join(os.path.dirname(__file__), 'emitter')))
@@ -923,3 +923,4 @@ class Tools:
             c.active_log_plgs['Local'].emit(task_name=task_name, sample_device=sample_device, grp_cfg=grp_cfg,
                                             shared=shared,
                                             message=message, level=level)
+

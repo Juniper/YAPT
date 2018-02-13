@@ -144,7 +144,7 @@ class EmitterPlgFact(object):
 
         if c.conf.EMITTER.Plugins:
 
-            emitter_plgs = Tools.load_log_plugins()
+            emitter_plgs = Tools.load_emitter_plugins()
 
             print Tools.create_log_msg(self.__class__.__name__, None,
                                        'Loading emitter plugin sequence <{0}>'.format(c.conf.EMITTER.Plugins))
@@ -157,3 +157,4 @@ class EmitterPlgFact(object):
                 c.active_log_plgs[_plg_name.title()] = emitter_plugin
         else:
             print Tools.create_log_msg(self.__class__.__name__, None, 'Emitter plugin sequence is empty')
+

@@ -315,7 +315,7 @@ class LogTools(object):
     AMQP = 'AMQP'
     AMQP_INIT = 'Exchange --> {0}, Type --> {1}, Routing Key --> {2}, Host --> {3}, Channel --> {4}'
     YAPT_CONF = 'YAPTCONF'
-    YAPT_CONF_LOAD_ERR = 'Loading YAPT config file with error <{0}>:{1}'
+    YAPT_CONF_LOAD_ERR = 'Loading YAPT config file with error <{0}:{1}>'
     YAPT_CONF_LOAD_GRP_ERR = 'Loading group file <{0}> failed with error <{1}>'
 
 
