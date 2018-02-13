@@ -65,7 +65,7 @@ class Local(DeviceConfigSource):
 
     def get_config_data_file(self, serialnumber=None, deviceOsshId=None):
 
-        dev_conf_path = c.conf.YAPT.DeviceConfDataDir
+        dev_conf_path = c.conf.SOURCE.File.DeviceConfDataDir
 
         if serialnumber is not None:
 
@@ -124,16 +124,22 @@ class Local(DeviceConfigSource):
 
     def get_config_data(self, serialnumber=None, deviceOsshId=None):
 
-        dev_conf_path = c.conf.YAPT.DeviceConfDataDir
+        dev_conf_path = c.conf.SOURCE.File.DeviceConfDataDir
 
         if serialnumber is not None:
 
             filename = serialnumber + '.yml'
 
+            print filename
+            print dev_conf_path
+            print dev_conf_path + filename
+            print os.path.exists(dev_conf_path + filename)
+            print os.path.isfile(dev_conf_path + filename)
+
             if os.path.exists(dev_conf_path + filename) and os.path.isfile(dev_conf_path + filename):
 
                 try:
-                    with open(c.conf.YAPT.DeviceConfDataDir + filename, 'r') as fp:
+                    with open(c.conf.SOURCE.File.DeviceConfDataDir + filename, 'r') as fp:
 
                         try:
 
@@ -165,7 +171,7 @@ class Local(DeviceConfigSource):
                     if os.path.exists(dev_conf_path + filename) and os.path.isfile(dev_conf_path + filename):
 
                         try:
-                            with open(c.conf.YAPT.DeviceConfDataDir + filename, 'r') as fp:
+                            with open(c.conf.SOURCE.File.DeviceConfDataDir + filename, 'r') as fp:
 
                                 try:
 
@@ -209,7 +215,7 @@ class Local(DeviceConfigSource):
             if os.path.exists(dev_conf_path + filename) and os.path.isfile(dev_conf_path + filename):
 
                 try:
-                    with open(c.conf.YAPT.DeviceConfDataDir + filename, 'r') as fp:
+                    with open(c.conf.SOURCE.File.DeviceConfDataDir + filename, 'r') as fp:
 
                         try:
 
@@ -279,3 +285,4 @@ class Local(DeviceConfigSource):
             c.logger.info(
                 Tools.create_log_msg(self.name, serialnumber, logmsg.__format__(filename, ioe.message)))
             return False, None
+
