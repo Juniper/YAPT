@@ -140,6 +140,7 @@ To run YAPT in a standalone environment grab a CentOS 7 box and follow steps bel
 - Edit the hosts inventory file and change according your environment
   * `nano inventory/hosts`
   
+  
   ```
   [yapt]
   yapt-01 ansible_host=172.16.146.131 ansible_connection=ssh ansible_user=root
@@ -147,6 +148,7 @@ To run YAPT in a standalone environment grab a CentOS 7 box and follow steps bel
       
 - Edit group variables file `all` and change needed setting to fit your environment
   * `nano group_vars/all`
+  
   
   ```
   # Rabbitmq stuff
@@ -262,10 +264,10 @@ To install YAPT with vagrant follow following steps:
 ## EDI ##
 
 To install YAPT to integrate into j-EDI we need to:
-- Setup j-EDI environment <https://github.com/Juniper/jedi-seed/blob/master/README.md>.
+- Setup j-EDI environment <https://github.com/Juniper/jedi-seed/blob/master/README.md>
 - Setup the YAPT EDI plugin: <https://github.com/Juniper/j-EDI/blob/master/saltstack/srv/plugins/yapt/README.md> 
 
-Current integration is with RT ticketing system. We could demonstrate updating a ticket with privisoning / verfification task information.   
+Current integration is with RT ticketing system. We could demonstrate updating a ticket with privisoning / verification task information.   
 For more information about YAPT provisioning task plugin have a look at the task plugin section.
 
 ## Standalone from source / scratch ##
@@ -329,11 +331,14 @@ Shown Rabbitmq config will not work with version >= 3.7.0.
 - Edit __conf/yapt/yapt.yml__ file under conf/yapt directory to fit your environment settings
   - Parameter __SourcePlugins__: Set the source plugin to the one you want to be used and configure source plugins settings under __Global Section__ in __yapt.yml__
   - Parameter __WebUiAddress__: should be set to interface IP WebUI will be reachable
-  - If YAPT server operates behind NAT address we need to set:
+  - If YAPT server operates behind NAT / Proxy we need to set:
+
+  
   ```
   WebUiNat: False                                 #Enable YAPT WebUI being behind NAT
   WebUiNatIp: 172.30.162.52                       #NAT IP
   ```
+
 - Configure the services which have been enabled under __SourcePlugins__ section
 
 # Configuration #
@@ -377,6 +382,32 @@ YAPT main config file `conf/yapt/yapt.yml` consists of following sections:
 - AMQP
 - EMITTER
 
+### User and Passwords ###
+YAPT ships with password utility, which is used to save encrypted passwords in YAPT configuration files.
+With password utility we can generate most of the passwords. Main goal of password util is to encrypt password in YAPT config files. 
+Current implementation is not intended to be secure since master key has to be protected on it's own.
+
+This tool can be started by following command:
+
+- cd lib/utils
+- PYTHONPATH=__PATH_TO_YAPT_INSTALLATION__ /usr/local/bin/python2.7 ./password.py
+- First of all you need to create a master key. If there is already a master key this won't be overwritten and has to be deleted from master key file
+
+
+```
+PYTHONPATH=/root/juniper-yapt-0.0.2/ /usr/local/bin/python2.7 password.py
+
+------------------------------ Password Util ------------------------------
+1. Create Master Key
+2. Generate Device SSH Password
+3. Generate Junos Space REST Api Password
+4. Generate OSSH Shared Secret
+5. Generate AMQP Password
+6. Exit
+---------------------------------------------------------------------------
+Enter your choice [1-6]:
+```
+
 ### Device Authentication ###
 YAPT supports password and key based device authentication. For password based authentication you use password util to generate the device password. If key based authentication is being used following settings have to be done:
 
@@ -418,34 +449,11 @@ Default WebUI URL is __http://ip:port/yapt/ui__
 ### OOBA WebUI ###
 OOBA WebUI URL is __http://ip:port/ooba__
 
-### User and Passwords ###
-YAPT ships with password utility, which is used to save encrypted passwords in YAPT configuration files.
-With password utility we can generate most of the passwords. Main goal of password util is to encrypt password in YAPT config files. 
-Current implementation is not intended to be secure since master key has to be protected on it's own.
-
-This tool can be started by following command:
-
-- cd lib/utils
-- PYTHONPATH=__PATH_TO_YAPT_INSTALLATION__ /usr/local/bin/python2.7 ./password.py
-- First of all you need to create a master key. If there is already a master key this won't be overwritten and has to be deleted from master key file
-
-
-```
-PYTHONPATH=/root/juniper-yapt-0.0.2/ /usr/local/bin/python2.7 password.py
-
------------------------------- Password Util ------------------------------
-1. Create Master Key
-2. Generate Device SSH Password
-3. Generate Junos Space REST Api Password
-4. Generate OSSH Shared Secret
-5. Generate AMQP Password
-6. Exit
----------------------------------------------------------------------------
-Enter your choice [1-6]:
-```
-
 ### Example Main Config ###
-```
+
+```yaml
+
+---
 ########################################################################################################################
 # YAPT Global Section
 ########################################################################################################################
@@ -584,9 +592,15 @@ EMITTER:
 
 ## Group Config ##
 
-- Edit group file under __conf/groups__. YAPT supports building groups to apply specific tasks to devices. Here is an example for SRX devices.
+YAPT supports building groups to apply specific tasks to devices.  Add new / edit group files to __conf/groups__. 
+Devices will be assigned to a group by setting group name in device data file under __conf/devices/data__.
+Group definition has to be set to group file name without file suffix: `device_group`: __srx__.
 
-```
+Here is an example for SRX devices:
+
+
+```yaml
+
 ---
 #**********************************************************************************************************************
 #GROUP: SRX
@@ -708,15 +722,12 @@ TASKS:
 
     Jsnap:
       Tests: [test_is_equal.yml]
-
 ```
 
-Devices will be assigned to a group by setting group name in device data file under __conf/devices/data__. Here is an example:
-Group definition has to be set to group file name without file suffix device_group: __srx__.
 
 ### Device Config ###
 
-```
+```yaml
 yapt:
   device_type: srx
   device_group: srx
@@ -774,21 +785,20 @@ device:
 
 To use ansible as task in standalone mode you will need to install Ansible Junos role by running:
 
+### Verification Tasks ###
+TBD
+
+
 ```
 ansible-galaxy install Juniper.junos
 ```
 
-#### Starting YAPT server ####
-
-- ./yapt.sh start
-- Open browser and point to URL: http://yapt-server-ip:port/yapt/ui
-
+## Additional Services ##
 If the centralised approach will be used we need additional services like DHCP / TFTP server. 
 Here some example configurations of those:
+### DHCP server (ISC DHCP) ###
 
-#### DHCP server (ISC DHCP) ####
-
-```
+```ini
 option domain-name "yapt.local";
 
 default-lease-time 600;
@@ -813,10 +823,10 @@ filename "init.conf";
 
 #### TFTP server (HPA-TFTP) ####
 
-```
+```ini
 service tftp
 {
-	disable	= no
+	disable	        = no
 	socket_type		= dgram
 	protocol		= udp
 	wait			= yes
@@ -824,15 +834,15 @@ service tftp
 	server			= /usr/sbin/in.tftpd
 	server_args		= -s /var/lib/tftpboot -t 120 -v
 	per_source		= 11
-	cps			= 100 2
+	cps			    = 100 2
 	flags			= IPv4
-	log_type                = FILE /var/log/tftpd.log
+	log_type        = FILE /var/log/tftpd.log
 }
 ```
 
 #### TFTP server (dnsmasq) ####
 
-```
+```ini
 # Disable DNS
 port=0
 
@@ -848,7 +858,7 @@ log-facility=/var/log/tftpd.log
 This example __init.conf__ config file should be copied to TFTP servers directory.
 The __root__ user is used for YAPT connecting to device for starting the provisioning process.
 
-```
+```xml
 system {
     host-name init;
     root-authentication {
@@ -909,13 +919,15 @@ security {
     }
 }
 ```
+
+
 ## JunOS Space ##
 Supported Junos Space Platform currently:
 
-* Management platform 15.1R3
-* Security Director: 15.1R2
-* Management platform 16.1
-* Security Director: 16.2 (Only partial support e.g. no firewall rule creation)
+- Management platform 15.1R3
+- Security Director: 15.1R2
+- Management platform 16.1
+- Security Director: 16.2 (Only partial support e.g. no firewall rule creation)
 
 # Directory structure #
 YAPT directory structure
