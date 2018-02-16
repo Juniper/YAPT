@@ -124,6 +124,13 @@ There is a very simple WebUI, which gives overview of already provisioned device
 
 # Installation #
 
+## Requirements ##
+
+- Hardware
+  * 1 CPU
+  * 1GB RAM
+  * Disk space 10GB (depends on how many software image files will be saved in image directory)
+
 ## Standalone ##
 
 To run YAPT in a standalone environment grab a CentOS 7 box and follow steps below:
@@ -213,7 +220,8 @@ To bring up YAPT docker environment we need following steps:
 - Edit group variables file `all` and change needed setting to fit your environment
   * `nano group_vars/all`
   
-  ```
+  
+  ```yaml
   # Rabbitmq stuff
   rabbitmq_version: 3.6.14
   rabbitmq_user: yapt
@@ -350,7 +358,7 @@ Shown Rabbitmq config will not work with version >= 3.7.0.
 YAPT main config file `conf/yapt/yapt.yml` consists of following sections:
 All settings in this file have a global scope.
 
-### Section YAPT ###
+### Section: YAPT ###
 
 
   - SourcePlugins: Enable source plugins and their respective service
@@ -376,29 +384,137 @@ All settings in this file have a global scope.
   - OobaUiPort: YAPT OOBA WebUI interface port
   - WorkerThreads: Amount of task queue worker threads to be started
     * If YAPT runs in Standalone / Vagrant installation this is used to scale parallel task processing
+    * In a containerized environment we would use load balancing mechanisms provided by the container system  
 
-### Section SOURCE ###
+### Section: SOURCE ###
 
 - DeviceConfOoba: Enable OOBA mapping checks
 - DeviceConfSrcPlugins: Configuration source plugin order
 
-### Section Backend ###
+### Section: Backend ###
 TBD
 
+### Section: SERVICES ###
+Services are tied to source plugins. If adding a source plugin to the source plugin sequence in file `yapt.conf` section `YAPT` the according service has to be configured.
 
-### Section SERVICES ###
+Why separation into services and source plugins? 
+Best example for this is the file based service. File based service observes a file for changes. 
+The file contents of a tftp log and a dhcp log is different but they are still files being observed by the same file service. 
+The source plugin is responsible for "normalizing" the file data read and extracting needed information from it using a pattern.
+
+#### TFTP Service ####
+TFTP service observes given file `LogFile` for changes. It matches new file entries to given pattern `Pattern`.
+
+
+```yaml
+Tftp:
+    Name: dnsmasq                                           #dnsmasq TFTP Server or hpa TFTP Server
+    LogFile: logs/testlogs/tftpd.log                        #Path to the log file being observed (TFTP/DHCP/etc)
+    #dnsmasq TFTP Pattern (Ubuntu/Centos)
+    Pattern: .*?\sdnsmasq-tftp\[\d.*\]:\ssent\s/var/lib/tftpboot/init.conf\sto\s((?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3}))
+```
+
+
+#### DHCP Service ####
+DHCP service observes given file `LogFile` for changes. DHCP service source plugin normalizes and extract needed data.
+
+
+```yaml
+Dhcp:
+    Name: isc                                               #dnsmasq DHCP Server or ISC DHCP Server
+    LogFile: logs/testlogs/dhcpd.leases                     #Path to the log file being processed
+```
+
+
+#### OSSH Service ####
+OSSH "outbound-ssh" is waiting for incoming device initiated SSH session. Listening on `ServiceBindAddress` and `ServiceListenPort`.
+A shared secret `SharedSecret` is used to authenticate the device. To allow port forwarding for later use with in-band certificate roll out
+device outbound ssh service has to be reconfigured. The ossh source plugin normalizes and extracts the received data.
+
+```yaml
+Ossh:
+    ServiceBindAddress: 172.16.146.1                        #SSH Server bind address
+    ServiceListenPort: 7804                                 #SSH Server listen port
+                                                            #DMI Shared Secret
+    SharedSecret: gAAAAABZVk8RuO9DYNhx92zfV5yypeMzFMFIkeY2T8GHWeBYs-BqAH7_oaGI7ktDdc9pQkxN9jlQSTtfbluMj0FxT5xlAKbLYA==
+    LocalConfigFile: conf/services/ossh/ossh.conf           #Contains mandatory options for device ssh deamon
+    RemoteConfigFile: /mfs/var/etc/sshd_config_obssh.yapt   #SSH config file on device. For outbound-ssh should be "/mfs/var/etc/sshd_config_obssh.yapt"
+    SigHubCmd: kill -HUP `cat /var/run/inetd.pid`           #Sig HUP inetd to re-read it's configuration
+```
+
+#### PHS Service ####
+PHS (Phone Home Service / Server) is waiting for incoming http/https sessions. Listening on `ServiceBindAddress` and `ServiceListenPort`.
+A bootstrapping configuration is provided in `InitConfPath` directory. Device type has to be determined by this services before sending bootstrap configuration.
+This for `device_type` has to be defined in specific device data file in `conf/device/data` directory. PHS can listen on http or https by enable / disable `EnableSSL` option.
+Authentication is done by checking received device serial number. Current implementation of an authentication database is a flat file provided by `DeviceAuthFile`.
+
+
+```yaml
+Phs:
+    Containerized: false                                    #Is PHS running in container env
+    ServiceBindAddress: 172.16.146.1                        #HTTP Server bind address
+    ServiceListenPort: 8082                                 #HTTP Server listen port
+    InitConfPath: conf/services/phs/                        #Inital bootstrap config file directory
+    EnableSSL: false                                        #HTTP or HTTPS used by PHC connection
+    SSLCertificate: conf/yapt/ssl/cert.pem                  #SSL Certificate
+    SSLPrivateKey: conf/yapt/ssl/privkey.pem                #SSL Private Key
+    DeviceAuthFile: conf/services/phs/dev_auth              #device authentication by serial number
+```
+
+### Section: JUNOSPACE ###
+Supported Junos Space Platform currently:
+
+- Management platform 15.1R3
+- Security Director: 15.1R2
+- Management platform 16.1
+- Security Director: 16.2 (Only partial support e.g. no firewall rule creation)
+
+Junos Space Rest API connector can be enabled by setting `Enabled` to True or disbaled by setting `Enabled` to False.
+Space version has to be set by `Version` to either `space151` or `space161`. 
+Space Rest API connector connects to IP `Ip` with user `User` and encrypted password `Password` which has been set by using the password utility. 
+YAPT support Junos Space device on-boarding by `discovering` the device or by outbound-ssh initiated device connection using device "configlets".
+The discovery task plugin docs have more information about the on-boarding methods. 
+The files in `TemplateDir` are being used by the Space Rest API connector to make the right calls since Junos Rest API is using different attributes in
+the Rest calls. This parameter has to point to the right Junos Space version being used.
+
+
+```yaml
+JUNOSSPACE:
+  Enabled: true                                     #Enable / disable Junos Space Connector (True / False)
+  Version: space151                                 #Junos Space Version (space151 / space161)
+  Ip: 10.200.200.101                                #Junos Space IP address
+  User: rest                                        #Junos Space REST API user
+                                                    #Junos Space REST API user password
+  Password: gAAAAABaIDFdOx8OcSkANaSnHYzOWLaqMIbYLWNR-eTxjYKNC7vOA3stkjlnA7L9hVMYPniwnakW2po197sHZsE3IUTT4ZYEBA==
+  TemplateDir: conf/space/templates/151/            #Junos Space REST API Templates (must be right Junos Space version)
+  RestTimeout: 3                                    #Junos Space Wait n sec for next rest call
+```
+
+### Section: DEVICEDRIVER ###
+YAPT suports two device drivers:
+
+- PyEZ
+  * Rich feature set for Junos based devices
+  * Tied to Junos based devices
+  * All current available provisioning tasks supported
+- NAPALM
+  * Vendor agnostic
+  * Not all current available provisioning tasks supported
+  * Mainly used for configuration provisioning
+
+Activate the driver by setting `Driver` to `pyez` or to `napa`. If Napalm is activated as a driver we have to set the module type `Module` to any of the supported Napalm drivers.
+
+```yaml
+Driver: pyez                      #pyez / napa (napalm)
+  Napalm:                           #Napalm specific options
+    Module: junos                   #junos/ios/etc
+    Port: 22                        #device port connecting to
+```
+
+### Section: AMQP ###
 TBD
 
-### Section JUNOSPACE ###
-TBD
-
-### Section DEVICEDRIVER ###
-TBD
-
-### Section AMQP ###
-TBD
-
-### Section EMITTER ###
+### Section: EMITTER ###
 TBD
 
 ### Example Main Config ###
@@ -545,7 +661,7 @@ EMITTER:
 ## Group Config ##
 
 YAPT supports building groups to apply specific tasks to devices.  Add new / edit group files to __conf/groups__. 
-Devices will be assigned to a group by setting group name in device data file under __conf/devices/data__.
+Devices will be assigned to a group by setting group name in device data file in __conf/devices/data__ directory.
 Group definition has to be set to group file name without file suffix: `device_group`: __srx__.
 
 Here is an example for SRX devices:
@@ -738,8 +854,8 @@ YAPT provides two task categories:
 - Verification Tasks
 
 Tasks will be activated in device group files. To activate a task add it to the task sequence list `Sequence: [Init, Filecp, Software, Configuration, Cleanup]`.
-To deactivate remove it from the task sequence list. Tasks in this list will be processed in order of occurrence. First letter of task name in this sequence list hast to be a capital letter.
-Only exception is task plugin `Init` which should always be in first place and task plugin `Cleanup` which should always be at the end of the sequence.
+To deactivate remove it from the task sequence list. Tasks in this list will be processed in order of occurrence. First letter of task name has always to be a capital letter.
+Ordering of the tasks can easily be changed. Only exception are the task `Init` which should always be in first place and task `Cleanup` which should always be at the end of the sequence.
  
 ### Provisioning Tasks ###
 
@@ -751,7 +867,11 @@ If not already done to use Ansible provisioning task plugin you will need to ins
 ansible-galaxy install Juniper.junos
 ```
 
-Provisioning task `ansibleapi`
+To use provisioning task `ansibleapi` configure the playbook path and the playbook file. 
+- Ansibleapi task can't be used together with in-band certificate roll out.
+- Ansibleapi task won't work with new device sitting behind NAT device
+- Ansibleapi task always initiate connection to device
+
 
 ```yaml
 Ansibleapi:
@@ -811,7 +931,7 @@ DevicePwdIsRsa: False                           #use ssh rsa authentication
 
 ## Starting / stopping services ##
 In standalone or vagrant installation YAPT needs rabbitmq service to be started prior to yapt service. 
-This is platform specific which could be done using Linux init scripts under __/etc/init.d__ or on systemd based systems with __systemctl__ or __service__ commands.
+This is platform specific and could be done using Linux init scripts under __/etc/init.d__ or on systemd based systems with __systemctl__ or __service__ commands.
 YAPT ships with a start / stop script called __yapt.sh__.
 * __yapt.sh start__ starts yapt
 * __yapt.sh stop__ stops yapt
@@ -832,8 +952,9 @@ Default WebUI URL is __http://ip:port/yapt/ui__
 OOBA WebUI URL is __http://ip:port/ooba__
 
 ## Additional Services ##
-If the centralised approach will be used we need additional services like DHCP / TFTP server. 
+For device like EX/QFX we need additional services like DHCP / TFTP server. 
 Here some example configurations of those:
+
 ### DHCP server (ISC DHCP) ###
 
 ```ini
@@ -893,8 +1014,10 @@ log-facility=/var/log/tftpd.log
 ```
 
 #### Bootstrap TFTP config file "Centralized Provisioning approach" ####
-This example __init.conf__ config file should be copied to TFTP servers directory.
-The __root__ user is used for YAPT connecting to device for starting the provisioning process.
+This example __init.conf__ config file should be copied to TFTP servers directory like specified in dnsmasq configuration above.
+The __root__ user is used for YAPT connecting to device for starting the provisioning process. 
+
+Here is an example for an vSRX (FireFly) device:
 
 ```xml
 system {
@@ -958,14 +1081,6 @@ security {
 }
 ```
 
-
-## JunOS Space ##
-Supported Junos Space Platform currently:
-
-- Management platform 15.1R3
-- Security Director: 15.1R2
-- Management platform 16.1
-- Security Director: 16.2 (Only partial support e.g. no firewall rule creation)
 
 # Directory structure #
 YAPT directory structure
