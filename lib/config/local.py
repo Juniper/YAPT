@@ -130,12 +130,6 @@ class Local(DeviceConfigSource):
 
             filename = serialnumber + '.yml'
 
-            print filename
-            print dev_conf_path
-            print dev_conf_path + filename
-            print os.path.exists(dev_conf_path + filename)
-            print os.path.isfile(dev_conf_path + filename)
-
             if os.path.exists(dev_conf_path + filename) and os.path.isfile(dev_conf_path + filename):
 
                 try:
@@ -285,4 +279,3 @@ class Local(DeviceConfigSource):
             c.logger.info(
                 Tools.create_log_msg(self.name, serialnumber, logmsg.__format__(filename, ioe.message)))
             return False, None
-

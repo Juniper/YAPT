@@ -923,4 +923,3 @@ class Tools:
             c.active_log_plgs['Local'].emit(task_name=task_name, sample_device=sample_device, grp_cfg=grp_cfg,
                                             shared=shared,
                                             message=message, level=level)
-

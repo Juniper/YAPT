@@ -26,8 +26,8 @@ YAPT:
 #Config Source Section
 ########################################################################################################################
 SOURCE:
-  DeviceConfOoba: true                            #Enable OOBA DB check
-  DeviceConfSrcPlugins: [cgitlab]                 #Configuration source plugin order
+  DeviceConfOoba: false                         #Enable OOBA DB check
+  DeviceConfSrcPlugins: [local]                 #Configuration source plugin order
 
   File:
     DeviceGrpFilesDir: conf/groups/                 #Map device to a provisioning group
