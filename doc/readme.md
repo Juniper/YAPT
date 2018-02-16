@@ -124,6 +124,17 @@ There is a very simple WebUI, which gives overview of already provisioned device
 
 # Installation #
 
+## Default username and password ##
+- For device authentication with username/password:
+  + username is `root`
+  + password is `juniper123`
+
+- For Junos Space authentication:
+  + username is `rest`
+  + password is `juniper123`
+
+- For OSSH service shared secret is `juniper123`
+
 ## Requirements ##
 
 - Hardware
@@ -363,7 +374,7 @@ All settings in this file have a global scope.
 
   - SourcePlugins: Enable source plugins and their respective service
     + Currently YAPT ships with `phs, ossh, tftp, dhcp` plugins
-  - PwdFile: To save encrypted passwords in the main config file we need a master key. This entry points where to read key from and save key to.
+  - PwdFile: To save encrypted passwords in the main config file we need a master key. This entry points to where to read key from and save key to.
   - DevicePwdIsRsa: Enable RSA authentication towards devices
   - DeviceUsr: User YAPT will initiate a device connection with
   - DevicePwd: If YAPT connect by username / password combination this option entry represents the encrypted password
