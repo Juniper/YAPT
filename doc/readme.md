@@ -242,7 +242,7 @@ To bring up YAPT docker environment we need following steps:
 ## Vagrant ##
 Below picture illustrates how Vagrant will setup YAPT topology:
 
-![Image of YAPT Vagrant topology](https://github.com/Juniper/YAPT/blob/master/doc/pics/vagrant_topo.png)
+![Image of YAPT Vagrant topology](https://github.com/Juniper/YAPT/blob/master/doc/pics/virtualbox_topo.png)
 
 To install YAPT with vagrant follow following steps:
 
