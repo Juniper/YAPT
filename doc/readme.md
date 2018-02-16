@@ -103,7 +103,7 @@ YAPT can pull config files for devices and groups from different sources. YAPT s
 - GitLab
   * Get device and group configs from git repository
 
-Default source is local file system. It's is also possible to build a config source chain. 
+Default source is local file system. It is also possible to build a config source chain. 
 For example YAPT first will have a look at git repo and when no config found look at local file system.
 
 ## Out of band activation (OOBA) ##
@@ -118,7 +118,7 @@ The config id reflects the actual config which should be pushed down to the devi
 ## UI ##
 There is a very simple WebUI, which gives overview of already provisioned devices and provisioning status of new devices.
 
-# YAPT #
+![Image of YAPT Job Overview](https://github.com/Juniper/YAPT/blob/master/doc/pics/yapt_job_screen.png)
 
 # Installation #
 
@@ -242,7 +242,7 @@ To bring up YAPT docker environment we need following steps:
 ## Vagrant ##
 Below picture illustrates how Vagrant will setup YAPT topology:
 
-![Image of YAPT Vagrant topology](https://github.com/Juniper/YAPT/blob/master/doc/pics/vagrant_top.png)
+![Image of YAPT Vagrant topology](https://github.com/Juniper/YAPT/blob/master/doc/pics/virtualbox_topo.png)
 
 To install YAPT with vagrant follow following steps:
 
@@ -256,14 +256,21 @@ To install YAPT with vagrant follow following steps:
   * `git clone https://github.com/Juniper/YAPT`
 - Run vagrant deployment with
   * `vagrant up`
+- Setup a vSRX in VirtualBox
+  * <https://github.com/Juniper/YAPT/blob/master/doc/presentation/yapt_quick_start.pptx>
 
 ## EDI ##
-TBD
 
-## Standalone from source ##
+To install YAPT to integrate into j-EDI we need to:
+- Setup j-EDI environment <https://github.com/Juniper/jedi-seed/blob/master/README.md>.
+- Setup the YAPT EDI plugin: <https://github.com/Juniper/j-EDI/blob/master/saltstack/srv/plugins/yapt/README.md> 
+
+Current integration is with RT ticketing system. We could demonstrate updating a ticket with privisoning / verfification task information.   
+For more information about YAPT provisioning task plugin have a look at the task plugin section.
+
+## Standalone from source / scratch ##
 
 To run YAPT in standalone mode we need a linux box. I did the setup with a CentOS 6/7 and Ubuntu 16.04
-
 Here are the steps to prepare a CentOS 6/7 based box:
 
 ```
@@ -307,11 +314,10 @@ ImportError: No module named ssl
 
 ```
 
-Shown Rabbitmq config will not work with version > 3.6.9.
+Shown Rabbitmq config will not work with version >= 3.7.0.
 
-### Username and Password ###
 
-YAPT needs following password generated before started first time:
+### Configuration steps ###
 
 - Create AMQP bus user and password
 
@@ -320,54 +326,58 @@ YAPT needs following password generated before started first time:
   * rabbitmqctl set_user_tags yapt administrator
   * rabbitmqctl set_permissions -p / yapt ".*" ".*" ".*"
 
-## Starting / stopping services ##
-In standalone or vagrant installation YAPT needs rabbitmq service to be started prior to yapt service. 
-This is platform specific which could be done using Linux init scripts under __/etc/init.d__ or on systemd based systems with __systemctl__ or __service__ commands.
-YAPT ships with a start / stop script called __yapt.sh__.
-* __yapt.sh start__ starts yapt
-* __yapt.sh stop__ stops yapt
+- Edit __conf/yapt/yapt.yml__ file under conf/yapt directory to fit your environment settings
+  - Parameter __SourcePlugins__: Set the source plugin to the one you want to be used and configure source plugins settings under __Global Section__ in __yapt.yml__
+  - Parameter __WebUiAddress__: should be set to interface IP WebUI will be reachable
+  - If YAPT server operates behind NAT address we need to set:
+  ```
+  WebUiNat: False                                 #Enable YAPT WebUI being behind NAT
+  WebUiNatIp: 172.30.162.52                       #NAT IP
+  ```
+- Configure the services which have been enabled under __SourcePlugins__ section
 
-This doesn't apply do a docker based installation.
+# Configuration #
 
-## Logging ##
+## Main Config ##
 
-* YAPT writes log information into
-    - logs/info.log (informational)
-    - logs/error.log (debug)
-* A __tail -f info.log | grep YAPT__ will show each provsioning tasks status.
+YAPT main config file `conf/yapt/yapt.yml` consists of following sections:
 
-## WebUI ##
-Default WebUI URL is __http://ip:port/yapt/ui__
+- YAPT
+  * SourcePlugins: Enable source plugins and their respective service
+    + Currently YAPT ships with `phs, ossh, tftp, dhcp` plugins
+  * PwdFile: To save encrypted passwords in the main config file we need a master key. This entry points where to read key from and save key to.
+  * DevicePwdIsRsa: Enable RSA authentication towards devices
+  * DeviceUsr: User YAPT will initiate a device connection with
+  * DevicePwd: If YAPT connect by username / password combination this option entry represents the encrypted password
+  * Backend: Choose the backend type to use
+    + Currently YAPT ships with two backend types
+      + Backend type `internal` is pretty fast but has no persistency
+      + Backend type `sql` is relaying on an RDBMS. In current implementation YAPT uses SQLite
+  * ConnectionProbeTimeout: Try to initiate connection to device and retry for n sec    
+  * LogFileDirectory: Tells YAPT where to store it's log files
+  * StartWebUi: Start web interface listening on port <WebUiPort>
+  * WebUiAddress: Webserver IP Address (Used for WebSocket Client)
+  * WebUiPort: Webserver Listener Port
+  * WebUiIndex: UI index file to load
+  * WebUiNat: Enable YAPT WebUI being behind NAT or Proxy 
+  * WebUiNatIp: Original IP if behind NAT or Proxy
+  * WebUiPlugin: WebUI Plugin (right now only amqp2ws)
+  * RestApiPort: YAPT Rest API Listener Port
+  * OobaUiPort: YAPT OOBA WebUI interface port
+  * WorkerThreads: Amount of task queue worker threads to be started
+    + If YAPT runs in Standalone / Vagrant installation this is used to scale parallel task processing
+  
+- SOURCE
+  * DeviceConfOoba: Enable OOBA mapping checks
+  * DeviceConfSrcPlugins: Configuration source plugin order
+- BACKEND
+- SERVICES
+- JUNOSSPACE
+- DEVICEDRIVER
+- AMQP
+- EMITTER
 
-## OOBA WebUI ##
-OOBA WebUI URL is __http://ip:port/ooba__
-
-## User and Passwords ##
-YAPT ships with password utility, which is used to save encrypted passwords in YAPT configuration files.
-With password utility we can generate most of the passwords. Main goal of password util is to encrypt password in YAPT config files. 
-Current implementation is not intended to be secure since master key has to be protected on it's own.
-
-This tool can be started by following command:
-
-* cd lib/utils
-* PYTHONPATH=__PATH_TO_YAPT_INSTALLATION__ /usr/local/bin/python2.7 ./password.py
-
-```
-PYTHONPATH=/root/juniper-yapt-0.0.2/ /usr/local/bin/python2.7 password.py
-
------------------------------- Password Util ------------------------------
-1. Create Master Key
-2. Generate Device SSH Password
-3. Generate Junos Space REST Api Password
-4. Generate OSSH Shared Secret
-5. Generate AMQP Password
-6. Exit
----------------------------------------------------------------------------
-Enter your choice [1-6]:
-```
-First of all you need to create a master key. If there is already a master key this won't be overwritten and has to be deleted from master key file.
-
-## Device Authentication ##
+### Device Authentication ###
 YAPT supports password and key based device authentication. For password based authentication you use password util to generate the device password. If key based authentication is being used following settings have to be done:
 
 - Change password mode by setting __DevicePwdIsRsa__ to __True__ in __yapt.conf__ global section
@@ -386,350 +396,55 @@ DevicePwdIsRsa: False                           #use ssh rsa authentication
 <ssh-rsa>ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDNRZHZGfeKpivvJxvcLEFbn37+m9HaAAjX5yPdHR/p9YBme+S7P9OcQv3Y5aRLsDjmGI3jqnEDDtw8XxS/Ky2DQ9g/uVb++MWTOu739iJiF6wwOJXUvFLbFzG8TF1i0mrGYyZ/5UtPL1YWrKnRO86mhbQDPie9H8dIoZb1AYBEugm0GwOqA0luRuAgvoAuOr15qYu0zDcwXF3f5ZpRh8TcVgWsPQ/HQK/WaWjOyeUz6a7iC1VtcmXn3LY6RG2iTCSxQz6n1Z/JBEUQfjKG9o9XEZ7Pf3eN8tGbTWXtiQVsfJ1VXTOPm/YUaABIhY5t72K3F7mMwoQmVS2GpG2PwRgr cklewar@cklewar-mbp</ssh-rsa>
 ```
 
-## Configuration ##
+## Starting / stopping services ##
+In standalone or vagrant installation YAPT needs rabbitmq service to be started prior to yapt service. 
+This is platform specific which could be done using Linux init scripts under __/etc/init.d__ or on systemd based systems with __systemctl__ or __service__ commands.
+YAPT ships with a start / stop script called __yapt.sh__.
+* __yapt.sh start__ starts yapt
+* __yapt.sh stop__ stops yapt
 
-- edit __conf/yapt/yapt.yml__ file under conf/yapt directory to fit your environment settings
-  - Parameter __SourcePlugins__: Set the source plugin to the one you want to be used and configure source plugins settings under __Global Section__ in __yapt.yml__
-  - Parameter __WebUiAddress__: should be set to interface IP WebUI will be reachable
-  - If YAPT server operates behind NAT address we need to set:
-  ```
-  WebUiNat: False                                 #Enable YAPT WebUI being behind NAT
-  WebUiNatIp: 172.30.162.52                       #NAT IP
-  ```
-  - Configure the services which have been enabled under __SourcePlugins__ section
+This doesn't apply do a docker based installation.
 
-- Edit group file under __conf/groups__. YAPT supports building groups to apply specific tasks to devices. Here is an example for SRX devices.
+### Logging ###
 
-```
----
-#**********************************************************************************************************************
-#GROUP: SRX
-#***********************************************************************************************************************
+* YAPT writes log information into
+    - logs/info.log (informational)
+    - logs/error.log (debug)
+* A __tail -f info.log | grep YAPT__ will show each provsioning tasks status.
 
-########################################################################################################################
-#Tasks Section (turn on/off provisioning tasks / configure specific task settings)
-########################################################################################################################
-TASKS:
-  #Enable tasks and set processing order within sequence
-  #Sequence: Init, Filecp, Software, Ipam, Configuration, Cert, Discovery, Policy, Assign, Rule, Publish, Cleanup
-  Sequence: [Init, Filecp, Software, Configuration, Cleanup]
+### WebUI ###
+Default WebUI URL is __http://ip:port/yapt/ui__
 
-  Provision:
+### OOBA WebUI ###
+OOBA WebUI URL is __http://ip:port/ooba__
 
-    Init:
-      Dependencies: [Configuration, Software]
+### User and Passwords ###
+YAPT ships with password utility, which is used to save encrypted passwords in YAPT configuration files.
+With password utility we can generate most of the passwords. Main goal of password util is to encrypt password in YAPT config files. 
+Current implementation is not intended to be secure since master key has to be protected on it's own.
 
-    Assign:
-      AssignTemplate: conf/space/151/tempaltes/assignDevice.j2
+This tool can be started by following command:
 
-    Configuration:
-      Dependencies: []
-      DeviceConfTemplateDir: conf/devices/template/   #device specific template config directory
-      DeviceConfTemplateFile: srx_no_ipam_no_ossh.j2  #device config template name
-      ConfigFileHistory: history/                     #path to dir where commited device config being saved
-      Merge: True                                     #Merge Configuration
-      Overwrite: False                                #Replace Configuration
+- cd lib/utils
+- PYTHONPATH=__PATH_TO_YAPT_INSTALLATION__ /usr/local/bin/python2.7 ./password.py
+- First of all you need to create a master key. If there is already a master key this won't be overwritten and has to be deleted from master key file
 
-      Internal:
-        CommitTimeout: 120                            #Set Commit Timeout to x sec
-        ConfirmedTimeout: 1                           #Set Commit confirmed timeout to x min
-
-      Ansibleapi:
-        PlaybookPath: conf/ansible/playbooks/         #Set path to playbook
-        Playbook: yapt_playbook.yml                   #Set Playbook file name. Playbooks stored in conf/ansible/playbook
-
-    Cert:
-      PortForwarding: false                                         #Enable Port Forwarding for cert retrieval
-      LocalFwdPort: 5554                                            #Forwarding Port on device
-      RemoteFwdHost: 10.15.115.2                                    #Remote host to forward to
-      RemoteFwdHostPort: 8080                                       #Port on remote host to forward to
-      EnrollmentUrl: ejbca/publicweb/apply/scep/advpn/pkiclient.exe #
-      RevocationUrl: ejbca/publicweb/status/ocsp                    #
-
-    Discovery:
-      Mode: Discovery                                 #Set discovery mode to either Discovery or Configlet
-      UsePing: false                                  #If Mode 'Discovery' use ping
-      UseSnmp: true                                   #If Mode 'Discovery' use snmp
-      ConnectionConfigletDir: conf/space/configlet/   #modeled device configlet file path
-
-    Filecp:
-      Files: [cleanup.slax]                           #File(s) to be copied to device (e.g. SLAX)
-      FileLocalDir: scripts/                          #source directory where to find files (defaults to script dir)
-      FileRemoteDir: /var/db/scripts/op               #Event/Commit/OP Script or any other directory path on device
-
-    Ipam:
-      Module: nipap
-      Address: 10.15.115.6
-      Port: '1337'
-      Prefixes: [10.200.0.0/24, 10.13.113.0/24]
-      User: nipap
-      Password: nipap
-
-    Policy:
-      PolicyTemplate: conf/space/templates/151/fwpolicy.j2
-      LookupType: DEVICE
-
-    Rule:
-      RuleTemplate: conf/space/templates/151/fwdefaultrule.j2
-      RuleTemplateVars: conf/space/templates/151/fwdefaultrule.yml
-
-    Software:
-      ImageDir: images/                               #device software images directory
-      RemoteDir: /var/tmp/                            #destination directory
-      RebootProbeCounter: 30                          #How many times probe should be send while dev rebooting
-      RebootProbeTimeout: 30                          #wait n sec starting probing after device is rebooted
-      RetryProbeCounter: 5                            #How many times probe should be send while going into reboot
-      PkgAddDevTimeout: 1800                          #Timeout for pkgadd function (OSSH)
-
-      TargetVersion:
-        FIREFLY-PERIMETER: 12.1X47-D40.1
-        VSRX: 15.1X49-D100.6
-        SRX100: 12.3X48-D40
-        SRX110: 12.3X48-D40
-        SRX210: 12.3X48-D40
-        SRX220: 12.3X48-D40
-        SRX300: 15.1X49-D70
-        SRX320: 15.1X49-D70
-        SRX340: 15.1X49-D70
-        SRX345: 15.1X49-D70
-
-    Ticket:
-      Module: rt                                                  #Module currently only request_tracker ticketing system
-      Mode: detail                                                #Mode could be "summary" to give a summarization at the end or "detail" to get update after every task
-      Address: 10.86.9.14                                         #Ticket System IP address
-      Port: 8000                                                  #Ticket System Port
-      Protocol: https                                             #HTTP / HTTPS
-      User: juniper                                               #Ticket system user
-      Password: juniper123                                        #Ticket system passsword
-      Eauth: pam                                                  #EDI authentication module
-      Functions: [request_tracker.create_ticket, request_tracker.update_ticket]   #call edi runner functions
-      NextEvent: None                                             #
-      TemplateDir: lib/emitter/templates/                             #Template directory
-      TicketCreateTemplate: ticket_create_detail_mode.j2          #Template file used for tickte creation
-      TicketUpdateTemplate: ticket_update_detail_mode.j2          #Template file used for ticker update
-
-########################################################################################################################
-#Verification Task Section
-########################################################################################################################
-  Verification:
-
-    Ping:
-      Destination: 10.12.111.1
-      Count: '10'
-
-    Vpn:
-      SaRemoteAddress: 10.11.111.115
-
-    Jsnap:
-      Tests: [test_is_equal.yml]
 
 ```
+PYTHONPATH=/root/juniper-yapt-0.0.2/ /usr/local/bin/python2.7 password.py
 
-Devices will be assigned to a group by setting group name in device data file under __conf/devices/data__. Here is an example:
-
-```
-yapt:
-  device_type: srx
-  device_group: srx
-  service_chain: []
-  bootstrap_template_dir: conf/vnf/template
-  bootstrap_template_file: vsrx_ztp_bootstrap.j2
-
-device:
-  hostname: vsrx_ztp01
-  encrypted_password: $5$Wbt5G9uy$IW32MqVW.3.sxbrz0jzs4X/JrTAbNk1E41N9.lMO0j5
-  ossh_secret: $9$m5zntu1ylM/ClM8XbwmfT
-  timezone: Europe/Berlin
-  domain_name: mycompany.local
-  ntp_server: 10.21.28.2
-  community: public
-  interfaces:
-  - name: fxp0
-    description: MGMT
-    family: inet
-    address: dhcp
-  - name: ge-0/0/0
-    description: MGMT
-    family: inet
-    address: dhcp
-  - name: ge-0/0/1
-    description: untrust
-    family: inet
-    address: dhcp
-  - name: ge-0/0/2
-    description: trust
-    family: inet
-    address: 10.12.112.254
-    mask: 24
-  tunnel_int:
-    name: st0
-    description: VPN
-    unit: 0
-    family: inet
-    address: ipam
-    mask: 24
-  cert:
-    ca_profile: ejbca
-    ca_identity: advpn
-    subject: CN=vsrx_ztp01,OU=IT,O=MyCompany,L=Berlin,DC=mycompany.local,C=DE
-    domain_name: vsrx_ztp01.mycompany.local
-    enrollment_url: ejbca/publicweb/apply/scep/advpn/pkiclient.exe
-    oscp_url: ejbca/publicweb/status/ocsp
-    challenge_password: juniper123
-    revocation_url: ejbca/publicweb/status/ocsp
+------------------------------ Password Util ------------------------------
+1. Create Master Key
+2. Generate Device SSH Password
+3. Generate Junos Space REST Api Password
+4. Generate OSSH Shared Secret
+5. Generate AMQP Password
+6. Exit
+---------------------------------------------------------------------------
+Enter your choice [1-6]:
 ```
 
-Group definition has to be set to group file name without file suffix __device_group: srx__.
-
-#### Ansible Configuration Task ####
-
-To use ansible as task in standalone mode you will need to install Ansible Junos role by running:
-
-```
-ansible-galaxy install Juniper.junos
-```
-
-#### Starting YAPT server ####
-
-- ./yapt.sh start
-- Open browser and point to URL: http://yapt-server-ip:8080/yapt/ui
-
-If the centralised approach will be used we need additional services like DHCP / TFTP server. 
-Here some example configurations of those:
-
-#### DHCP server (ISC DHCP) ####
-
-```
-option domain-name "yapt.local";
-
-default-lease-time 600;
-max-lease-time 7200;
-
-log-facility local7;
-
-allow booting;
-allow bootp;
-allow unknown-clients;
-
-subnet 192.168.60.0 netmask 255.255.255.0 {
-
-range 192.168.60.50 192.168.60.254;
-option broadcast-address 192.168.1.255;
-option routers 192.168.1.1;
-next-server 192.168.60.6;
-filename "init.conf";
-
-}
-```
-
-#### TFTP server (HPA-TFTP) ####
-
-```
-service tftp
-{
-	disable	= no
-	socket_type		= dgram
-	protocol		= udp
-	wait			= yes
-	user			= root
-	server			= /usr/sbin/in.tftpd
-	server_args		= -s /var/lib/tftpboot -t 120 -v
-	per_source		= 11
-	cps			= 100 2
-	flags			= IPv4
-	log_type                = FILE /var/log/tftpd.log
-}
-```
-
-#### TFTP server (dnsmasq) ####
-
-```
-# Disable DNS
-port=0
-
-# Enable the TFTP server
-enable-tftp
-tftp-root=/var/lib/tftpboot
-tftp-no-blocksize
-# Enable Logging
-log-facility=/var/log/tftpd.log
-```
-
-#### Bootstrap TFTP config file "Centralized Provisioning approach" ####
-This example __init.conf__ config file should be copied to TFTP servers directory.
-The __root__ user is used for YAPT connecting to device for starting the provisioning process.
-
-```
-system {
-    host-name init;
-    root-authentication {
-        encrypted-password "$1$B3h1HvJj$8wD6QXpmo6h8q.ezlj/FW/"; ## SECRET-DATA
-    }
-    services {
-        ssh;
-        netconf {
-            ssh;
-        }
-    }
-    syslog {
-        user * {
-            any emergency;
-        }
-        file messages {
-            any any;
-            authorization info;
-        }
-        file interactive-commands {
-            interactive-commands any;
-        }
-    }
-    license {
-        autoupdate {
-            url https://ae1.juniper.net/junos/key_retrieval;
-        }
-    }
-}
-interfaces {
-    ge-0/0/0 {
-        unit 0 {
-            family inet {
-                dhcp-client;
-            }
-        }
-    }
-}
-security {
-    zones {
-        security-zone untrust {
-            interfaces {
-                ge-0/0/0.0 {
-                    host-inbound-traffic {
-                        system-services {
-                            traceroute;
-                            ping;
-                            ssh;
-                            netconf;
-                            ike;
-                            snmp;
-                            dhcp;
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-```
-## JunOS Space ##
-Supported Junos Space Platform currently:
-
-* Management platform 15.1R3
-* Security Director: 15.1R2
-* Management platform 16.1
-* Security Director: 16.2 (Only partial support e.g. no firewall rule creation)
-
-# YAPT config file #
-
+### Example Main Config ###
 ```
 ########################################################################################################################
 # YAPT Global Section
@@ -866,6 +581,341 @@ EMITTER:
   Plugins: [local, ticket]
   MainLogFile: logs/info.log
 ```
+
+## Group Config ##
+
+- Edit group file under __conf/groups__. YAPT supports building groups to apply specific tasks to devices. Here is an example for SRX devices.
+
+```
+---
+#**********************************************************************************************************************
+#GROUP: SRX
+#***********************************************************************************************************************
+
+########################################################################################################################
+#Tasks Section (turn on/off provisioning tasks / configure specific task settings)
+########################################################################################################################
+TASKS:
+  #Enable tasks and set processing order within sequence
+  #Sequence: Init, Filecp, Software, Ipam, Configuration, Cert, Discovery, Policy, Assign, Rule, Publish, Cleanup
+  Sequence: [Init, Filecp, Software, Configuration, Cleanup]
+
+  Provision:
+
+    Init:
+      Dependencies: [Configuration, Software]
+
+    Assign:
+      AssignTemplate: conf/space/151/tempaltes/assignDevice.j2
+
+    Configuration:
+      Dependencies: []
+      DeviceConfTemplateDir: conf/devices/template/   #device specific template config directory
+      DeviceConfTemplateFile: srx_no_ipam_no_ossh.j2  #device config template name
+      ConfigFileHistory: history/                     #path to dir where commited device config being saved
+      Merge: True                                     #Merge Configuration
+      Overwrite: False                                #Replace Configuration
+
+      Internal:
+        CommitTimeout: 120                            #Set Commit Timeout to x sec
+        ConfirmedTimeout: 1                           #Set Commit confirmed timeout to x min
+
+      Ansibleapi:
+        PlaybookPath: conf/ansible/playbooks/         #Set path to playbook
+        Playbook: yapt_playbook.yml                   #Set Playbook file name. Playbooks stored in conf/ansible/playbook
+
+    Cert:
+      PortForwarding: false                                         #Enable Port Forwarding for cert retrieval
+      LocalFwdPort: 5554                                            #Forwarding Port on device
+      RemoteFwdHost: 10.15.115.2                                    #Remote host to forward to
+      RemoteFwdHostPort: 8080                                       #Port on remote host to forward to
+      EnrollmentUrl: ejbca/publicweb/apply/scep/advpn/pkiclient.exe #
+      RevocationUrl: ejbca/publicweb/status/ocsp                    #
+
+    Discovery:
+      Mode: Discovery                                 #Set discovery mode to either Discovery or Configlet
+      UsePing: false                                  #If Mode 'Discovery' use ping
+      UseSnmp: true                                   #If Mode 'Discovery' use snmp
+      ConnectionConfigletDir: conf/space/configlet/   #modeled device configlet file path
+
+    Filecp:
+      Files: [cleanup.slax]                           #File(s) to be copied to device (e.g. SLAX)
+      FileLocalDir: scripts/                          #source directory where to find files (defaults to script dir)
+      FileRemoteDir: /var/db/scripts/op               #Event/Commit/OP Script or any other directory path on device
+
+    Ipam:
+      Module: nipap
+      Address: 10.15.115.6
+      Port: '1337'
+      Prefixes: [10.200.0.0/24, 10.13.113.0/24]
+      User: nipap
+      Password: nipap
+
+    Policy:
+      PolicyTemplate: conf/space/templates/151/fwpolicy.j2
+      LookupType: DEVICE
+
+    Rule:
+      RuleTemplate: conf/space/templates/151/fwdefaultrule.j2
+      RuleTemplateVars: conf/space/templates/151/fwdefaultrule.yml
+
+    Software:
+      ImageDir: images/                               #device software images directory
+      RemoteDir: /var/tmp/                            #destination directory
+      RebootProbeCounter: 30                          #How many times probe should be send while dev rebooting
+      RebootProbeTimeout: 30                          #wait n sec starting probing after device is rebooted
+      RetryProbeCounter: 5                            #How many times probe should be send while going into reboot
+      PkgAddDevTimeout: 1800                          #Timeout for pkgadd function (OSSH)
+
+      TargetVersion:
+        FIREFLY-PERIMETER: 12.1X47-D40.1
+        VSRX: 15.1X49-D100.6
+        SRX100: 12.3X48-D40
+        SRX110: 12.3X48-D40
+        SRX210: 12.3X48-D40
+        SRX220: 12.3X48-D40
+        SRX300: 15.1X49-D70
+        SRX320: 15.1X49-D70
+        SRX340: 15.1X49-D70
+        SRX345: 15.1X49-D70
+
+    Ticket:
+      Module: rt                                                  #Module currently only request_tracker ticketing system
+      Mode: detail                                                #Mode could be "summary" to give a summarization at the end or "detail" to get update after every task
+      Address: 10.86.9.14                                         #Ticket System IP address
+      Port: 8000                                                  #Ticket System Port
+      Protocol: https                                             #HTTP / HTTPS
+      User: juniper                                               #Ticket system user
+      Password: juniper123                                        #Ticket system passsword
+      Eauth: pam                                                  #EDI authentication module
+      Functions: [request_tracker.create_ticket, request_tracker.update_ticket]   #call edi runner functions
+      NextEvent: None                                             #
+      TemplateDir: lib/emitter/templates/                             #Template directory
+      TicketCreateTemplate: ticket_create_detail_mode.j2          #Template file used for tickte creation
+      TicketUpdateTemplate: ticket_update_detail_mode.j2          #Template file used for ticker update
+
+########################################################################################################################
+#Verification Task Section
+########################################################################################################################
+  Verification:
+
+    Ping:
+      Destination: 10.12.111.1
+      Count: '10'
+
+    Vpn:
+      SaRemoteAddress: 10.11.111.115
+
+    Jsnap:
+      Tests: [test_is_equal.yml]
+
+```
+
+Devices will be assigned to a group by setting group name in device data file under __conf/devices/data__. Here is an example:
+Group definition has to be set to group file name without file suffix device_group: __srx__.
+
+### Device Config ###
+
+```
+yapt:
+  device_type: srx
+  device_group: srx
+  service_chain: []
+  bootstrap_template_dir: conf/vnf/template
+  bootstrap_template_file: vsrx_ztp_bootstrap.j2
+
+device:
+  hostname: vsrx_ztp01
+  encrypted_password: $5$Wbt5G9uy$IW32MqVW.3.sxbrz0jzs4X/JrTAbNk1E41N9.lMO0j5
+  ossh_secret: $9$m5zntu1ylM/ClM8XbwmfT
+  timezone: Europe/Berlin
+  domain_name: mycompany.local
+  ntp_server: 10.21.28.2
+  community: public
+  interfaces:
+  - name: fxp0
+    description: MGMT
+    family: inet
+    address: dhcp
+  - name: ge-0/0/0
+    description: MGMT
+    family: inet
+    address: dhcp
+  - name: ge-0/0/1
+    description: untrust
+    family: inet
+    address: dhcp
+  - name: ge-0/0/2
+    description: trust
+    family: inet
+    address: 10.12.112.254
+    mask: 24
+  tunnel_int:
+    name: st0
+    description: VPN
+    unit: 0
+    family: inet
+    address: ipam
+    mask: 24
+  cert:
+    ca_profile: ejbca
+    ca_identity: advpn
+    subject: CN=vsrx_ztp01,OU=IT,O=MyCompany,L=Berlin,DC=mycompany.local,C=DE
+    domain_name: vsrx_ztp01.mycompany.local
+    enrollment_url: ejbca/publicweb/apply/scep/advpn/pkiclient.exe
+    oscp_url: ejbca/publicweb/status/ocsp
+    challenge_password: juniper123
+    revocation_url: ejbca/publicweb/status/ocsp
+```
+
+### Provisioning Tasks ###
+
+#### Ansible Configuration Task ####
+
+To use ansible as task in standalone mode you will need to install Ansible Junos role by running:
+
+```
+ansible-galaxy install Juniper.junos
+```
+
+#### Starting YAPT server ####
+
+- ./yapt.sh start
+- Open browser and point to URL: http://yapt-server-ip:port/yapt/ui
+
+If the centralised approach will be used we need additional services like DHCP / TFTP server. 
+Here some example configurations of those:
+
+#### DHCP server (ISC DHCP) ####
+
+```
+option domain-name "yapt.local";
+
+default-lease-time 600;
+max-lease-time 7200;
+
+log-facility local7;
+
+allow booting;
+allow bootp;
+allow unknown-clients;
+
+subnet 192.168.60.0 netmask 255.255.255.0 {
+
+range 192.168.60.50 192.168.60.254;
+option broadcast-address 192.168.1.255;
+option routers 192.168.1.1;
+next-server 192.168.60.6;
+filename "init.conf";
+
+}
+```
+
+#### TFTP server (HPA-TFTP) ####
+
+```
+service tftp
+{
+	disable	= no
+	socket_type		= dgram
+	protocol		= udp
+	wait			= yes
+	user			= root
+	server			= /usr/sbin/in.tftpd
+	server_args		= -s /var/lib/tftpboot -t 120 -v
+	per_source		= 11
+	cps			= 100 2
+	flags			= IPv4
+	log_type                = FILE /var/log/tftpd.log
+}
+```
+
+#### TFTP server (dnsmasq) ####
+
+```
+# Disable DNS
+port=0
+
+# Enable the TFTP server
+enable-tftp
+tftp-root=/var/lib/tftpboot
+tftp-no-blocksize
+# Enable Logging
+log-facility=/var/log/tftpd.log
+```
+
+#### Bootstrap TFTP config file "Centralized Provisioning approach" ####
+This example __init.conf__ config file should be copied to TFTP servers directory.
+The __root__ user is used for YAPT connecting to device for starting the provisioning process.
+
+```
+system {
+    host-name init;
+    root-authentication {
+        encrypted-password "$1$B3h1HvJj$8wD6QXpmo6h8q.ezlj/FW/"; ## SECRET-DATA
+    }
+    services {
+        ssh;
+        netconf {
+            ssh;
+        }
+    }
+    syslog {
+        user * {
+            any emergency;
+        }
+        file messages {
+            any any;
+            authorization info;
+        }
+        file interactive-commands {
+            interactive-commands any;
+        }
+    }
+    license {
+        autoupdate {
+            url https://ae1.juniper.net/junos/key_retrieval;
+        }
+    }
+}
+interfaces {
+    ge-0/0/0 {
+        unit 0 {
+            family inet {
+                dhcp-client;
+            }
+        }
+    }
+}
+security {
+    zones {
+        security-zone untrust {
+            interfaces {
+                ge-0/0/0.0 {
+                    host-inbound-traffic {
+                        system-services {
+                            traceroute;
+                            ping;
+                            ssh;
+                            netconf;
+                            ike;
+                            snmp;
+                            dhcp;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+```
+## JunOS Space ##
+Supported Junos Space Platform currently:
+
+* Management platform 15.1R3
+* Security Director: 15.1R2
+* Management platform 16.1
+* Security Director: 16.2 (Only partial support e.g. no firewall rule creation)
 
 # Directory structure #
 YAPT directory structure
