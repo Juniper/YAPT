@@ -32,7 +32,7 @@ provisioned.
 # Architecture #
 YAPT has a modular architecture based on plugins and a bus system.
 
-![Image of YAPT architecture](https://github.com/Juniper/YAPT/blob/master/doc/yapt_architecture.png)
+![Image of YAPT architecture](https://github.com/Juniper/YAPT/blob/master/doc/pics/yapt_architecture.png)
 
 ## Bus ##
 YAPT uses AMQP based bus for internal communication between "Processors".
@@ -240,6 +240,10 @@ To bring up YAPT docker environment we need following steps:
   * `ansible-playbook -i inventory/hosts deploy-yapt-server.yml`
 
 ## Vagrant ##
+Below picture illustrates how Vagrant will setup YAPT topology:
+
+![Image of YAPT Vagrant topology](https://github.com/Juniper/YAPT/blob/master/doc/pics/vagrant_top.png)
+
 To install YAPT with vagrant follow following steps:
 
 - Install Vagrant
