@@ -112,6 +112,8 @@ WebUI which could demonstrate this. Since we do not know the serial number of th
 serial number and a so called config id. Device serial number could be scanned from device's barcode and then assign to config id using
 the OOBA WebUI.  
 
+![Image of YAPT Job Overview](https://github.com/Juniper/YAPT/blob/master/doc/pics/yapt_ooba_start_screen.png)
+
 To use this feature we would need to create a site and assign assets to this site. Each asset maps serial number to a config id.
 The config id reflects the actual config which should be pushed down to the device.   
 
@@ -346,108 +348,58 @@ Shown Rabbitmq config will not work with version >= 3.7.0.
 ## Main Config ##
 
 YAPT main config file `conf/yapt/yapt.yml` consists of following sections:
+All settings in this file have a global scope.
 
-- YAPT
-  * SourcePlugins: Enable source plugins and their respective service
+### Section YAPT ###
+
+
+  - SourcePlugins: Enable source plugins and their respective service
     + Currently YAPT ships with `phs, ossh, tftp, dhcp` plugins
-  * PwdFile: To save encrypted passwords in the main config file we need a master key. This entry points where to read key from and save key to.
-  * DevicePwdIsRsa: Enable RSA authentication towards devices
-  * DeviceUsr: User YAPT will initiate a device connection with
-  * DevicePwd: If YAPT connect by username / password combination this option entry represents the encrypted password
-  * Backend: Choose the backend type to use
-    + Currently YAPT ships with two backend types
-      + Backend type `internal` is pretty fast but has no persistency
-      + Backend type `sql` is relaying on an RDBMS. In current implementation YAPT uses SQLite
-  * ConnectionProbeTimeout: Try to initiate connection to device and retry for n sec    
-  * LogFileDirectory: Tells YAPT where to store it's log files
-  * StartWebUi: Start web interface listening on port <WebUiPort>
-  * WebUiAddress: Webserver IP Address (Used for WebSocket Client)
-  * WebUiPort: Webserver Listener Port
-  * WebUiIndex: UI index file to load
-  * WebUiNat: Enable YAPT WebUI being behind NAT or Proxy 
-  * WebUiNatIp: Original IP if behind NAT or Proxy
-  * WebUiPlugin: WebUI Plugin (right now only amqp2ws)
-  * RestApiPort: YAPT Rest API Listener Port
-  * OobaUiPort: YAPT OOBA WebUI interface port
-  * WorkerThreads: Amount of task queue worker threads to be started
-    + If YAPT runs in Standalone / Vagrant installation this is used to scale parallel task processing
-  
-- SOURCE
-  * DeviceConfOoba: Enable OOBA mapping checks
-  * DeviceConfSrcPlugins: Configuration source plugin order
-- BACKEND
-- SERVICES
-- JUNOSSPACE
-- DEVICEDRIVER
-- AMQP
-- EMITTER
+  - PwdFile: To save encrypted passwords in the main config file we need a master key. This entry points where to read key from and save key to.
+  - DevicePwdIsRsa: Enable RSA authentication towards devices
+  - DeviceUsr: User YAPT will initiate a device connection with
+  - DevicePwd: If YAPT connect by username / password combination this option entry represents the encrypted password
+  - Backend: Choose the backend type to use
+    * Currently YAPT ships with two backend types
+      * Backend type `internal` is pretty fast but has no persistency
+      * Backend type `sql` is relaying on an RDBMS. In current implementation YAPT uses SQLite
+  - ConnectionProbeTimeout: Try to initiate connection to device and retry for n sec    
+  - LogFileDirectory: Tells YAPT where to store it's log files
+  - StartWebUi: Start web interface listening on port <WebUiPort>
+  - WebUiAddress: Webserver IP Address (Used for WebSocket Client)
+  - WebUiPort: Webserver Listener Port
+  - WebUiIndex: UI index file to load
+  - WebUiNat: Enable YAPT WebUI being behind NAT or Proxy 
+  - WebUiNatIp: Original IP if behind NAT or Proxy
+  - WebUiPlugin: WebUI Plugin (right now only amqp2ws)
+  - RestApiPort: YAPT Rest API Listener Port
+  - OobaUiPort: YAPT OOBA WebUI interface port
+  - WorkerThreads: Amount of task queue worker threads to be started
+    * If YAPT runs in Standalone / Vagrant installation this is used to scale parallel task processing
 
-### User and Passwords ###
-YAPT ships with password utility, which is used to save encrypted passwords in YAPT configuration files.
-With password utility we can generate most of the passwords. Main goal of password util is to encrypt password in YAPT config files. 
-Current implementation is not intended to be secure since master key has to be protected on it's own.
+### Section SOURCE ###
 
-This tool can be started by following command:
+- DeviceConfOoba: Enable OOBA mapping checks
+- DeviceConfSrcPlugins: Configuration source plugin order
 
-- cd lib/utils
-- PYTHONPATH=__PATH_TO_YAPT_INSTALLATION__ /usr/local/bin/python2.7 ./password.py
-- First of all you need to create a master key. If there is already a master key this won't be overwritten and has to be deleted from master key file
+### Section Backend ###
+TBD
 
 
-```
-PYTHONPATH=/root/juniper-yapt-0.0.2/ /usr/local/bin/python2.7 password.py
+### Section SERVICES ###
+TBD
 
------------------------------- Password Util ------------------------------
-1. Create Master Key
-2. Generate Device SSH Password
-3. Generate Junos Space REST Api Password
-4. Generate OSSH Shared Secret
-5. Generate AMQP Password
-6. Exit
----------------------------------------------------------------------------
-Enter your choice [1-6]:
-```
+### Section JUNOSPACE ###
+TBD
 
-### Device Authentication ###
-YAPT supports password and key based device authentication. For password based authentication you use password util to generate the device password. If key based authentication is being used following settings have to be done:
+### Section DEVICEDRIVER ###
+TBD
 
-- Change password mode by setting __DevicePwdIsRsa__ to __True__ in __yapt.conf__ global section
+### Section AMQP ###
+TBD
 
-```
-DevicePwdIsRsa: False                           #use ssh rsa authentication
-```
-
-- Generate ssh private / public key
-  * cd conf/yapt
-  * ssh-keygen -b 2048 -t rsa -f id_rsa -P ""
-- Public key id_rsa.pub can later on be used in bootstrap configuration
-  * PHS bootstrap config example:
-
-```
-<ssh-rsa>ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDNRZHZGfeKpivvJxvcLEFbn37+m9HaAAjX5yPdHR/p9YBme+S7P9OcQv3Y5aRLsDjmGI3jqnEDDtw8XxS/Ky2DQ9g/uVb++MWTOu739iJiF6wwOJXUvFLbFzG8TF1i0mrGYyZ/5UtPL1YWrKnRO86mhbQDPie9H8dIoZb1AYBEugm0GwOqA0luRuAgvoAuOr15qYu0zDcwXF3f5ZpRh8TcVgWsPQ/HQK/WaWjOyeUz6a7iC1VtcmXn3LY6RG2iTCSxQz6n1Z/JBEUQfjKG9o9XEZ7Pf3eN8tGbTWXtiQVsfJ1VXTOPm/YUaABIhY5t72K3F7mMwoQmVS2GpG2PwRgr cklewar@cklewar-mbp</ssh-rsa>
-```
-
-## Starting / stopping services ##
-In standalone or vagrant installation YAPT needs rabbitmq service to be started prior to yapt service. 
-This is platform specific which could be done using Linux init scripts under __/etc/init.d__ or on systemd based systems with __systemctl__ or __service__ commands.
-YAPT ships with a start / stop script called __yapt.sh__.
-* __yapt.sh start__ starts yapt
-* __yapt.sh stop__ stops yapt
-
-This doesn't apply do a docker based installation.
-
-### Logging ###
-
-* YAPT writes log information into
-    - logs/info.log (informational)
-    - logs/error.log (debug)
-* A __tail -f info.log | grep YAPT__ will show each provsioning tasks status.
-
-### WebUI ###
-Default WebUI URL is __http://ip:port/yapt/ui__
-
-### OOBA WebUI ###
-OOBA WebUI URL is __http://ip:port/ooba__
+### Section EMITTER ###
+TBD
 
 ### Example Main Config ###
 
@@ -725,7 +677,7 @@ TASKS:
 ```
 
 
-### Device Config ###
+## Device Config ##
 
 ```yaml
 yapt:
@@ -779,19 +731,105 @@ device:
     revocation_url: ejbca/publicweb/status/ocsp
 ```
 
+## Task Config ##
+YAPT provides two task categories:
+
+- Provisioning Tasks
+- Verification Tasks
+
+Tasks will be activated in device group files. To activate a task add it to the task sequence list `Sequence: [Init, Filecp, Software, Configuration, Cleanup]`.
+To deactivate remove it from the task sequence list. Tasks in this list will be processed in order of occurrence. First letter of task name in this sequence list hast to be a capital letter.
+Only exception is task plugin `Init` which should always be in first place and task plugin `Cleanup` which should always be at the end of the sequence.
+ 
 ### Provisioning Tasks ###
 
-#### Ansible Configuration Task ####
+#### Ansibleapi ####
 
-To use ansible as task in standalone mode you will need to install Ansible Junos role by running:
+If not already done to use Ansible provisioning task plugin you will need to install Ansible Junos role with:
+
+```bash
+ansible-galaxy install Juniper.junos
+```
+
+Provisioning task `ansibleapi`
+
+```yaml
+Ansibleapi:
+        PlaybookPath: conf/ansible/playbooks/         #Set path to playbook
+        Playbook: yapt_playbook.yml                   #Set Playbook file name. Playbooks stored in conf/ansible/playbook
+```
+
 
 ### Verification Tasks ###
 TBD
 
 
+## User and Passwords ##
+YAPT ships with password utility, which is used to save encrypted passwords in YAPT configuration files.
+With password utility we can generate most of the passwords. Main goal of password util is to encrypt password in YAPT config files. 
+Current implementation is not intended to be secure since master key has to be protected on it's own.
+
+This tool can be started by following command:
+
+- cd lib/utils
+- PYTHONPATH=__PATH_TO_YAPT_INSTALLATION__ /usr/local/bin/python2.7 ./password.py
+- First of all you need to create a master key. If there is already a master key this won't be overwritten and has to be deleted from master key file
+
+
 ```
-ansible-galaxy install Juniper.junos
+PYTHONPATH=/root/juniper-yapt-0.0.2/ /usr/local/bin/python2.7 password.py
+
+------------------------------ Password Util ------------------------------
+1. Create Master Key
+2. Generate Device SSH Password
+3. Generate Junos Space REST Api Password
+4. Generate OSSH Shared Secret
+5. Generate AMQP Password
+6. Exit
+---------------------------------------------------------------------------
+Enter your choice [1-6]:
 ```
+
+## Device Authentication ##
+YAPT supports password and key based device authentication. For password based authentication you use password util to generate the device password. If key based authentication is being used following settings have to be done:
+
+- Change password mode by setting __DevicePwdIsRsa__ to __True__ in __yapt.conf__ global section
+
+```
+DevicePwdIsRsa: False                           #use ssh rsa authentication
+```
+
+- Generate ssh private / public key
+  * cd conf/yapt
+  * ssh-keygen -b 2048 -t rsa -f id_rsa -P ""
+- Public key id_rsa.pub can later on be used in bootstrap configuration
+  * PHS bootstrap config example:
+
+```
+<ssh-rsa>ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDNRZHZGfeKpivvJxvcLEFbn37+m9HaAAjX5yPdHR/p9YBme+S7P9OcQv3Y5aRLsDjmGI3jqnEDDtw8XxS/Ky2DQ9g/uVb++MWTOu739iJiF6wwOJXUvFLbFzG8TF1i0mrGYyZ/5UtPL1YWrKnRO86mhbQDPie9H8dIoZb1AYBEugm0GwOqA0luRuAgvoAuOr15qYu0zDcwXF3f5ZpRh8TcVgWsPQ/HQK/WaWjOyeUz6a7iC1VtcmXn3LY6RG2iTCSxQz6n1Z/JBEUQfjKG9o9XEZ7Pf3eN8tGbTWXtiQVsfJ1VXTOPm/YUaABIhY5t72K3F7mMwoQmVS2GpG2PwRgr cklewar@cklewar-mbp</ssh-rsa>
+```
+
+## Starting / stopping services ##
+In standalone or vagrant installation YAPT needs rabbitmq service to be started prior to yapt service. 
+This is platform specific which could be done using Linux init scripts under __/etc/init.d__ or on systemd based systems with __systemctl__ or __service__ commands.
+YAPT ships with a start / stop script called __yapt.sh__.
+* __yapt.sh start__ starts yapt
+* __yapt.sh stop__ stops yapt
+
+This doesn't apply do a docker based installation.
+
+## Logging ##
+
+* YAPT writes log information into
+    - logs/info.log (informational)
+    - logs/error.log (debug)
+* A __tail -f info.log | grep YAPT__ will show each provsioning tasks status.
+
+## WebUI ##
+Default WebUI URL is __http://ip:port/yapt/ui__
+
+## OOBA WebUI ##
+OOBA WebUI URL is __http://ip:port/ooba__
 
 ## Additional Services ##
 If the centralised approach will be used we need additional services like DHCP / TFTP server. 
