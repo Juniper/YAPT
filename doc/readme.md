@@ -7,21 +7,20 @@ YAPT is a tool to demonstrate Juniper automation capabilities on SRX / EX / VMX 
 ## Centralised Provisioning before shipment ##
 
 During the boot sequence the device will get initial configuration parameters and connects to a centralised server that would
-build and deliver a location specific configuration. In this particular use case location is determined
+build and deliver a device specific configuration. The location is determined
 by device's serial number. But could also be any other device specific information.
 
-Each provisioning task can be turned “on/off” and the order in which tasks are being processed can be changed to reflect uses cases / requirements..
-Once all tasks are done, device can be shipped to final destination.
+Once all provisioning / verification tasks are done, device can be shipped to it's final destination.
 The ability to provision more than one device at the same time is also possible within the YAPT workflow.
 
 ## Decentralized provisioning with Phone Home ##
 
-Device will be shipped to final destination directly.
+Device will be shipped to it's final destination.
 
-The provision process consists of several tasks:
+The provisioning process consists of several tasks:
 * Device calls home using Juniper redirect service pointing to YAPT
 * Bootstrap config will be applied using Phone Home
-* YAPT receives request and starts provisioning process
+* YAPT starts provisioning process
 
 ## RMA a device ##
 
@@ -96,7 +95,7 @@ YAPT supports different backend types. Standard backend is called "internal". Th
 YAPT also ships with SQLite based Backend which brings persistence.
 
 ## Configuration Sources ##
-YAPT can pull config files for devices and groups from different sources. YAPT ships with following config source plugins:
+YAPT can pull needed configuration information from different sources. YAPT ships with following config source plugins:
 
 - Local
   * Get device and group configs from local file system
@@ -232,6 +231,7 @@ To bring up YAPT docker environment we need following steps:
   * `nano group_vars/all`
   
   
+  
   ```yaml
   # Rabbitmq stuff
   rabbitmq_version: 3.6.14
@@ -288,7 +288,7 @@ To install YAPT to integrate into j-EDI we need to:
 - Setup j-EDI environment <https://github.com/Juniper/jedi-seed/blob/master/README.md>
 - Setup the YAPT EDI plugin: <https://github.com/Juniper/j-EDI/blob/master/saltstack/srv/plugins/yapt/README.md> 
 
-Current integration is with RT ticketing system. We could demonstrate updating a ticket with privisoning / verification task information.   
+Current integration is with RT ticketing system. We could demonstrate updating a ticket with provisioning / verification task information.   
 For more information about YAPT provisioning task plugin have a look at the task plugin section.
 
 ## Standalone from source / scratch ##
@@ -349,8 +349,8 @@ Shown Rabbitmq config will not work with version >= 3.7.0.
   * rabbitmqctl set_user_tags yapt administrator
   * rabbitmqctl set_permissions -p / yapt ".*" ".*" ".*"
 
-- Edit __conf/yapt/yapt.yml__ file under conf/yapt directory to fit your environment settings
-  - Parameter __SourcePlugins__: Set the source plugin to the one you want to be used and configure source plugins settings under __Global Section__ in __yapt.yml__
+- Edit __conf/yapt/yapt.yml__ file to fit your environment settings
+  - Parameter __SourcePlugins__: Set the source plugin(s) to be used and configure service settings under __SERVICES Section__
   - Parameter __WebUiAddress__: should be set to interface IP WebUI will be reachable
   - If YAPT server operates behind NAT / Proxy we need to set:
 
@@ -366,11 +366,10 @@ Shown Rabbitmq config will not work with version >= 3.7.0.
 
 ## Main Config ##
 
-YAPT main config file `conf/yapt/yapt.yml` consists of following sections:
 All settings in this file have a global scope.
+YAPT main config file `conf/yapt/yapt.yml` consists of following sections:
 
 ### Section: YAPT ###
-
 
   - SourcePlugins: Enable source plugins and their respective service
     + Currently YAPT ships with `phs, ossh, tftp, dhcp` plugins
@@ -378,10 +377,6 @@ All settings in this file have a global scope.
   - DevicePwdIsRsa: Enable RSA authentication towards devices
   - DeviceUsr: User YAPT will initiate a device connection with
   - DevicePwd: If YAPT connect by username / password combination this option entry represents the encrypted password
-  - Backend: Choose the backend type to use
-    * Currently YAPT ships with two backend types
-      * Backend type `internal` is pretty fast but has no persistency
-      * Backend type `sql` is relaying on an RDBMS. In current implementation YAPT uses SQLite
   - ConnectionProbeTimeout: Try to initiate connection to device and retry for n sec    
   - LogFileDirectory: Tells YAPT where to store it's log files
   - StartWebUi: Start web interface listening on port <WebUiPort>
@@ -398,15 +393,75 @@ All settings in this file have a global scope.
     * In a containerized environment we would use load balancing mechanisms provided by the container system  
 
 ### Section: SOURCE ###
+Enable different sources for:
 
-- DeviceConfOoba: Enable OOBA mapping checks
-- DeviceConfSrcPlugins: Configuration source plugin order
+- Device data
+- Device config template
+- Group config
+- VNF bootstrap config
 
-### Section: Backend ###
-TBD
+Global options regardless of which config source plugin is used are:
+
+```yaml
+DeviceConfOoba: false                         #Enable OOBA DB check
+DeviceConfSrcPlugins: [local]                 #Configuration source plugin order
+```
+
+##### Local #####
+This is the default module. All configuration information will be kept in local filesystem.
+
+```yaml
+ Local:
+    DeviceGrpFilesDir: conf/groups/                 #Map device to a provisioning group
+    DeviceConfDataDir: conf/devices/data/           #device specific template data config directory
+```
+  
+##### GITlab #####
+This will obtain configuration information from a Gitlab system. Current implementation only supports Gitlab system.
+
+- To use this plugin we have to prepare following repositories in Gitlab:
+  + `DevCfg: demo_ops/yapt_dev_conf`
+  + `DevCfgTemplate: demo_ops/yapt_dev_conf_template`
+  + `DevGrpCfg: demo_ops/yapt_dev_grp_conf`
+  + `VnfBoostrapTemplate: demo_ops/yapt_vnf_boostrap_template`
+
+Git source plugin will connect to `Address`, `Port` and `Protocol` with credentials `User` and `Password`.
+
+```yaml
+  Git:
+    Address: 10.86.9.14
+    Port: 9080
+    Protocol: http
+    LoginUrl: /users/sign_in
+    User: root
+    Password: password
+    DevCfg: demo_ops/yapt_dev_conf
+    DevCfgTemplate: demo_ops/yapt_dev_conf_template
+    DevGrpCfg: demo_ops/yapt_dev_grp_conf
+    VnfBoostrapTemplate: demo_ops/yapt_vnf_boostrap_template
+```
+
+### Section: BACKEND ###
+YAPT ships with following backend types:
+
+- internal
+  * Backend type `internal` is pretty fast but has no persistence
+- sql
+  * Backend type `sql` is relaying on an RDBMS. In current implementation YAPT uses SQLite
+
+```yaml
+BACKEND:
+
+  Module: sql                                    #Backend Type (internal / sql)
+
+    Sqlite:
+      DbName: yapt.db                                             #SQLite DB Name
+      DbPath: lib/backend/db/                                     #Path to db file
+      AutoCreateDb: true                                          #If DB not exists create it automatically
+```
 
 ### Section: SERVICES ###
-Services are tied to source plugins. If adding a source plugin to the source plugin sequence in file `yapt.conf` section `YAPT` the according service has to be configured.
+Services are tied to source plugins. If adding a source plugin to the source plugin sequence in `yapt.yml` file section `YAPT` the according service has to be configured.
 
 Why separation into services and source plugins? 
 Best example for this is the file based service. File based service observes a file for changes. 
@@ -424,7 +479,6 @@ Tftp:
     #dnsmasq TFTP Pattern (Ubuntu/Centos)
     Pattern: .*?\sdnsmasq-tftp\[\d.*\]:\ssent\s/var/lib/tftpboot/init.conf\sto\s((?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3}))
 ```
-
 
 #### DHCP Service ####
 DHCP service observes given file `LogFile` for changes. DHCP service source plugin normalizes and extract needed data.
@@ -472,7 +526,7 @@ Phs:
     DeviceAuthFile: conf/services/phs/dev_auth              #device authentication by serial number
 ```
 
-### Section: JUNOSPACE ###
+### Section: JUNOSSPACE ###
 Supported Junos Space Platform currently:
 
 - Management platform 15.1R3
@@ -485,8 +539,8 @@ Space version has to be set by `Version` to either `space151` or `space161`.
 Space Rest API connector connects to IP `Ip` with user `User` and encrypted password `Password` which has been set by using the password utility. 
 YAPT support Junos Space device on-boarding by `discovering` the device or by outbound-ssh initiated device connection using device "configlets".
 The discovery task plugin docs have more information about the on-boarding methods. 
-The files in `TemplateDir` are being used by the Space Rest API connector to make the right calls since Junos Rest API is using different attributes in
-the Rest calls. This parameter has to point to the right Junos Space version being used.
+The files in `TemplateDir` are being used by the Space Rest API connector to make the right calls since Junos Rest API cahnges from version to version. 
+This parameter has to point to the right Junos Space version being used.
 
 
 ```yaml
@@ -502,7 +556,7 @@ JUNOSSPACE:
 ```
 
 ### Section: DEVICEDRIVER ###
-YAPT suports two device drivers:
+YAPT has support for two device drivers:
 
 - PyEZ
   * Rich feature set for Junos based devices
@@ -523,10 +577,35 @@ Driver: pyez                      #pyez / napa (napalm)
 ```
 
 ### Section: AMQP ###
-TBD
+To connect YAPT to the AMQP bus we need to provide `Host`, `Port`, `User` and `Password` values. Password, if YAPT runs in standalone installation mode, will be provided with the password util.
+
+
+```yaml
+AMQP:
+  Host: 127.0.0.1
+  Port: 5672
+  Type: direct
+  Exchange: yapt
+  User: yapt
+  Password: gAAAAABZXKh1cacgc1qPE7Bc2JPcI_G0_2QaGEyr0Yu_6kIoKuVngbRBWcCuzAMrU3hKF0eSDG4lif6WpJdv0upwfWbS5eU70w==
+```
 
 ### Section: EMITTER ###
-TBD
+YAPT has the capability to emit information to different receivers. Currently YAPT ships with following emitter plugins:
+
+- Local
+  + This is the default emitter and emits information to log files
+- Ticket
+  + The ticket emitter plugin is used when ticket provisioning plugin is enabled
+  
+To activate / deactivate emitter plugin remove or add them to `Plugins` sequence in `EMITTER` section in main YAPT config file `yapt.yml`.
+
+
+```yaml
+EMITTER:
+  Plugins: [local, ticket]
+  MainLogFile: logs/info.log
+```
 
 ### Example Main Config ###
 
@@ -805,6 +884,29 @@ TASKS:
 
 
 ## Device Config ##
+Device config data will be kept in YAML formatted source. This data is later on being used to generate the device specific configuration.
+In group file which the device is assigned to defined template will be used to render final configuration file. YAPT uses Jinja2 template engine
+when `Configruation` plugin `internal` is used.
+
+```yaml
+DeviceConfTemplateDir: conf/devices/template/   #device specific template config directory
+DeviceConfTemplateFile: srx_no_ipam_no_ossh.j2  #device config template name
+```
+
+Depending on the provisioning task plugin there are more options to set when it comes to provisioning device configuration.
+Some attributes are mandatory and the keyword has to be present in device config even if it's not used. If not used just left the value empty.
+Format of device's data file consists of two main sections:
+
+### Yapt section ###
+- `device_type` 
+  + Device type is mainly used for PHS. Since XML bootstrapping data looks different between a SRX and a NFX YAPT needs to know which device it is talking to  
+- `device_group`
+  + Assign device to a group to run specific tasks
+- `service_chain`
+  + Build a service chain to instruct YAPT to wait for device connecting by another service in a second step after initial bootstrapping 
+  + Main use case is PHS --> OSSH. Device first will connect to YAPT using PHS then after boostrap config being applied device initiates OSSH connection
+  + `service_chain` would then look like: `service_chain: [ossh]`
+- `bootstrap_template_dir` and `bootstrap_template_file` is used for VNF provisioning only and points to the VNF specific configuration
 
 ```yaml
 yapt:
@@ -813,7 +915,22 @@ yapt:
   service_chain: []
   bootstrap_template_dir: conf/vnf/template
   bootstrap_template_file: vsrx_ztp_bootstrap.j2
+```
 
+|Attribute                  |Description            |Mandatory  |
+|---                        |---                    |---        |
+|device_type                |Set device type        |yes        |
+|device_group               |Set device group       |yes        |
+|service_chain              |Build service chain    |yes        |
+|bootstrap_template_dir     |VNF template dir       |yes        |
+|bootstrap_template_file    |VNF template file      |yes        |
+
+### Device section ###
+Most of the values defined in the `device` section referring to the template to be used. 
+There is currently one exception which is the `Cert` provisioning plugin. If `Cert` plugin is being used we have mandatory statements in this file.
+Please have a look at the task plugin section to get more information about the `Cert` provisioning plugin and the mandatory statements. 
+
+```yaml
 device:
   hostname: vsrx_ztp01
   encrypted_password: $5$Wbt5G9uy$IW32MqVW.3.sxbrz0jzs4X/JrTAbNk1E41N9.lMO0j5
@@ -858,6 +975,360 @@ device:
     revocation_url: ejbca/publicweb/status/ocsp
 ```
 
+Example of a device template file:
+
+```text
+{{ heading }}
+system {
+    host-name {{ device.hostname }};
+    time-zone {{ device.timezone }};
+    domain-name {{ device.domain_name }};
+    root-authentication {
+        encrypted-password "{{ device.encrypted_password }}"; ## SECRET-DATA
+    }
+    services {
+        ssh {
+            protocol-version v2;
+        }
+        netconf {
+            ssh;
+        }
+        outbound-ssh {
+            client yapt {
+                device-id abc123;
+                secret "$9$jckmT69pRhrz3hrev7Nik.Pz3/CtOIE"; ## SECRET-DATA
+                services netconf;
+                172.16.146.1 port 7804;
+            }
+        }
+    }
+    syslog {
+        user * {
+            any emergency;
+        }
+        file messages {
+            any any;
+            authorization info;
+        }
+        file interactive-commands {
+            interactive-commands any;
+        }
+    }
+    license {
+        autoupdate {
+            url https://ae1.juniper.net/junos/key_retrieval;
+        }
+    }
+    ntp {
+        server {{ device.ntp_server }};
+    }
+    scripts {
+        op {
+            file cleanup.slax
+        }
+    }
+}
+interfaces {
+    {% for interface in device.interfaces %}
+    {% if interface.address == "dhcp" %}
+    {{ interface.name }} {
+        description "{{ interface.description }}";
+        unit 0 {
+            family {{ interface.family }} {
+                dhcp-client;
+            }
+        }
+    }
+    {% elif interface.name == "ge-0/0/0" %}
+    replace: {{ interface.name }} {
+        description "{{ interface.description }}";
+        unit 0 {
+            family {{ interface.family }} {
+                address {{ ipam['IP1'] }}/{{ interface.mask }};
+            }
+        }
+    }
+    {% else %}
+    {{ interface.name }} {
+        description "{{ interface.description }}";
+        unit 0 {
+            family {{ interface.family }} {
+                address {{ interface.address }}/{{ interface.mask }};
+            }
+        }
+    }
+    {% endif %}
+    {% endfor %}
+    {{ device.tunnel_int.name }} {
+        unit {{ device.tunnel_int.unit }} {
+            family {{ device.tunnel_int.family }} {
+                address {{ ipam['IP0'] }}/{{ device.tunnel_int.mask }};
+            }
+        }
+    }
+}
+snmp {
+    community {{ device.community }} {
+        authorization read-only;
+    }
+}
+routing-options {
+    router-id {{ ipam['IP0'] }};
+}
+protocols {
+    ospf {
+        export AutoVPN;
+        area 0.0.0.0 {
+            interface {{ device.tunnel_int.name }}.{{ device.tunnel_int.unit }} {
+                interface-type p2p;
+            }
+        }
+    }
+}
+policy-options {
+    policy-statement AutoVPN {
+        term direct_term {
+            from {
+                protocol direct;
+                {% for interface in device.interfaces %}
+                {% if interface.description == "trust" %}
+                interface {{ interface.name }}.0;
+                {% endif %}
+                {% endfor %}
+            }
+            then accept;
+        }
+        term ospf_term {
+            from protocol ospf;
+            then accept;
+        }
+    }
+}
+security {
+    pki {
+        ca-profile {{ device.cert.ca_profile }} {
+            ca-identity {{ device.cert.ca_identity }};
+            enrollment {
+                url {{ device.cert.enrollment_url }};
+            }
+            revocation-check {
+                disable;
+            }
+        }
+        auto-re-enrollment {
+            certificate-id {{ device.hostname }} {
+                ca-profile-name {{ device.cert.ca_profile }};
+                challenge-password "{{ device.cert.challenge_password }}"; ## SECRET-DATA
+                re-enroll-trigger-time-percentage 10;
+                re-generate-keypair;
+                scep-encryption-algorithm {
+                    des3;
+                }
+                scep-digest-algorithm {
+                    sha1;
+                }
+            }
+        }
+    }
+    ike {
+        proposal P1 {
+            authentication-method rsa-signatures;
+            dh-group group14;
+            authentication-algorithm sha-256;
+            encryption-algorithm aes-256-cbc;
+            lifetime-seconds 28800;
+        }
+        policy AutoVPN {
+            mode main;
+            proposals P1;
+            certificate {
+                local-certificate {{ device.hostname }};
+            }
+        }
+        gateway AutoVPNHub {
+            ike-policy AutoVPN;
+            address 10.13.113.1;
+            dead-peer-detection {
+                interval 10;
+                threshold 1;
+            }
+            no-nat-traversal;
+            local-identity distinguished-name;
+            remote-identity distinguished-name;
+            {% for interface in device.interfaces %}
+            {% if interface.description == "untrust" %}
+            external-interface {{ interface.name }}.0;
+            {% endif %}
+            {% endfor %}
+            version v2-only;
+        }
+    }
+    ipsec {
+        proposal P2 {
+            protocol esp;
+            authentication-algorithm hmac-sha1-96;
+            encryption-algorithm aes-256-cbc;
+            lifetime-seconds 3600;
+        }
+        policy AutoVPN {
+            perfect-forward-secrecy {
+                keys group14;
+            }
+            proposals P2;
+        }
+        vpn AutoVPN {
+            bind-interface {{ device.tunnel_int.name }}.{{ device.tunnel_int.unit }};
+            ike {
+                gateway AutoVPNHub;
+                ipsec-policy AutoVPN;
+            }
+            establish-tunnels immediately;
+        }
+    }
+    flow {
+        tcp-mss {
+            ipsec-vpn {
+                mss 1350;
+            }
+        }
+    }
+    screen {
+        ids-option untrust-screen {
+            icmp {
+                ping-death;
+            }
+            ip {
+                source-route-option;
+                tear-drop;
+            }
+            tcp {
+                syn-flood {
+                    alarm-threshold 1024;
+                    attack-threshold 200;
+                    source-threshold 1024;
+                    destination-threshold 2048;
+                    queue-size 2000;
+                    timeout 20;
+                }
+                land;
+            }
+        }
+    }
+    policies {
+        from-zone trust to-zone untrust {
+            policy default-permit {
+                match {
+                    source-address any;
+                    destination-address any;
+                    application any;
+                }
+                then {
+                    permit;
+                }
+            }
+        }
+        from-zone untrust to-zone trust {
+            policy default-deny {
+                match {
+                    source-address any;
+                    destination-address any;
+                    application any;
+                }
+                then {
+                    deny;
+                }
+            }
+        }
+        from-zone trust to-zone vpn {
+            policy default-permit {
+                match {
+                    source-address any;
+                    destination-address any;
+                    application any;
+                }
+                then {
+                    permit;
+                }
+            }
+        }
+        from-zone vpn to-zone trust {
+            policy default-permit {
+                match {
+                    source-address any;
+                    destination-address any;
+                    application any;
+                }
+                then {
+                    permit;
+                }
+            }
+        }
+    }
+    zones {
+        security-zone trust {
+            tcp-rst;
+            interfaces {
+            {% for interface in device.interfaces %}
+                {% if interface.description == "trust" %}
+                {{ interface.name }}.0 {
+                    host-inbound-traffic {
+                        system-services {
+                            http;
+                            https;
+                            ssh;
+                            dhcp;
+                            netconf;
+                            ping;
+                            traceroute;
+                        }
+                    }
+                }
+                {% endif %}
+            {% endfor %}
+            }
+        }
+        security-zone untrust {
+            screen untrust-screen;
+            interfaces {
+            {% for interface in device.interfaces %}
+                {% if interface.description == "untrust" %}
+                {{ interface.name }}.0 {
+                    host-inbound-traffic {
+                        system-services {
+                            https;
+                            ssh;
+                            dhcp;
+                            netconf;
+                            ike;
+                            ping;
+                            traceroute;
+                            snmp;
+                        }
+                    }
+                }
+                {% endif %}
+            {% endfor %}
+            }
+        }
+        security-zone vpn {
+            interfaces {
+                {{ device.tunnel_int.name }}.{{ device.tunnel_int.unit }} {
+                    host-inbound-traffic {
+                        system-services {
+                            ping;
+                            traceroute;
+                        }
+                        protocols {
+                            ospf;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
 ## Task Config ##
 YAPT provides two task categories:
 
@@ -866,20 +1337,77 @@ YAPT provides two task categories:
 
 Tasks will be activated in device group files. To activate a task add it to the task sequence list `Sequence: [Init, Filecp, Software, Configuration, Cleanup]`.
 To deactivate remove it from the task sequence list. Tasks in this list will be processed in order of occurrence. First letter of task name has always to be a capital letter.
-Ordering of the tasks can easily be changed. Only exception are the task `Init` which should always be in first place and task `Cleanup` which should always be at the end of the sequence.
+Ordering of the tasks can be easily changed. Only exception are the task `Init` which should always be in first place and task `Cleanup` which should always be at the end of the sequence.
  
+```yaml
+TASKS:
+  #Enable tasks and set processing order within sequence
+  Sequence: [Init, Filecp, Software, Configuration, Cleanup]
+```
+
+Tasks are all plugin based and stored in `lib/tasks`. Depending on the configured driver in `DEVICEDRIVER` section YAPT loads activated tasks in task `Sequence`.
+Tasks have different states:
+
+- Init state
+  + Task loads all dependencies and data and changes to `init` state
+- Done state
+  + Task successfully finished it's job and changes to `done` state
+- Failed state
+  + An error occured and task state changes to `failed` state
+- Progress state
+  + Task is working / running doing it's job and changes to `progress` state
+- Reboot state
+  + Task is waiting for a device reboot and changes to `reboot` state
+- Waiting state
+  + Task is in waiting state after task creation process
+
+Tasks could have dependencies with other tasks. Therefor current task has to load / execute other jobs before actual tasks work can be done.
+Dependencies can be defined for every task in the task plugin section in group file with `Dependencies` statement. 
+
 ### Provisioning Tasks ###
 
-#### Ansibleapi ####
+#### Assign ####
+This task is used within Junos Space on boarding process. It assigns firewall policy object to device object.
 
+
+```yaml
+Assign:
+      AssignTemplate: conf/space/151/tempaltes/assignDevice.j2
+```
+
+
+#### Configuration ####
+Configuration task has global options regardless of which implementation is used. Global options are:
+
+- `Dependnecies`: Configuration task plugins often have dependencies like for `Ipam` or `Cert` task data to be pulled
+- `DeviceConfTemplateDir`: Defines directory where to look for device template files. Will be used when config source is set to `local`
+- `DeviceConfTemplateFile`: Defines the template file to be loaded for configuration generation
+- `ConfigFileHistory`: Saves rendered configuration file in configured directory
+- `Merge`: Merge config (True / False)
+- `Overwrite`: Overwrite config (True / False)
+```yaml
+
+
+Configuration:
+      Dependencies: []
+      DeviceConfTemplateDir: conf/devices/template/   #device specific template config directory
+      DeviceConfTemplateFile: srx_no_ipam_no_ossh.j2  #device config template name
+      ConfigFileHistory: history/                     #path to dir where commited device config being saved
+      Merge: True                                     #Merge Configuration
+      Overwrite: False                                #Replace Configuration
+```
+
+##### Ansibleapi #####
 If not already done to use Ansible provisioning task plugin you will need to install Ansible Junos role with:
 
 ```bash
 ansible-galaxy install Juniper.junos
 ```
 
-To use provisioning task `ansibleapi` configure the playbook path and the playbook file. 
-- Ansibleapi task can't be used together with in-band certificate roll out.
+To use provisioning task `ansibleapi` configure the playbook path with `PlaybookPath` and the playbook file with `Playbook`. 
+
+Constrains with task plugin `ansibleapi`:
+- Ansibleapi task can't be used together with in-band certificate roll out
 - Ansibleapi task won't work with new device sitting behind NAT device
 - Ansibleapi task always initiate connection to device
 
@@ -888,6 +1416,189 @@ To use provisioning task `ansibleapi` configure the playbook path and the playbo
 Ansibleapi:
         PlaybookPath: conf/ansible/playbooks/         #Set path to playbook
         Playbook: yapt_playbook.yml                   #Set Playbook file name. Playbooks stored in conf/ansible/playbook
+```
+
+##### Internal #####
+With `Internal` configuration provisioning plugin we use device data and template source to generate device specific configuration.
+Current available options are 
+
+- `CommitTimeout`: wait n sec for commit response
+- `ConfirmedTimeout`: wait n sec firing commit confirmed   
+
+```yaml
+      Internal:
+        CommitTimeout: 120                            #Set Commit Timeout to x sec
+        ConfirmedTimeout: 1                           #Set Commit confirmed timeout to x min
+```
+
+### Init ###
+Depending on which device driver choosen `Init` task prepares connection object to support specific functionality. In case of `Init` task and PyEz as device driver we support
+`Configuration` and `Software` provisioning. 
+
+```yaml
+Init:
+      Dependencies: [Configuration, Software]
+```
+
+#### Cert ####
+Cert Task is used for in-band certificate roll out. We can use existing SSH session between YAPT and device to install the certificates.
+This could be done by using `PortForwarding`. When enabled we have to set local forwarding port `LocalFwdPort` on device.
+Setting the remote host with `RemoteFwdHost` we want to forward to and the destination port with `RemoteFwdHostPort`.
+`EnrollmentUrl` and `RevocationUrl` are pointing to specific CA systems SCEP / OCSP urls.
+Cert plugin has been tested with EJBCA CA software. If `Cert` plugin is used we have set below mandatory configuration options in device config file.
+
+
+```yaml
+Cert:
+      PortForwarding: false                                         #Enable Port Forwarding for cert retrieval
+      LocalFwdPort: 5554                                            #Forwarding Port on device
+      RemoteFwdHost: 10.15.115.2                                    #Remote host to forward to
+      RemoteFwdHostPort: 8080                                       #Port on remote host to forward to
+      EnrollmentUrl: ejbca/publicweb/apply/scep/advpn/pkiclient.exe #
+      RevocationUrl: ejbca/publicweb/status/ocsp                    #
+```
+
+#### Discovery ####
+The discovery plugin is used to on-board device with Junos Space. There are two modes (`Mode`)available to on-board device:
+
+- Discovery
+  + Junos Space initiated device discovery process being triggered by YAPT
+- Configlet
+  + Using outbound-ssh (configlet) approach. Connection will be initiated by device
+    * Create a device instance (Modeled device) in Junos Space
+      + Instance name must be the __DEVICE_TYPE__ name
+    * Create `connectionConfigletVars.yml` directory `ConnectionConfigletDir/__DEVICE_TYPE__` 
+    * Example `conf/space/configlet/SRX300/connectionConfigletVars.yml`
+    * Copy `connectionConfiglet.j2` file from doc boilerplate directory
+
+YAPT will automatically add additional instances to existing one. 
+
+```yaml
+Discovery:
+      Mode: Discovery                                 #Set discovery mode to either Discovery or Configlet
+      UsePing: false                                  #If Mode 'Discovery' use ping
+      UseSnmp: true                                   #If Mode 'Discovery' use snmp
+      ConnectionConfigletDir: conf/space/configlet/   #modeled device configlet file path
+```
+
+#### Filecp ####
+Copies files in `Files` from `FileLocalDir` to specified directory `FileRemoteDir`. 
+
+```yaml
+Filecp:
+      Files: [cleanup.slax]                           #File(s) to be copied to device (e.g. SLAX)
+      FileLocalDir: scripts/                          #source directory where to find files (defaults to script dir)
+      FileRemoteDir: /var/db/scripts/op               #Event/Commit/OP Script or any other directory path on device
+```
+
+Top copy multiple files add additional entires to `Files` like `[file1.slax, file2.txt, file3.sh, cleanup.slax]`
+`cleanup.salx` should be kept in the list.
+
+#### Ipam ####
+Current available Ipam plugin is `nipap`. Via `Module` could be other modules defined. 
+Ipam plugin connects to `Address` and `Port`. Plugin uses credentails `User` and `Password` to authenticate to Ipam system.
+Defining the list of prefixes we want IPs from with `Prefixes`. Prefixes later on can be accessed in device template file with `ipam['IPX']` where `X` is the prefix in our list.
+
+```text
+{{ device.tunnel_int.name }} {
+        unit {{ device.tunnel_int.unit }} {
+            family {{ device.tunnel_int.family }} {
+                address {{ ipam['IP0'] }}/{{ device.tunnel_int.mask }};
+            }
+        }
+    }
+``` 
+
+
+```yaml
+Ipam:
+      Module: nipap
+      Address: 10.15.115.6
+      Port: '1337'
+      Prefixes: [10.200.0.0/24, 10.13.113.0/24]
+      User: nipap
+      Password: nipap
+```
+
+#### Policy ####
+Policy plugin is used to create a security policy object in Junos Space.
+
+```yaml
+Policy:
+      PolicyTemplate: conf/space/templates/151/fwpolicy.j2
+      LookupType: DEVICE
+```
+
+#### Rule ####
+Rule plugin is used to add a security rule to security policy in Junos Space.
+
+```yaml
+Rule:
+      RuleTemplate: conf/space/templates/151/fwdefaultrule.j2
+      RuleTemplateVars: conf/space/templates/151/fwdefaultrule.yml
+```
+
+#### Software ####
+Software plugin installs image kept in directory `ImageDir` onto device. 
+We define the remote directory where the image should be copied to during update process by setting `RemoteDir`.
+`RebootProbeCounter` probes n times to check if device is back from reboot. `RebootProbeTimeout` checks every n sec if device got into reboot state.
+`RetryProbeCounter` checks n times if device got into reboot state. `PkgAddDevTimeout` is specific value for outbound-ssh based software update and defines
+the time to wait for rpc response during software update. Define a mapping with `TargetVersion` between __DEVICE_TYPE__ and the target software version being installed.
+
+
+```yaml
+Software:
+      ImageDir: images/                               #device software images directory
+      RemoteDir: /var/tmp/                            #destination directory
+      RebootProbeCounter: 30                          #How many times probe should be send while dev rebooting
+      RebootProbeTimeout: 30                          #wait n sec starting probing after device is rebooted
+      RetryProbeCounter: 5                            #How many times probe should be send while going into reboot
+      PkgAddDevTimeout: 1800                          #Timeout for pkgadd function (OSSH)
+
+      TargetVersion:
+        FIREFLY-PERIMETER: 12.1X47-D40.1
+        VSRX: 15.1X49-D100.6
+        SRX100: 12.3X48-D40
+        SRX110: 12.3X48-D40
+        SRX210: 12.3X48-D40
+        SRX220: 12.3X48-D40
+        SRX300: 15.1X49-D70
+        SRX320: 15.1X49-D70
+        SRX340: 15.1X49-D70
+        SRX345: 15.1X49-D70
+```
+
+#### Ticket ####
+Current supported ticket system is RT and so parameter `Module` has to be set to `rt`. 
+
+Ticket plugin supports two modes:
+- The mode `detail` updates ticket after tasks successfully done 
+- The mode `summary` updates ticket after all tasks done
+
+YAPT connects to EDI webhook by `Address`, `Port` and `Protocol` with credentials `User` and `Password`. These are settings
+which have to be configured on the EDI system.
+The parameter `TemplateDir` points to template directory for rendering ticket contents. If ticket is created the first time we use template `TicketCreateTemplate`.
+If ticket is updated we use `TicketUpdateTemplate` template.
+Enable ticket plugin by adding it to the task sequence list in group file. 
+- If ticket plugin mode is `detail` place it before `Init` task (Yes, that's an exception)
+  * Check if emitter plugin `ticket` is in emitter `Plugins` sequence in YAPT main config file section `EMITTER`
+- If ticket plugin mode is `summary` place it after `Cleanup` task (Yes, that's an exception too)
+
+```yaml
+Ticket:
+      Module: rt                                                  #Module currently only request_tracker ticketing system
+      Mode: detail                                                #Mode could be "summary" to give a summarization at the end or "detail" to get update after every task
+      Address: 10.86.9.14                                         #Ticket System IP address
+      Port: 8000                                                  #Ticket System Port
+      Protocol: https                                             #HTTP / HTTPS
+      User: juniper                                               #Ticket system user
+      Password: juniper123                                        #Ticket system passsword
+      Eauth: pam                                                  #EDI authentication module
+      Functions: [request_tracker.create_ticket, request_tracker.update_ticket]   #call edi runner functions
+      NextEvent: None                                             #
+      TemplateDir: lib/emitter/templates/                             #Template directory
+      TicketCreateTemplate: ticket_create_detail_mode.j2          #Template file used for tickte creation
+      TicketUpdateTemplate: ticket_update_detail_mode.j2          #Template file used for ticker update
 ```
 
 
@@ -924,7 +1635,7 @@ Enter your choice [1-6]:
 ## Device Authentication ##
 YAPT supports password and key based device authentication. For password based authentication you use password util to generate the device password. If key based authentication is being used following settings have to be done:
 
-- Change password mode by setting __DevicePwdIsRsa__ to __True__ in __yapt.conf__ global section
+- Change password mode by setting __DevicePwdIsRsa__ to __True__ in __yapt.yml__ global section
 
 ```
 DevicePwdIsRsa: False                           #use ssh rsa authentication
@@ -957,13 +1668,13 @@ This doesn't apply do a docker based installation.
 * A __tail -f info.log | grep YAPT__ will show each provsioning tasks status.
 
 ## WebUI ##
-Default WebUI URL is __http://ip:port/yapt/ui__
+WebUI URL is __http://ip:port/yapt/ui__
 
 ## OOBA WebUI ##
 OOBA WebUI URL is __http://ip:port/ooba__
 
 ## Additional Services ##
-For device like EX/QFX we need additional services like DHCP / TFTP server. 
+For devices like EX/QFX we need additional services like DHCP / TFTP server. 
 Here some example configurations of those:
 
 ### DHCP server (ISC DHCP) ###
@@ -1092,6 +1803,8 @@ security {
 }
 ```
 
+# YAPT Rest API #
+TBD
 
 # Directory structure #
 YAPT directory structure

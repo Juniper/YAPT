@@ -77,8 +77,8 @@ class Tools:
 
             if filename:
                 try:
-                    return ObjectView(yaml.safe_load(open(c.conf.SOURCE.File.DeviceGrpFilesDir + filename).read()))
-                    #return yaml.safe_load(open(c.conf.SOURCE.File.DeviceGrpFilesDir + filename).read())
+                    return ObjectView(yaml.safe_load(open(c.conf.SOURCE.Local.DeviceGrpFilesDir + filename).read()))
+                    #return yaml.safe_load(open(c.conf.SOURCE.Local.DeviceGrpFilesDir + filename).read())
 
                 except IOError as ioe:
                     c.logger.info(Tools.create_log_msg(logmsg.YAPT_CONF, '', logmsg.__format__(filename, ioe.message)))

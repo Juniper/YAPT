@@ -1,0 +1,12 @@
+system { 
+   services { 
+      outbound-ssh { 
+         client {{ configlet.client }} {
+            device-id {{ configlet.deviceID }};
+            secret "Juniper"; 
+            services netconf; 
+            {{ configlet.ip }} port {{ configlet.port }}
+         } 
+      } 
+    } 
+}

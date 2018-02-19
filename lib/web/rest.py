@@ -193,7 +193,7 @@ class Group(RestBase):
 
             try:
 
-                with open(c.conf.SOURCE.File.DeviceGrpFilesDir + name + '.yml', 'w') as fp:
+                with open(c.conf.SOURCE.Local.DeviceGrpFilesDir + name + '.yml', 'w') as fp:
                     ruamel.yaml.dump(new_device, fp, Dumper=ruamel.yaml.RoundTripDumper)
 
             except Exception as e:
@@ -226,7 +226,7 @@ class Group(RestBase):
 
         elif action == 'config':
 
-            with open(c.conf.SOURCE.File.DeviceGrpFilesDir + name + '.yml', 'r') as stream:
+            with open(c.conf.SOURCE.Local.DeviceGrpFilesDir + name + '.yml', 'r') as stream:
                 content = stream.read()
                 return content
 

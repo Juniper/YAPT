@@ -25,5 +25,5 @@ class YaptBackend(object):
         args = parser.parse_args()
         c.conf.AMQP.Host = args.amqpIp
 
-        BackendPluginFactory(plugin_name=c.conf.YAPT.Backend, target=Backend,
+        BackendPluginFactory(plugin_name=c.conf.BACKEND.Module, target=Backend,
                              name=c.AMQP_PROCESSOR_BACKEND)

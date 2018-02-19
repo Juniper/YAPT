@@ -243,7 +243,7 @@ class Local(DeviceConfigSource):
 
     def get_group_data_file(self, serialnumber=None, group=None):
 
-        group_file_path = c.conf.SOURCE.File.DeviceGrpFilesDir
+        group_file_path = c.conf.SOURCE.Local.DeviceGrpFilesDir
         filename = group + '.yml'
 
         if os.path.exists(group_file_path + filename) and os.path.isfile(group_file_path + filename):
@@ -273,7 +273,7 @@ class Local(DeviceConfigSource):
 
         try:
 
-            return True, yaml.safe_load(open(c.conf.SOURCE.File.DeviceGrpFilesDir + filename).read())
+            return True, yaml.safe_load(open(c.conf.SOURCE.Local.DeviceGrpFilesDir + filename).read())
 
         except IOError as ioe:
             c.logger.info(

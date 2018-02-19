@@ -25,7 +25,7 @@ class Yapt(object):
         Tools.create_config_view('main')
         EmitterPlgFact()
 
-        BackendPluginFactory(plugin_name=c.conf.YAPT.Backend, target=Backend,
+        BackendPluginFactory(plugin_name=c.conf.BACKEND.Module, target=Backend,
                              name=c.AMQP_PROCESSOR_BACKEND)
 
         for item in range(c.conf.YAPT.WorkerThreads):

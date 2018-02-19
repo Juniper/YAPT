@@ -73,7 +73,7 @@ AMQP_MESSAGE_TYPE_REST_LOG_GET = 'rest_log_get'
 TASK_TYPE_PROVISION = 'provision'
 TASK_TYPE_VERIFICATION = 'verification'
 
-# Task states used for UI Update
+# Task states
 TASK_STATE_INIT = 'task_state_init'
 TASK_STATE_DONE = 'task_state_done'
 TASK_STATE_FAILED = 'task_state_failed'
