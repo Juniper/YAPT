@@ -420,11 +420,18 @@ This is the default module. All configuration information will be kept in local 
 This will obtain configuration information from a Gitlab system. Current implementation only supports Gitlab system.
 
 - To use this plugin we have to prepare following repositories in Gitlab:
-  + `DevCfg: demo_ops/yapt_dev_conf`
-  + `DevCfgTemplate: demo_ops/yapt_dev_conf_template`
-  + `DevGrpCfg: demo_ops/yapt_dev_grp_conf`
-  + `VnfBoostrapTemplate: demo_ops/yapt_vnf_boostrap_template`
+  + `DevCfg: myrepo/yapt_dev_conf`
+  + `DevCfgTemplate: my_repo/yapt_dev_conf_template`
+  + `DevGrpCfg: my_repo/yapt_dev_grp_conf`
+  + `VnfBoostrapTemplate: my_repo/yapt_vnf_boostrap_template`
 
+Filename schema in repository must be:
+
+- Templates `myfilename.j2`
+- Device config `myfilename.yml`
+- Group config `myfilenmae.yml`
+
+Device template filename will be read from group configuration task global option `DeviceConfTemplateFile`.
 Git source plugin will connect to `Address`, `Port` and `Protocol` with credentials `User` and `Password`.
 
 ```yaml
@@ -1804,7 +1811,13 @@ security {
 ```
 
 # YAPT Rest API #
-TBD
+
+
+## Add device to trust store ##
+
+```text
+http://172.16.146.1:9090/api/authenticate?sn=8809EA3C6C21
+```
 
 # Directory structure #
 YAPT directory structure

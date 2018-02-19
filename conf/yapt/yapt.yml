@@ -1,3 +1,4 @@
+---
 ########################################################################################################################
 # YAPT Global Section
 ########################################################################################################################
@@ -26,14 +27,14 @@ YAPT:
 ########################################################################################################################
 SOURCE:
   DeviceConfOoba: false                         #Enable OOBA DB check
-  DeviceConfSrcPlugins: [local]                 #Configuration source plugin order
+  DeviceConfSrcPlugins: [cgitlab]               #Configuration source plugin order
 
   Local:
     DeviceGrpFilesDir: conf/groups/                 #Map device to a provisioning group
     DeviceConfDataDir: conf/devices/data/           #device specific template data config directory
 
-  Git:
-    Address: 10.86.9.14
+  Cgitlab:
+    Address: 10.16.116.142
     Port: 9080
     Protocol: http
     LoginUrl: /users/sign_in
@@ -49,13 +50,12 @@ SOURCE:
 #Backend Section (Configure Backend settings)
 ########################################################################################################################
 BACKEND:
+  Module: sql                                  #Backend Type (internal / sql)
 
-  Module: sql                                    #Backend Type (internal / sql)
-
-    Sqlite:
-      DbName: yapt.db                                             #SQLite DB Name
-      DbPath: lib/backend/db/                                     #Path to db file
-      AutoCreateDb: true                                          #If DB not exists create it automatically
+  Sqlite:
+    DbName: yapt.db                            #SQLite DB Name
+    DbPath: lib/backend/db/                    #Path to db file
+    AutoCreateDb: true                         #If DB not exists create it automatically
 
 ########################################################################################################################
 #Source Plugins Section

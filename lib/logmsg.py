@@ -299,7 +299,7 @@ class LogLocal(object):
 
 class LogGit(object):
     GIT_DEV_CFG_OK = 'Found device config file <{0}>'
-    GIT_DEV_CFG_NOK = ''
+    GIT_DEV_CFG_NOK = 'Missing config file for serialnumber <{0}>'
     GIT_DEV_GRP_CFG_OK = 'Found group config file <{0}>'
     GIT_DEV_GRP_CFG_NOK = 'Error in getting device group config <{0}> <{1}>'
     GIT_DEV_TEMPL_OK = ''
