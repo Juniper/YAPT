@@ -43,7 +43,7 @@ SOURCE:
     DevCfg: demo_ops/yapt_dev_conf
     DevCfgTemplate: demo_ops/yapt_dev_conf_template
     DevGrpCfg: demo_ops/yapt_dev_grp_conf
-    VnfBoostrapTemplate: demo_ops/yapt_vnf_boostrap_template
+    VnfBoostrapTemplate: demo_ops/yapt_vnf_bootstrap_template
 
 
 ########################################################################################################################

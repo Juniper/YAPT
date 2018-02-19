@@ -160,7 +160,7 @@ To run YAPT in a standalone environment grab a CentOS 7 box and follow steps bel
   * `nano inventory/hosts`
   
   
-  ```
+  ```yaml
   [yapt]
   yapt-01 ansible_host=172.16.146.131 ansible_connection=ssh ansible_user=root
   ```
@@ -169,7 +169,7 @@ To run YAPT in a standalone environment grab a CentOS 7 box and follow steps bel
   * `nano group_vars/all`
   
   
-  ```
+  ```yaml
   # Rabbitmq stuff
   rabbitmq_version: 3.6.14
   rabbitmq_user: yapt
@@ -229,7 +229,6 @@ To bring up YAPT docker environment we need following steps:
       
 - Edit group variables file `all` and change needed setting to fit your environment
   * `nano group_vars/all`
-  
   
   
   ```yaml
@@ -302,9 +301,9 @@ yum groupinstall "Development tools"
 yum install zlib-devel bzip2-devel openssl-devel ncurses-devel sqlite-devel socat dhcp dnsmasq
 
 cd /usr/src
-wget https://www.python.org/ftp/python/2.7.13/Python-2.7.13.tgz
-tar xzf Python-2.7.13.tgz
-cd Python-2.7.13
+wget https://www.python.org/ftp/python/2.7.14/Python-2.7.14.tgz
+tar xzf Python-2.7.14.tgz
+cd Python-2.7.14
 ./configure
 make altinstall
 
@@ -420,10 +419,10 @@ This is the default module. All configuration information will be kept in local 
 This will obtain configuration information from a Gitlab system. Current implementation only supports Gitlab system.
 
 - To use this plugin we have to prepare following repositories in Gitlab:
-  + `DevCfg: myrepo/yapt_dev_conf`
-  + `DevCfgTemplate: my_repo/yapt_dev_conf_template`
-  + `DevGrpCfg: my_repo/yapt_dev_grp_conf`
-  + `VnfBoostrapTemplate: my_repo/yapt_vnf_boostrap_template`
+  + DevCfg: `myrepo/yapt_dev_conf`
+  + DevCfgTemplate: `my_repo/yapt_dev_conf_template`
+  + DevGrpCfg: `my_repo/yapt_dev_grp_conf`
+  + VnfBoostrapTemplate: `my_repo/yapt_vnf_bootstrap_template`
 
 Filename schema in repository must be:
 
@@ -445,7 +444,7 @@ Git source plugin will connect to `Address`, `Port` and `Protocol` with credenti
     DevCfg: demo_ops/yapt_dev_conf
     DevCfgTemplate: demo_ops/yapt_dev_conf_template
     DevGrpCfg: demo_ops/yapt_dev_grp_conf
-    VnfBoostrapTemplate: demo_ops/yapt_vnf_boostrap_template
+    VnfBoostrapTemplate: demo_ops/yapt_vnf_bootstrap_template
 ```
 
 ### Section: BACKEND ###
