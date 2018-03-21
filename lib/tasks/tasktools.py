@@ -10,6 +10,7 @@ import select
 import socket
 import threading
 import jsonpickle
+import yaml
 
 from jnpr.junos.exception import *
 from paramiko.ssh_exception import SSHException
@@ -141,8 +142,8 @@ class Configuration:
             heading = "## Last changed: " + now + "\n"
             heading += "version " + version + ";"
             sample_device.deviceConfigData['heading'] = heading
-            template = self.get_device_config(lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_TEMPLATE,
-                                              sample_device=sample_device, grp_cfg=grp_cfg)
+            template = self.get_config(lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_TEMPLATE,
+                                       sample_device=sample_device, grp_cfg=grp_cfg)
             if template is not None:
                 config = template.render(sample_device.deviceConfigData)
                 sample_device.deviceConfiguration = config
@@ -160,8 +161,8 @@ class Configuration:
     def prepare_vnf_boostrap_config(self, serialnumber=None, grp_cfg=None, vnf_type=None):
 
         now = datetime.datetime.now().strftime('%Y-%m-%d-%H%M')
-        datavars = self.get_device_config(lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_DEVICE,
-                                          serialnumber=None, deviceOsshId=serialnumber)
+        datavars = self.get_config(lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE,
+                                   serialnumber=None, deviceOsshId=serialnumber)
 
         if datavars:
 
@@ -172,11 +173,11 @@ class Configuration:
 
             heading = "## Last changed: " + now + "\n"
             datavars['heading'] = heading
-            template = self.get_device_config(lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_TEMPLATE_BOOTSTRAP,
-                                              serialnumber=None,
-                                              deviceOsshId=serialnumber,
-                                              path=datavars['yapt']['bootstrap_template_dir'],
-                                              file=datavars['yapt']['bootstrap_template_file'])
+            template = self.get_config(lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_TEMPLATE_BOOTSTRAP,
+                                       serialnumber=None,
+                                       deviceOsshId=serialnumber,
+                                       path=datavars['yapt']['bootstrap_template_dir'],
+                                       file=datavars['yapt']['bootstrap_template_file'])
 
             if template:
                 config = template.render(datavars, deviceId=serialnumber)
@@ -191,9 +192,9 @@ class Configuration:
                                                   logmsg.CONF_DEV_CFG_DEV_DATA_ERROR))
             return None
 
-    def get_device_config(self, lookup_type=None, **kvargs):
+    def get_config(self, lookup_type=None, **kvargs):
         """
-        obtain specific config type from defined source
+        obtain specific config type <lookup_type> from configured source in <DeviceConfSrcPlugins>
         :param lookup_type: defines which data we looking for e.g. device_data / group_data / template
         :return:
         """
@@ -204,10 +205,16 @@ class Configuration:
             sample_device = kvargs.get('sample_device')
             sn = sample_device.deviceSerial
             osshid = sample_device.deviceOsshId
+            deviceGroup = sample_device.deviceGroup
 
         elif 'serialnumber' and 'deviceOsshId' in kvargs:
             sn = kvargs.get('serialnumber')
             osshid = kvargs.get('deviceOsshId')
+
+        elif 'deviceGroup' in kvargs:
+            deviceGroup = kvargs.get('deviceGroup')
+            sn = deviceGroup
+            osshid = None
 
         else:
             return None
@@ -219,7 +226,8 @@ class Configuration:
         if c.conf.SOURCE.DeviceConfOoba:
             self.logger.info(Tools.create_log_msg(logmsg.CONF_SOURCE_PLG, sn if sn else osshid,
                                                   'Checking config id mapping in asset database'))
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_ASSET_GET, payload=sn if sn else osshid,
+            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_ASSET_GET_BY_SERIAL,
+                                  payload=sn if sn else osshid,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
@@ -243,7 +251,7 @@ class Configuration:
                                   logmsg.CONF_SOURCE_PLG_LOADED.format(config_source_plugin))
                 source = source()
 
-                if lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_DEVICE:
+                if lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE:
                     isFile, datavars = source.get_config_data(serialnumber=sn, deviceOsshId=osshid)
                     self.logger.debug(logmsg.CONF_SOURCE_PLG, sn if sn else osshid,
                                       logmsg.CONF_SOURCE_PLG_EXEC.format(config_source_plugin))
@@ -265,7 +273,7 @@ class Configuration:
                     else:
                         continue
 
-                elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_DEVICE_FILE:
+                elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE_FILE:
 
                     isFile, filename = source.get_config_data_file(serialnumber=sn, deviceOsshId=osshid)
                     self.logger.debug(logmsg.CONF_SOURCE_PLG, sn if sn else osshid,
@@ -288,9 +296,9 @@ class Configuration:
                     else:
                         continue
 
-                elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_TEMPLATE:
+                elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GET_TEMPLATE:
 
-                    isFile, template = source.get_config_template(serialnumber=sn,
+                    isFile, template = source.get_config_template_data(serialnumber=sn,
                                                                   grp_cfg=kvargs.get('grp_cfg'))
                     self.logger.debug(logmsg.CONF_SOURCE_PLG, sn if sn else osshid,
                                       logmsg.CONF_SOURCE_PLG_EXEC.format(config_source_plugin))
@@ -300,7 +308,7 @@ class Configuration:
                     else:
                         continue
 
-                elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_TEMPLATE_FILE:
+                elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GET_TEMPLATE_FILE:
 
                     isFile, template = source.get_config_template_file(serialnumber=sn,
                                                                        grp_cfg=kvargs.get('grp_cfg'))
@@ -325,8 +333,8 @@ class Configuration:
                     else:
                         continue
 
-                elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GROUP:
-                    isFile, groupvars = source.get_group_data(serialnumber=sn, group=sample_device.deviceGroup)
+                elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GET_GROUP:
+                    isFile, groupvars = source.get_group_data(serialnumber=sn, group=deviceGroup)
                     self.logger.debug(logmsg.CONF_SOURCE_PLG, sn if sn else osshid,
                                       logmsg.CONF_SOURCE_PLG_EXEC.format(config_source_plugin))
 
@@ -349,8 +357,8 @@ class Configuration:
                     else:
                         continue
 
-                elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GROUP_FILE:
-                    isFile, filename = source.get_group_data_file(serialnumber=sn, group=sample_device.deviceGroup)
+                elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GET_GROUP_FILE:
+                    isFile, filename = source.get_group_data_file(serialnumber=sn, group=deviceGroup)
                     self.logger.debug(logmsg.CONF_SOURCE_PLG, sn if sn else osshid,
                                       logmsg.CONF_SOURCE_PLG_EXEC.format(config_source_plugin))
 
@@ -364,6 +372,146 @@ class Configuration:
         else:
             self.logger.info(logmsg.CONF_SOURCE_PLG, sn if sn else osshid, 'Config Source plugin sequence empty')
             return
+
+    def add_config(self, lookup_type=None, **kvargs):
+
+        if lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_ADD_TEMPLATE:
+
+            if 'templateName' and 'templateData' and 'groupName' and 'configSource' in kvargs:
+
+                templateName = kvargs.get('templateName')
+                templateData = kvargs.get('tempateData')
+                groupName = kvargs.get('groupName')
+                configSource = kvargs.get('configSource')
+
+                if templateName and templateData and groupName and configSource:
+
+                    source = Tools.load_dev_cfg_src_plugin(name=configSource)
+                    self.logger.debug(logmsg.CONF_SOURCE_PLG, groupName,
+                                      logmsg.CONF_SOURCE_PLG_FOUND.format(configSource))
+                    source = getattr(source, configSource.title())
+                    self.logger.debug(logmsg.CONF_SOURCE_PLG, groupName,
+                                      logmsg.CONF_SOURCE_PLG_LOADED.format(configSource))
+                    source = source()
+
+                    if source:
+
+                        isFile, datavars = source.add_config_template_data(templateName=templateName,
+                                                                           templateData=templateData,
+                                                                           group=groupName)
+                        self.logger.debug(logmsg.CONF_SOURCE_PLG, groupName,
+                                          logmsg.CONF_SOURCE_PLG_EXEC.format(configSource))
+
+                        return isFile, datavars
+                    else:
+                        self.logger.info(logmsg.CONF_SOURCE_PLG, groupName,
+                                         logmsg.CONF_SOURCE_PLG_NOK.format(configSource))
+
+        elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_ADD_GROUP:
+
+            if 'groupName' and 'groupData' and 'configSource' in kvargs:
+
+                groupName = kvargs.get('groupName')
+                groupData = kvargs.get('groupData')
+                configSource = kvargs.get('configSource')
+
+                if groupName and groupData and configSource:
+
+                    source = Tools.load_dev_cfg_src_plugin(name=configSource)
+                    self.logger.debug(logmsg.CONF_SOURCE_PLG, groupName,
+                                      logmsg.CONF_SOURCE_PLG_FOUND.format(configSource))
+                    source = getattr(source, configSource.title())
+                    self.logger.debug(logmsg.CONF_SOURCE_PLG, groupName,
+                                      logmsg.CONF_SOURCE_PLG_LOADED.format(configSource))
+                    source = source()
+
+                    if source:
+
+                        self.logger.info(
+                            Tools.create_log_msg(logmsg.CONF_VALIDATE, groupName,
+                                                 logmsg.CONF_VALIDATE_INIT.format('group')))
+                        resp, err = source.validate(source=yaml.safe_load(groupData), lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_ADD_GROUP)
+
+                        if resp:
+                            self.logger.info(Tools.create_log_msg(logmsg.CONF_VALIDATE, groupName,
+                                                                  logmsg.CONF_VALIDATE_OK.format('Group')))
+
+                            isFile, datavars = source.add_group_data(groupName=groupName,
+                                                                     groupData=groupData)
+                            self.logger.debug(logmsg.CONF_SOURCE_PLG, groupName,
+                                              logmsg.CONF_SOURCE_PLG_EXEC.format(configSource))
+
+                            return isFile, datavars
+
+                        else:
+                            self.logger.info(Tools.create_log_msg(logmsg.CONF_VALIDATE, groupName,
+                                                                  logmsg.CONF_VALIDATE_NOK.format(err)))
+                            return False, 'Validation of group file <{0}> failed with error <{1}>'.format(groupName, err)
+                    else:
+                        self.logger.info(logmsg.CONF_SOURCE_PLG, groupName,
+                                         logmsg.CONF_SOURCE_PLG_NOK.format(configSource))
+
+        else:
+            return False, 'Unknown lookup type'
+
+    def del_config(self, lookup_type=None, **kvargs):
+
+        if lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_DEL_GROUP:
+
+            groupName = kvargs.get('groupName')
+            configSource = kvargs.get('groupConfigSource')
+
+            if groupName and configSource:
+
+                source = Tools.load_dev_cfg_src_plugin(name=configSource)
+                self.logger.debug(logmsg.CONF_SOURCE_PLG, groupName,
+                                  logmsg.CONF_SOURCE_PLG_FOUND.format(configSource))
+                source = getattr(source, configSource.title())
+                self.logger.debug(logmsg.CONF_SOURCE_PLG, groupName,
+                                  logmsg.CONF_SOURCE_PLG_LOADED.format(configSource))
+                source = source()
+
+                if source:
+
+                    isFile, datavars = source.del_group_data(groupName=groupName, )
+                    self.logger.debug(logmsg.CONF_SOURCE_PLG, groupName,
+                                      logmsg.CONF_SOURCE_PLG_EXEC.format(configSource))
+
+                    return isFile, datavars
+
+                else:
+                    self.logger.info(logmsg.CONF_SOURCE_PLG, groupName,
+                                     logmsg.CONF_SOURCE_PLG_NOK.format(configSource))
+
+        elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_DEL_TEMPLATE:
+
+            templateName = kvargs.get('templateName')
+            templateDevGrp = kvargs.get('templateDevGrp')
+            configSource = kvargs.get('templateConfigSource')
+
+            if templateName and templateDevGrp and configSource:
+
+                source = Tools.load_dev_cfg_src_plugin(name=configSource)
+                self.logger.debug(logmsg.CONF_SOURCE_PLG, templateName,
+                                  logmsg.CONF_SOURCE_PLG_FOUND.format(configSource))
+                source = getattr(source, configSource.title())
+                self.logger.debug(logmsg.CONF_SOURCE_PLG, templateName,
+                                  logmsg.CONF_SOURCE_PLG_LOADED.format(configSource))
+                source = source()
+
+                if source:
+
+                    isFile, datavars = source.del_config_template_data(templateName=templateName, group=templateDevGrp)
+                    self.logger.debug(logmsg.CONF_SOURCE_PLG, templateName,
+                                      logmsg.CONF_SOURCE_PLG_EXEC.format(configSource))
+                    return isFile, datavars
+
+                else:
+                    self.logger.info(logmsg.CONF_SOURCE_PLG, templateName,
+                                     logmsg.CONF_SOURCE_PLG_NOK.format(configSource))
+
+        else:
+            return False, 'Unknown lookup type'
 
 
 class Software:

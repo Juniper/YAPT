@@ -276,6 +276,7 @@ class Web(object):
         yapt_server = Server()
         yapt_server.socket_host = self._host
         yapt_server.socket_port = int(self._port)
+        yapt_server.max_request_body_size = 838860800
         yapt_server.subscribe()
 
     @cherrypy.expose

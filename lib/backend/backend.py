@@ -42,7 +42,6 @@ class Backend(AMQPRpcServerAdapter):
                 message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
                                       source=c.AMQP_PROCESSOR_BACKEND)
                 encoded = jsonpickle.encode(message)
-
                 ch.basic_publish(exchange='', routing_key=props.reply_to,
                                  properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
                 ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -51,11 +50,9 @@ class Backend(AMQPRpcServerAdapter):
                             AMQPMessage) and c.AMQP_MESSAGE_TYPE_DEVICE_UPDATE == body_decoded.message_type:
 
                 response = self.update_device(body_decoded.payload)
-
                 message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
                                       source=c.AMQP_PROCESSOR_BACKEND)
                 encoded = jsonpickle.encode(message)
-
                 ch.basic_publish(exchange='', routing_key=props.reply_to,
                                  properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
                 ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -63,17 +60,39 @@ class Backend(AMQPRpcServerAdapter):
             elif isinstance(body_decoded,
                             AMQPMessage) and c.AMQP_MESSAGE_TYPE_DEVICE_UPDATE_TASK_STATE == body_decoded.message_type:
 
-                sample_device = body_decoded.payload['sample_device']
+                device_serial = body_decoded.payload['deviceSerial']
+                is_callback = body_decoded.payload['isCallback']
                 task_name = body_decoded.payload['taskName']
                 task_state = body_decoded.payload['taskState']
-                task_state_msg = body_decoded.payload['taskStateMsg']
 
-                response = self.update_device_task_state(sample_device=sample_device, task_name=task_name,
-                                                         task_state=task_state, task_state_msg=task_state_msg)
+                response = self.update_device_task_state(device_serial=device_serial, is_callback=is_callback,
+                                                         task_name=task_name,
+                                                         task_state=task_state)
                 message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
                                       source=c.AMQP_PROCESSOR_BACKEND)
                 encoded = jsonpickle.encode(message)
+                ch.basic_publish(exchange='', routing_key=props.reply_to,
+                                 properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
+                ch.basic_ack(delivery_tag=method.delivery_tag)
 
+            elif isinstance(body_decoded,
+                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_DEV_GET_BY_SN == body_decoded.message_type:
+
+                response = self.get_device(body_decoded.payload)
+                message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
+                                      source=c.AMQP_PROCESSOR_BACKEND)
+                encoded = jsonpickle.encode(message)
+                ch.basic_publish(exchange='', routing_key=props.reply_to,
+                                 properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+
+            elif isinstance(body_decoded,
+                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_DEV_GET_ALL == body_decoded.message_type:
+
+                response = self.get_devices()
+                message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
+                                      source=c.AMQP_PROCESSOR_BACKEND)
+                encoded = jsonpickle.encode(message)
                 ch.basic_publish(exchange='', routing_key=props.reply_to,
                                  properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
                 ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -84,14 +103,18 @@ class Backend(AMQPRpcServerAdapter):
                 response = self.add_site(siteId=body_decoded.payload['siteId'],
                                          siteName=body_decoded.payload['siteName'],
                                          siteDescr=body_decoded.payload['siteDescr'])
-
                 message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
                                       source=c.AMQP_PROCESSOR_BACKEND)
                 encoded = jsonpickle.encode(message)
-
                 ch.basic_publish(exchange='', routing_key=props.reply_to,
                                  properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
                 ch.basic_ack(delivery_tag=method.delivery_tag)
+
+            elif isinstance(body_decoded,
+                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_SITE_DEL == body_decoded.message_type:
+
+                response = self.del_site(siteId=body_decoded.payload['siteId'])
+                self.processRequest(ch=ch, method=method, props=props, response=response)
 
             elif isinstance(body_decoded,
                             AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_ASSET_ADD == body_decoded.message_type:
@@ -104,20 +127,29 @@ class Backend(AMQPRpcServerAdapter):
                 message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
                                       source=c.AMQP_PROCESSOR_BACKEND)
                 encoded = jsonpickle.encode(message)
-
                 ch.basic_publish(exchange='', routing_key=props.reply_to,
                                  properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
                 ch.basic_ack(delivery_tag=method.delivery_tag)
 
             elif isinstance(body_decoded,
-                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_ASSET_GET == body_decoded.message_type:
+                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_ASSET_GET_BY_SITE == body_decoded.message_type:
+
+                response = self.get_asset_by_site_id(assetSiteId=body_decoded.payload)
+                self.processRequest(ch=ch, method=method, props=props, response=response)
+                # message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
+                #                      source=c.AMQP_PROCESSOR_BACKEND)
+                # encoded = jsonpickle.encode(message)
+                # ch.basic_publish(exchange='', routing_key=props.reply_to,
+                #                 properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
+                # ch.basic_ack(delivery_tag=method.delivery_tag)
+
+            elif isinstance(body_decoded,
+                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_ASSET_GET_BY_SERIAL == body_decoded.message_type:
 
                 response = self.get_asset_by_serial(assetSerial=body_decoded.payload)
-
                 message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
                                       source=c.AMQP_PROCESSOR_BACKEND)
                 encoded = jsonpickle.encode(message)
-
                 ch.basic_publish(exchange='', routing_key=props.reply_to,
                                  properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
                 ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -125,13 +157,12 @@ class Backend(AMQPRpcServerAdapter):
             elif isinstance(body_decoded,
                             AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_ASSET_UPDATE == body_decoded.message_type:
 
-                response = self.update_asset_site_mapping(assetSerial=body_decoded.payload['assetSerial'],
+                response = self.update_asset_site_mapping(assetSiteId=body_decoded.payload['assetSiteId'],
+                                                          assetSerial=body_decoded.payload['assetSerial'],
                                                           assetConfigId=body_decoded.payload['assetConfigId'])
-
                 message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
                                       source=c.AMQP_PROCESSOR_BACKEND)
                 encoded = jsonpickle.encode(message)
-
                 ch.basic_publish(exchange='', routing_key=props.reply_to,
                                  properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
                 ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -140,11 +171,9 @@ class Backend(AMQPRpcServerAdapter):
                             AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_SITE_GET_BY_ID == body_decoded.message_type:
 
                 response = self.get_site_by_id(siteId=body_decoded.payload)
-
                 message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
                                       source=c.AMQP_PROCESSOR_BACKEND)
                 encoded = jsonpickle.encode(message)
-
                 ch.basic_publish(exchange='', routing_key=props.reply_to,
                                  properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
                 ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -153,11 +182,9 @@ class Backend(AMQPRpcServerAdapter):
                             AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_SITE_GET_ALL == body_decoded.message_type:
 
                 response = self.get_sites()
-
                 message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
                                       source=c.AMQP_PROCESSOR_BACKEND)
                 encoded = jsonpickle.encode(message)
-
                 ch.basic_publish(exchange='', routing_key=props.reply_to,
                                  properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
                 ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -167,12 +194,11 @@ class Backend(AMQPRpcServerAdapter):
 
                 response = self.add_group(groupName=body_decoded.payload['groupName'],
                                           groupConfig=body_decoded.payload['groupConfig'],
-                                          groupDescr=body_decoded.payload['groupDescr'])
-
+                                          groupDescr=body_decoded.payload['groupDescr'],
+                                          groupConfigSource=body_decoded.payload['groupConfigSource'])
                 message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
                                       source=c.AMQP_PROCESSOR_BACKEND)
                 encoded = jsonpickle.encode(message)
-
                 ch.basic_publish(exchange='', routing_key=props.reply_to,
                                  properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
                 ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -181,11 +207,9 @@ class Backend(AMQPRpcServerAdapter):
                             AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_GROUP_GET_BY_NAME == body_decoded.message_type:
 
                 response = self.get_group_by_name(groupName=body_decoded.payload)
-
                 message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
                                       source=c.AMQP_PROCESSOR_BACKEND)
                 encoded = jsonpickle.encode(message)
-
                 ch.basic_publish(exchange='', routing_key=props.reply_to,
                                  properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
                 ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -194,46 +218,154 @@ class Backend(AMQPRpcServerAdapter):
                             AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_GROUP_GET_ALL == body_decoded.message_type:
 
                 response = self.get_groups()
-
                 message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
                                       source=c.AMQP_PROCESSOR_BACKEND)
                 encoded = jsonpickle.encode(message)
-
                 ch.basic_publish(exchange='', routing_key=props.reply_to,
                                  properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
                 ch.basic_ack(delivery_tag=method.delivery_tag)
 
             elif isinstance(body_decoded,
-                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_DEV_GET_BY_SN == body_decoded.message_type:
+                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_GROUP_DEL == body_decoded.message_type:
 
-                response = self.get_device(body_decoded.payload)
-
+                response = self.del_group_by_name(groupName=body_decoded.payload)
                 message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
                                       source=c.AMQP_PROCESSOR_BACKEND)
                 encoded = jsonpickle.encode(message)
-
                 ch.basic_publish(exchange='', routing_key=props.reply_to,
                                  properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
                 ch.basic_ack(delivery_tag=method.delivery_tag)
 
             elif isinstance(body_decoded,
-                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_DEV_GET_ALL == body_decoded.message_type:
+                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_TEMPLATE_ADD == body_decoded.message_type:
 
-                response = self.get_devices()
-
+                response = self.add_template(templateName=body_decoded.payload['templateName'],
+                                             templateConfig=body_decoded.payload['templateConfig'],
+                                             templateDescr=body_decoded.payload['templateDescr'],
+                                             templateConfigSource=body_decoded.payload['templateConfigSource'],
+                                             templateDevGrp=body_decoded.payload['templateDevGrp'])
                 message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
                                       source=c.AMQP_PROCESSOR_BACKEND)
                 encoded = jsonpickle.encode(message)
-
                 ch.basic_publish(exchange='', routing_key=props.reply_to,
                                  properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
                 ch.basic_ack(delivery_tag=method.delivery_tag)
+
+            elif isinstance(body_decoded,
+                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_TEMPLATE_GET_BY_NAME == body_decoded.message_type:
+
+                response = self.get_template_by_name(templateName=body_decoded.payload)
+                message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
+                                      source=c.AMQP_PROCESSOR_BACKEND)
+                encoded = jsonpickle.encode(message)
+                ch.basic_publish(exchange='', routing_key=props.reply_to,
+                                 properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+
+            elif isinstance(body_decoded,
+                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_TEMPLATE_GET_ALL == body_decoded.message_type:
+
+                response = self.get_templates()
+                message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
+                                      source=c.AMQP_PROCESSOR_BACKEND)
+                encoded = jsonpickle.encode(message)
+                ch.basic_publish(exchange='', routing_key=props.reply_to,
+                                 properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+
+            elif isinstance(body_decoded,
+                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_TEMPLATE_DEL == body_decoded.message_type:
+
+                response = self.del_template_by_name(templateName=body_decoded.payload)
+                message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
+                                      source=c.AMQP_PROCESSOR_BACKEND)
+                encoded = jsonpickle.encode(message)
+                ch.basic_publish(exchange='', routing_key=props.reply_to,
+                                 properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+
+            elif isinstance(body_decoded,
+                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_IMAGE_ADD == body_decoded.message_type:
+
+                response = self.add_image(imageName=body_decoded.payload['imageName'],
+                                          imageDescr=body_decoded.payload['imageDescr'])
+                message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
+                                      source=c.AMQP_PROCESSOR_BACKEND)
+                encoded = jsonpickle.encode(message)
+                ch.basic_publish(exchange='', routing_key=props.reply_to,
+                                 properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+
+            elif isinstance(body_decoded,
+                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_IMAGE_GET_BY_NAME == body_decoded.message_type:
+
+                response = self.get_image_by_name(imageName=body_decoded.payload)
+                message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
+                                      source=c.AMQP_PROCESSOR_BACKEND)
+                encoded = jsonpickle.encode(message)
+                ch.basic_publish(exchange='', routing_key=props.reply_to,
+                                 properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+
+            elif isinstance(body_decoded,
+                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_IMAGE_GET_ALL == body_decoded.message_type:
+
+                response = self.get_images()
+                message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
+                                      source=c.AMQP_PROCESSOR_BACKEND)
+                encoded = jsonpickle.encode(message)
+                ch.basic_publish(exchange='', routing_key=props.reply_to,
+                                 properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+
+            elif isinstance(body_decoded,
+                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_IMAGE_DEL == body_decoded.message_type:
+
+                response = self.del_image_by_name(imageName=body_decoded.payload['imageName'])
+                message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
+                                      source=c.AMQP_PROCESSOR_BACKEND)
+                encoded = jsonpickle.encode(message)
+                ch.basic_publish(exchange='', routing_key=props.reply_to,
+                                 properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+
+            elif isinstance(body_decoded,
+                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_SERVICE_GET_BY_NAME == body_decoded.message_type:
+
+                response = self.get_service_by_name(serviceName=body_decoded.payload)
+                message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
+                                      source=c.AMQP_PROCESSOR_BACKEND)
+                encoded = jsonpickle.encode(message)
+                ch.basic_publish(exchange='', routing_key=props.reply_to,
+                                 properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+
+            elif isinstance(body_decoded,
+                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_SERVICE_GET_ALL == body_decoded.message_type:
+
+                response = self.get_services()
+                self.processRequest(ch=ch, method=method, props=props, response=response)
+                # message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
+                #                      source=c.AMQP_PROCESSOR_BACKEND)
+                # encoded = jsonpickle.encode(message)
+                # ch.basic_publish(exchange='', routing_key=props.reply_to,
+                #                 properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
+                # ch.basic_ack(delivery_tag=method.delivery_tag)
 
             else:
                 Tools.amqp_receive_error_to_logger(routing_key=method.routing_key, body_decoded=body_decoded)
 
         else:
             self._logger.info('YAPTBACKEND: Recevied empty message')
+
+    def processRequest(self, ch=None, method=None, props=None, response=None):
+
+        message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
+                              source=c.AMQP_PROCESSOR_BACKEND)
+        encoded = jsonpickle.encode(message)
+        ch.basic_publish(exchange='', routing_key=props.reply_to,
+                         properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
+        ch.basic_ack(delivery_tag=method.delivery_tag)
 
     @abc.abstractmethod
     def add_device(self, new_device):
@@ -244,7 +376,7 @@ class Backend(AMQPRpcServerAdapter):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def update_device_task_state(self, sample_device, task_name, task_state, task_state_msg):
+    def update_device_task_state(self, device_serial, is_callback, task_name, task_state):
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -260,6 +392,10 @@ class Backend(AMQPRpcServerAdapter):
         raise NotImplementedError()
 
     @abc.abstractmethod
+    def del_site(self, siteId):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
     def get_site_by_id(self, siteId):
         raise NotImplementedError()
 
@@ -272,15 +408,23 @@ class Backend(AMQPRpcServerAdapter):
         raise NotImplementedError()
 
     @abc.abstractmethod
+    def get_asset_by_site_id(self, assetSiteId):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
     def get_asset_by_serial(self, assetSerial):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def update_asset_site_mapping(self, assetSerial, assetConfigId):
+    def update_asset_site_mapping(self, assetSiteId, assetSerial, assetConfigId):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def add_group(self, groupName, groupConfig, groupDescr):
+    def add_group(self, groupName, groupConfig, groupDescr, groupConfigSource):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def del_group_by_name(self, groupName):
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -289,4 +433,44 @@ class Backend(AMQPRpcServerAdapter):
 
     @abc.abstractmethod
     def get_groups(self):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def add_template(self, templateName, templateConfig, templateDescr, tempalteConfigSource, templateDevGrp):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def del_template_by_name(self, templateName):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def get_template_by_name(self, templateName):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def get_templates(self):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def add_image(self, imageName, imageDescr):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def del_image_by_name(self, imageName):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def get_image_by_name(self, imageName):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def get_images(self):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def get_service_by_name(self, serviceName):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def get_services(self):
         raise NotImplementedError()

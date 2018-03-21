@@ -296,6 +296,9 @@ class LogLocal(object):
     LOCAL_GRP_CFG_FILE_OK = 'Found group config file <{0}>'
     LOCAL_GRP_CFG_FILE_NOK = 'Error in opening group config file <{0}>'
     LOCAL_GRP_CFG_FILE_MISS = 'Missing group config file <{0}>'
+    LOCAL_GRP_CFG_FILE_ADD_OK = 'Successfully added group <{0}>'
+    LOCAL_GRP_CFG_FILE_DEL_OK = 'Successfully deleted group <{0}>'
+
 
 class LogGit(object):
     GIT_DEV_CFG_OK = 'Found device config file <{0}>'
@@ -338,7 +341,7 @@ class LogTaskTools(object):
     CONF_SOURCE_PLG_FOUND = 'Found enabled config source plugin <{0}>'
     CONF_SOURCE_PLG_LOADED = 'Loaded enabled config source plugin <{0}>'
     CONF_SOURCE_PLG_EXEC = 'Executed enabled config source plugin <{0}>'
-    CONF_SOURCE_PLG_NOK = ''
+    CONF_SOURCE_PLG_NOK = 'Failed loading source plugin <{0}>'
     CONF_VALIDATE = 'CONFVALIDATE'
     CONF_VALIDATE_INIT = 'Validating <{0}> configuration'
     CONF_VALIDATE_OK = '<{0}> configuration validation successful'

@@ -129,8 +129,8 @@ class SampleDevice(object):
     @property
     def deviceTasks(self):
         """
-        :returns: the provisioning tasks and their status messages
-        (Software/Filecp/Configuration/Cert/Discovery/Policy/Assign/Rules/Publish)
+        :returns: the provisioning tasks and their status and status messages
+        (Software/Filecp/Ipam/Configuration/Cert/Discovery/Policy/Assign/Rules/Publish)
         """
         return self.__deviceTasks
 
@@ -193,21 +193,6 @@ class SampleDevice(object):
     @deviceStatus.setter
     def deviceStatus(self, value):
         self.__deviceStatus = value
-
-    # ------------------------------------------------------------------------
-    # property: deviceProvisionProgress
-    # ------------------------------------------------------------------------
-
-    @property
-    def is_callback(self):
-        """
-        :returns: device provision task progress
-        """
-        return self.__is_callback
-
-    @is_callback.setter
-    def is_callback(self, value):
-        self.__is_callback = value
 
     # ------------------------------------------------------------------------
     # property: deviceGroup
@@ -388,15 +373,13 @@ class SampleDevice(object):
         self.__deviceSourcePlugin = deviceSourcePlugin
         self.__deviceTaskSeq = None
         self.__deviceTasks = TaskState()
-        self.__is_callback = True
         self.__device_task_seq = dict()
-        # We need back ref to sampleDevice in TasksState. Should be a better way doing this.
-        self.__device_task_seq['sampleDevice'] = self
-        self.__deviceTasks.taskState = self.__device_task_seq
+        self.__deviceTasks.taskState = dict()
+        self.__deviceTasks.deviceSerial = None
+        self.__deviceTasks.is_callback = True
 
     def device_to_json(self, action=None):
-        deviceTasksStates = [i for i in self.deviceTasks.taskState.items() if
-                             i[0] != 'sampleDevice']
+        deviceTasksStates = [i for i in self.deviceTasks.taskState.items()]
         deviceTasksStates = sorted(deviceTasksStates,
                                    key=lambda t: self.deviceTaskSeq.index(t[0]))
 
@@ -428,7 +411,6 @@ class TaskStateObserver(object):
             'callback': callback,
         })
 
-        self._sample_device = None
         self._value = None
         self._instance_to_name_mapping = {}
         self._instance = None
@@ -466,16 +448,13 @@ class TaskStateObserver(object):
         attr_name = self._get_attr_name(instance)
         attr_value = instance.__dict__.get(attr_name, self.item)
         observer = self.__class__(**self.kwargs)
-        # Todo: Change _value to only have tasks?
         observer._value = attr_value
         observer._instance = instance
-        observer._sample_device = attr_value['sampleDevice']
         return observer
 
     def __set__(self, instance, value):
         attr_name = self._get_attr_name(instance)
         instance.__dict__[attr_name] = value
-        self._sample_device = value['sampleDevice']
         self._value = value
         self._instance = instance
 
@@ -492,8 +471,14 @@ class TaskStateObserver(object):
     def __setitem__(self, key, value):
 
         self._value[key] = value
-        if self._sample_device.is_callback:
+        obj = getattr(self._instance, 'is_callback', 'none')
+
+        if obj:
             self.update_backend(key)
+        elif obj == 'none':
+            print 'SampleDevice: Error in retrieving object <is_callback>'
+        else:
+            pass
 
     def update_backend(self, key):
 
@@ -504,7 +489,7 @@ class TaskStateObserver(object):
             self._parent_observer.update_backend(key)
         else:
             if self.callback:
-                self.callback(self, self._instance, self._sample_device, key, self._value[key])
+                self.callback(self, self._instance, key)
 
     def __getattr__(self, item):
         """Mock behaviour of data attach to `Observer`. If certain behaviour mutate attached data, additional
@@ -525,25 +510,21 @@ class TaskStateObserver(object):
         return attr
 
 
-def action(self, instance, sample_device, task_name, task_state):
+def action(self, instance, task_name):
     from lib.processor import BackendClientProcessor
     backendp = BackendClientProcessor(exchange='', routing_key=c.AMQP_RPC_BACKEND_QUEUE)
-    dev_conn = sample_device.deviceConnection
-    sample_device.deviceConnection = hex(id(sample_device.deviceConnection))
 
     if isinstance(instance, TaskState):
 
         message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_DEVICE_UPDATE_TASK_STATE,
-                              payload={'sample_device': sample_device, 'taskName': task_name,
-                                       'taskState': task_state['taskState'],
-                                       'taskStateMsg': task_state['taskStateMsg']},
+                              payload={'deviceSerial': getattr(instance, 'deviceSerial', 'none'),
+                                       'isCallback': getattr(instance, 'is_callback', 'none'), 'taskName': task_name,
+                                       'taskState': instance.taskState[task_name]},
                               source=task_name)
         backendp.call(message=message)
 
     else:
         self._logger.info('Unknown task type %s. Can\'t update backend', instance)
-
-    sample_device.deviceConnection = dev_conn
 
 
 class TaskState(object):

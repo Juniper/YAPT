@@ -53,6 +53,7 @@ class TailfSvc(threading.Thread):
 
             where = fin.tell()
             line = fin.readline()
+
             if not line:
                 time.sleep(LogViewer.SLEEP_INTERVAL)
                 fin.seek(where)

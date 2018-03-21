@@ -30,7 +30,7 @@ class Task(object):
         self.task_name = self.__class__.__name__.split('Task')[0]
         self.sample_device = sample_device
         self.shared = shared
-        self.grp_cfg = Tools.create_config_view('group', stream=sample_device.deviceGroupData)
+        self.grp_cfg = Tools.create_config_view(c.CONFIG_TYPE_GROUP, stream=sample_device.deviceGroupData)
         self.task_type = self.__class__.TASK_TYPE
         self.check_schema = self.__class__.CHECK_SCHEMA
         self.task_version = self.__class__.TASK_VERSION

@@ -189,8 +189,8 @@ class PhoneHomeServer(object):
         self.serialnumber = params['uid']
         from lib.tasks.tasktools import Configuration
         _configurator = Configuration()
-        datavars = _configurator.get_device_config(
-            serialnumber=self.serialnumber, deviceOsshId=None, lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_DEVICE)
+        datavars = _configurator.get_config(
+            serialnumber=self.serialnumber, deviceOsshId=None, lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE)
 
         if datavars:
 

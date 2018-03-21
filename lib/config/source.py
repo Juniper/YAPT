@@ -20,7 +20,15 @@ class DeviceConfigSource(object):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def get_config_template(self, serialnumber, grp_cfg):
+    def get_config_template_data(self, serialnumber, grp_cfg):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def add_config_template_data(self, templateName, templateData, group):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def del_config_template_data(self, templateName, group):
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -43,12 +51,20 @@ class DeviceConfigSource(object):
     def get_group_data(self, serialnumber, group):
         raise NotImplementedError()
 
+    @abc.abstractmethod
+    def add_group_data(self, groupName, groupData):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def del_group_data(self, groupName):
+        raise NotImplementedError()
+
     def validate(self, source=None, lookup_type=None):
 
-        if lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_DEVICE:
+        if lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE:
 
             if 'device_type' in source['yapt']:
-                with open('conf/schema/device/' + source['yapt']['device_type'].lower() + '.yml', 'r') as stream:
+                with open('conf/schema/device/' + source['yapt']['device_type'].lower() + c.CONFIG_FILE_SUFFIX_DEVICE, 'r') as stream:
                     schema = yaml.safe_load(stream)
 
                 v = Validator()
@@ -58,14 +74,14 @@ class DeviceConfigSource(object):
                 Tools.create_log_msg(self.name, None, logmsg.SOURCE_DEV_TYPE_NOK.format(hex(id(source))))
                 return False, None
 
-        elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_DEVICE_FILE:
+        elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE_FILE:
 
             with open(source, 'r') as stream:
                 doc = yaml.safe_load(stream)
 
             if 'device_type' in doc['yapt']:
 
-                with open('conf/schema/device/' + doc['yapt']['device_type'].lower() + '.yml', 'r') as stream:
+                with open('conf/schema/device/' + doc['yapt']['device_type'].lower() + c.CONFIG_FILE_SUFFIX_DEVICE, 'r') as stream:
                     schema = yaml.safe_load(stream)
 
                 v = Validator()
@@ -76,7 +92,7 @@ class DeviceConfigSource(object):
                 Tools.create_log_msg(self.name, None, logmsg.SOURCE_DEV_TYPE_NOK.format(hex(id(source))))
                 return False, None
 
-        elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GROUP:
+        elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GET_GROUP or c.CONFIG_SOURCE_LOOKUP_TYPE_GET_GROUP:
 
             with open('conf/schema/group/group.yml', 'r') as stream:
                 schema = yaml.safe_load(stream)

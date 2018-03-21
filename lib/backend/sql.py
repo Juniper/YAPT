@@ -34,6 +34,7 @@ database = SqliteDatabase(c.conf.BACKEND.Sqlite.DbPath + c.conf.BACKEND.Sqlite.D
 
 
 class Sql(Backend):
+
     def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, verbose=None):
         super(Sql, self).__init__(group, target, name, args, kwargs, verbose)
         self._logger.debug(
@@ -50,10 +51,10 @@ class Sql(Backend):
 
     @classmethod
     def create_tables(cls, dbname=None, fields=None, refName=None):
-
         dynTable = taskFactory(dbName=dbname, fields=fields, refName=refName)
+        tables = [Device, dynTable, Site, Asset, Group, Template, Image, Service]
         database.connect()
-        database.create_tables([Device, dynTable, Site, Asset, Group], safe=True)
+        database.create_tables(tables, safe=True)
         database.close()
 
         return dynTable
@@ -100,8 +101,8 @@ class Sql(Backend):
             device.deviceTaskProgress = 0.0
             device.save()
 
-            if new_device.is_callback:
-                new_device.is_callback = False
+            new_device.deviceTasks.deviceSerial = new_device.deviceSerial
+            new_device.deviceTasks.is_callback = False
 
             for item in device.deviceTaskSeq:
                 new_device.deviceTasks.taskState[item] = {'taskState': c.TASK_STATE_WAIT,
@@ -111,7 +112,7 @@ class Sql(Backend):
                     where(self.DeviceTasks.owner == new_device.deviceSerial)
                 query.execute()
 
-            new_device.is_callback = True
+            new_device.deviceTasks.is_callback = True
             database.close()
 
             message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_UI_UPDATE_AND_RESET, payload=new_device,
@@ -160,31 +161,18 @@ class Sql(Backend):
 
         return sample_device
 
-    def update_device_task_state(self, sample_device, task_name, task_state, task_state_msg):
+    def update_device_task_state(self, device_serial, is_callback, task_name, task_state):
 
-        if sample_device.is_callback:
-            sample_device.is_callback = False
-
-        key = {task_name: task_state_msg}
+        key = {task_name: task_state['taskStateMsg']}
         query = self.DeviceTasks.update(**key). \
-            where(self.DeviceTasks.owner == sample_device.deviceSerial)
-        query.execute()
-
-        query = Device.update(deviceStatus=sample_device.deviceStatus,
-                              deviceTaskProgress=sample_device.deviceTaskProgress, ). \
-            where(Device.deviceSerial == sample_device.deviceSerial)
-
+            where(self.DeviceTasks.owner == device_serial)
         query.execute()
         database.close()
-
-        sample_device.is_callback = True
         message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_DEVICE_UPDATE_TASK_STATE,
-                              payload=[sample_device, task_name],
+                              payload=[device_serial, task_name, task_state],
                               source=c.AMQP_PROCESSOR_BACKEND)
 
         self.amqpCl.send_message(message=message)
-
-        return sample_device
 
     def get_device(self, serial_number):
 
@@ -217,14 +205,14 @@ class Sql(Backend):
             sample_devices[device.deviceSerial]['data'] = sample_device
 
             task = self.DeviceTasks.get(device.deviceSerial == self.DeviceTasks.owner)
+            sample_device.deviceTasks.deviceSerial = sample_device.deviceSerial
 
-            if sample_device.is_callback:
-                sample_device.is_callback = False
+            sample_device.deviceTasks.is_callback = False
 
             for item in sample_device.deviceTaskSeq:
                 sample_device.deviceTasks.taskState[item] = task._data[item]
 
-            sample_device.is_callback = True
+            sample_device.deviceTasks.is_callback = True
 
         database.close()
 
@@ -233,14 +221,24 @@ class Sql(Backend):
     def add_site(self, siteId=None, siteName=None, siteDescr=None):
 
         try:
-            new_site = Site.create(siteId=siteId, siteName=siteName, siteDescr=siteDescr)
-            new_site.save()
+            Site.create(siteId=siteId, siteName=siteName, siteDescr=siteDescr)
             database.close()
-            return True
+            return True, "Successfully added site <{0}>".format(siteId)
 
         except IntegrityError as ie:
             self._logger.info('YAPTBACKEND-[%s]: %s', siteId, ie)
-            return False
+            return False, ie.message
+
+    def del_site(self, siteId=None):
+
+        try:
+
+            site = Site.get(Site.siteId == siteId)
+            site.delete_instance(recursive=True)
+            return True, "Successfully deleted site <{0}>".format(siteId)
+
+        except DoesNotExist as dne:
+            return False, dne.message
 
     def add_asset_to_site(self, assetSiteId=None, assetSerial=None, assetConfigId=None, assetDescr=None):
 
@@ -249,11 +247,11 @@ class Sql(Backend):
             Asset.create(assetSiteId=assetSiteId, assetSerial=assetSerial, assetConfigId=assetConfigId,
                          assetDescr=assetDescr)
             database.close()
-            return True
+            return True, "Successfully assigned asset <{0}> to site <{1}>".format(assetConfigId, assetSiteId)
 
         except IntegrityError as ie:
             self._logger.info('YAPTBACKEND-[%s]: %s', assetConfigId, ie)
-            return False
+            return False, ie.message
 
     def get_site_by_id(self, siteId=None):
         siteData = dict()
@@ -272,10 +270,10 @@ class Sql(Backend):
 
                 siteData['assets'] = assets
 
-            return siteData
+            return True, siteData
 
-        except DoesNotExist:
-            return False
+        except DoesNotExist as dne:
+            return False, dne.message
 
     def get_sites(self):
         sites = list()
@@ -296,21 +294,38 @@ class Sql(Backend):
                 siteData['assets'] = assets
                 sites.append(siteData)
 
-            return sites
+            return True, sites
 
-        except DoesNotExist:
-            return False
+        except DoesNotExist as dne:
+            return False, dne.message
+
+    def get_asset_by_site_id(self, assetSiteId=None):
+        assets = list()
+
+        try:
+            data = Asset.select().where(Asset.assetSiteId == assetSiteId)
+
+            for asset in data:
+                assetData = {'assetId': asset.assetId, 'assetSiteId': asset.assetSiteId.siteId,
+                             'assetSerial': asset.assetSerial, 'assetConfigId': asset.assetConfigId,
+                             'assetDescr': asset.assetDescr}
+                assets.append(assetData)
+
+            return True, assets
+
+        except DoesNotExist as dne:
+            return False, dne.message
 
     def get_asset_by_serial(self, assetSerial=None):
 
         try:
             data = Asset.get(Asset.assetSerial == assetSerial).assetConfigId
-            return data
+            return True, data
 
-        except DoesNotExist:
-            return False
+        except DoesNotExist as dne:
+            return False, dne.message
 
-    def update_asset_site_mapping(self, assetSerial=None, assetConfigId=None):
+    def update_asset_site_mapping(self, assetSiteId=None, assetSerial=None, assetConfigId=None):
 
         query = Asset.update(assetSerial=assetSerial).where(Asset.assetConfigId == assetConfigId)
         query.execute()
@@ -318,21 +333,38 @@ class Sql(Backend):
 
         return True
 
-    def add_group(self, groupName, groupConfig, groupDescr):
+    def add_group(self, groupName=None, groupConfig=None, groupDescr=None, groupConfigSource=None):
+
+        try:
+            Group.create(groupName=groupName, groupDescr=groupDescr, groupConfigSource=groupConfigSource)
+            database.close()
+            return True, "Successfully added new group <{0}>".format(groupName)
+
+        except IntegrityError as ie:
+            self._logger.info('YAPTBACKEND-[%s]: %s', groupName, ie.message)
+            return False, "Failed to add new group <{0}> with error <{1}>".format(groupName, ie.message)
+
+    def del_group_by_name(self, groupName=None):
 
         try:
 
-            new_group = Group.create(groupName=groupName, groupDescr=groupDescr)
-            new_group.save()
-            database.close()
-            return True
+            group = Group.get(Group.groupName == groupName)
+            group.delete_instance()
+            return True, "Successfully deleted group <{0}>".format(groupName)
 
-        except IntegrityError as ie:
-            self._logger.info('YAPTBACKEND-[%s]: %s', groupName, ie)
-            return False
+        except DoesNotExist as dne:
+            return False, dne.message
 
-    def get_group_by_name(self, groupName):
-        pass
+    def get_group_by_name(self, groupName=None):
+
+        try:
+            group = Group.get(Group.groupName == groupName)
+
+            return True, {'groupId': group.groupId, 'groupName': group.groupName, 'groupDescr': group.groupDescr,
+                          'groupConfigSource': group.groupConfigSource}
+
+        except DoesNotExist as dne:
+            return False, dne.message
 
     def get_groups(self):
 
@@ -345,10 +377,131 @@ class Sql(Backend):
                 groupData = {'groupId': group.groupId, 'groupName': group.groupName, 'groupDescr': group.groupDescr}
                 groups.append(groupData)
 
-            return groups
+            return True, groups
 
-        except DoesNotExist:
-            return False
+        except DoesNotExist as dne:
+            return False, dne.message
+
+    def add_template(self, templateName=None, templateConfig=None, templateDescr=None, templateConfigSource=None,
+                     templateDevGrp=None):
+
+        try:
+            Template.create(templateName=templateName, templateDescr=templateDescr,
+                            templateConfigSource=templateConfigSource, templateDevGrp=templateDevGrp)
+            database.close()
+            return True, "Successfully added new template <{0}>".format(templateName)
+
+        except IntegrityError as ie:
+            self._logger.info('YAPTBACKEND-[%s]: %s', templateName, ie.message)
+            return False, "Failed to add new template <{0}> with error <{1}>".format(templateName, ie.message)
+
+    def del_template_by_name(self, templateName=None):
+
+        try:
+
+            template = Template.get(Template.templateName == templateName)
+            template.delete_instance()
+            return True, "Successfully deleted template <{0}>".format(templateName)
+
+        except DoesNotExist as dne:
+            return False, dne.message
+
+    def get_template_by_name(self, templateName=None):
+
+        try:
+            template = Template.get(Template.templateName == templateName)
+            return True, {'templateId': template.templateId, 'templateName': template.templateName,
+                          'templateDescr': template.templateDescr,
+                          'templateDevGrp': template.templateDevGrp,
+                          'templateConfigSource': template.templateConfigSource}
+
+        except DoesNotExist as dne:
+            return False, dne.message
+
+    def get_templates(self):
+
+        templates = list()
+
+        try:
+            query = prefetch(Template.select())
+
+            for template in query:
+                templateData = {'templateId': template.templateId, 'templateName': template.templateName,
+                                'templateDescr': template.templateDescr}
+                templates.append(templateData)
+
+            return True, templates
+
+        except DoesNotExist as dne:
+            return False, dne.message
+
+    def add_image(self, imageName=None, imageDescr=None):
+
+        try:
+            Image.create(imageName=imageName, imageDescr=imageDescr)
+            database.close()
+            return True, "Successfully added new image <{0}>".format(imageName)
+
+        except IntegrityError as ie:
+            self._logger.info('YAPTBACKEND-[%s]: %s', imageName, ie.message)
+            return False, "Failed to add new image <{0}> with error <{1}>".format(imageName, ie.message)
+
+    def del_image_by_name(self, imageName=None):
+
+        try:
+
+            image = Image.get(Image.imageName == imageName)
+            image.delete_instance()
+            return True, "Successfully deleted image <{0}>".format(imageName)
+
+        except DoesNotExist as dne:
+            return False, dne.message
+
+    def get_image_by_name(self, imageName=None):
+
+        try:
+            image = Image.get(Image.imageName == imageName)
+            return True, image
+
+        except DoesNotExist as dne:
+            return False, dne.message
+
+    def get_images(self):
+
+        images = list()
+
+        try:
+            query = prefetch(Image.select())
+
+            for image in query:
+                imageData = {'imageId': image.imageId, 'imageName': image.imageName,
+                             'imageDescr': image.imageDescr}
+                images.append(imageData)
+
+            return True, images
+
+        except DoesNotExist as dne:
+            return False, dne.message
+
+    def get_service_by_name(self, serviceName=None):
+        pass
+
+    def get_services(self):
+
+        services = list()
+
+        try:
+            query = prefetch(Service.select())
+
+            for service in query:
+                serviceData = {'serviceName': service.serviceName, 'serviceDescr': service.serviceDescr,
+                               'serviceStatus': service.serviceStatus}
+                services.append(serviceData)
+
+            return True, services
+
+        except DoesNotExist as dne:
+            return False, dne.message
 
 
 class DeviceTaskSeqField(Field):
@@ -393,23 +546,46 @@ class Device(BaseModel):
 
 class Site(BaseModel):
     siteId = CharField(unique=True, primary_key=True)
-    siteName = CharField(default='')
+    siteName = CharField(unique=True, null=False)
     siteDescr = CharField(default='')
 
 
 class Asset(BaseModel):
     assetId = IntegerField(unique=True, primary_key=True)
     assetSiteId = ForeignKeyField(Site, related_name='refSite')
-    # assetSerial should be unique. How to initialize unique key with empty value?
+    # assetSerial should be unique. How to initialize unique key with empty value? Does this make sense Unique key empty value?
     assetSerial = CharField(null=True)
-    assetConfigId = CharField(unique=True, default='')
+    assetConfigId = CharField(unique=True, null=False)
     assetDescr = CharField(default='')
 
 
 class Group(BaseModel):
     groupId = IntegerField(unique=True, primary_key=True)
-    groupName = CharField(unique=True, default='')
-    groupDescr = CharField(default='')
+    groupName = CharField(unique=True, null=False)
+    groupDescr = CharField(default='New group')
+    groupConfigSource = CharField(default='local')
+
+
+# Template should be part of group?
+class Template(BaseModel):
+    templateId = IntegerField(unique=True, primary_key=True)
+    templateName = CharField(unique=True, null=False)
+    templateDescr = CharField(default='New template')
+    templateDevGrp = CharField(default='mygroup')
+    templateConfigSource = CharField(default='local')
+
+
+class Image(BaseModel):
+    imageId = IntegerField(unique=True, primary_key=True)
+    imageName = CharField(unique=True, null=False)
+    imageDescr = CharField(default='New image')
+
+
+class Service(BaseModel):
+    serviceId = IntegerField(unique=True, primary_key=True)
+    serviceName = CharField(unique=True, null=False)
+    serviceDescr = CharField(default='New service')
+    serviceStatus = CharField(default='stopped')
 
 
 def taskFactory(dbName=None, fields=None, refName=None):

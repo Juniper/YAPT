@@ -24,6 +24,10 @@ class Internal(Backend):
         self._logger.info(Tools.create_log_msg(logmsg.INTBACKEND, None, logmsg.INTBACKEND_STARTED))
         self.sample_devices = dict()
         self.sample_devices_lock = threading.Lock()
+        self.sites = dict()
+        self.sites_lock = threading.Lock()
+        self.groups = dict()
+        self.groups_lock = threading.Lock()
 
     def add_device(self, new_device):
 
@@ -35,6 +39,17 @@ class Internal(Backend):
             try:
                 self.sample_devices[new_device.deviceSerial] = dict()
                 self.sample_devices[new_device.deviceSerial]['data'] = new_device
+
+                if c.DEVICE_STATUS_NEW == self.sample_devices[new_device.deviceSerial]['data'].deviceStatus:
+
+                    self.sample_devices[new_device.deviceSerial]['data'].deviceTasks.is_callback = False
+
+                    for task in self.sample_devices[new_device.deviceSerial]['data'].deviceTaskSeq:
+                        self.sample_devices[new_device.deviceSerial]['data'].deviceTasks.taskState[task] = {
+                            'taskState': c.TASK_STATE_WAIT,
+                            'taskStateMsg': c.TASK_STATE_MSG_WAIT}
+
+                self.sample_devices[new_device.deviceSerial]['data'].deviceTasks.is_callback = True
 
             finally:
 
@@ -62,6 +77,15 @@ class Internal(Backend):
                         backend_device = new_device
                         backend_device.deviceStatus = c.DEVICE_STATUS_EXISTS
                         self.sample_devices[new_device.deviceSerial]['data'] = backend_device
+                        self.sample_devices[new_device.deviceSerial]['data'].deviceTasks.is_callback = False
+
+                        for task in self.sample_devices[new_device.deviceSerial]['data'].deviceTaskSeq:
+                            self.sample_devices[new_device.deviceSerial]['data'].deviceTasks.taskState[task] = {
+                                'taskState': c.TASK_STATE_WAIT,
+                                'taskStateMsg': c.TASK_STATE_MSG_WAIT}
+
+                        self.sample_devices[new_device.deviceSerial]['data'].deviceTasks.is_callback = True
+
                         message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_UI_UPDATE_AND_RESET,
                                               payload=backend_device, source=c.AMQP_PROCESSOR_BACKEND)
                         self.amqpCl.send_message(message=message)
@@ -85,6 +109,14 @@ class Internal(Backend):
                 try:
                     self.sample_devices[new_device.deviceSerial] = dict()
                     self.sample_devices[new_device.deviceSerial]['data'] = new_device
+                    self.sample_devices[new_device.deviceSerial]['data'].deviceTasks.is_callback = False
+
+                    for task in self.sample_devices[new_device.deviceSerial]['data'].deviceTaskSeq:
+                        self.sample_devices[new_device.deviceSerial]['data'].deviceTasks.taskState[task] = {
+                            'taskState': c.TASK_STATE_WAIT,
+                            'taskStateMsg': c.TASK_STATE_MSG_WAIT}
+
+                    self.sample_devices[new_device.deviceSerial]['data'].deviceTasks.is_callback = True
 
                 finally:
 
@@ -117,7 +149,7 @@ class Internal(Backend):
 
         return self.sample_devices[sample_device.deviceSerial]['data']
 
-    def update_device_task_state(self, sample_device, task_name, task_state, task_state_msg):
+    def update_device_task_state(self, device_serial, is_callback, task_name, task_state):
 
         self.sample_devices_lock.acquire()
 
@@ -125,34 +157,29 @@ class Internal(Backend):
 
             try:
 
-                backend_device = self.sample_devices[sample_device.deviceSerial]['data']
-
-                if backend_device.is_callback:
-                    backend_device.is_callback = False
-
-                backend_device.deviceTasks.taskState[task_name] = {'taskState': task_state,
-                                                                   'taskStateMsg': task_state_msg}
-                backend_device.deviceStatus = c.DEVICE_STATUS_TASK_CHANGED
-
-                backend_device.is_callback = True
+                backend_device = self.sample_devices[device_serial]['data']
+                backend_device.deviceTasks.is_callback = False
+                backend_device.deviceTasks.taskState[task_name] = {'taskState': task_state['taskState'],
+                                                                   'taskStateMsg': task_state['taskStateMsg']}
+                backend_device.deviceTasks.is_callback = True
                 message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_DEVICE_UPDATE_TASK_STATE,
-                                      payload=[self.sample_devices[sample_device.deviceSerial]['data'], task_name],
+                                      payload=[device_serial, task_name, task_state],
                                       source=c.AMQP_PROCESSOR_BACKEND)
 
                 self.amqpCl.send_message(message=message)
 
-                return self.sample_devices[sample_device.deviceSerial]['data']
+                return self.sample_devices[device_serial]['data']
 
             finally:
 
                 self.sample_devices_lock.release()
 
         except KeyError as err:
-            self._logger.info(Tools.create_log_msg(self.__class__.__name__, sample_device.deviceSerial,
+            self._logger.info(Tools.create_log_msg(self.__class__.__name__, device_serial,
                                                    logmsg.INTBACKEND_KEY_NOK.format(err.message)))
 
     def get_device(self, serial_number):
-        pass
+        return self.sample_devices[serial_number]['data']
 
     def get_devices(self):
         return self.sample_devices
@@ -161,25 +188,89 @@ class Internal(Backend):
         pass
 
     def get_sites(self):
-        pass
+        return self.sites
 
-    def add_site(self, siteId, siteName, siteDescr):
-        pass
+    def add_site(self, siteId=None, siteName=None, siteDescr=None):
 
-    def update_asset_site_mapping(self, assetSerial, assetConfigId):
-        pass
+        self.sites_lock.acquire()
 
-    def add_group(self, groupName, groupConfig, groupDescr):
-        pass
+        try:
+            if siteId not in self.sites:
+                self.sites[siteId] = {'siteId': siteId, 'siteName': siteName, 'siteDescr': siteDescr, 'assets': dict()}
+                return True, 'Successfully added site with ID <{0}> to database'.format(siteId)
+            else:
+                return False, 'Site with ID <{0}> already exists in database'.format(siteId)
 
-    def add_asset_to_site(self, siteId, assetSerial, assetConfigId, assetDescr):
-        pass
+        finally:
 
-    def get_site_by_id(self, siteId):
-        pass
+            self.sites_lock.release()
 
-    def get_asset_by_serial(self, assetSerial):
-        pass
+    def update_asset_site_mapping(self, assetSiteId=None, assetSerial=None, assetConfigId=None):
+
+        self.sites_lock.acquire()
+
+
+        try:
+
+            if assetConfigId in self.sites[assetSiteId]['assets']:
+                self.sites[assetSiteId]['assets'][assetConfigId] = {'assetSerial': assetSerial,
+                                                                    'assetConfigId': assetConfigId}
+                return True, 'Successfully mapped asset serial <{0}> to asset config id <{1}>'.format(assetSerial,
+                                                                                                      assetConfigId)
+            else:
+                return False, 'Failed to map asset serial <{0}> to config id <{1}>. Config id does not exists'.format(assetSerial, assetConfigId)
+
+        finally:
+
+            self.sites_lock.release()
+
+    def add_group(self, groupName=None, groupConfig=None, groupDescr=None):
+
+        self.groups_lock.acquire()
+
+        try:
+
+            if groupName not in self.groups:
+                self.groups[groupName] = {'groupName': groupName, 'groupConfig': groupConfig, 'groupDescr': groupDescr}
+                return True, 'Successfully added group <{0}> to database'.format(groupName)
+            else:
+                return False, 'Group with name <{0}> already exists in database'.format(groupName)
+
+        finally:
+
+            self.groups_lock.release()
+
+    def add_asset_to_site(self, assetSiteId, assetSerial, assetConfigId, assetDescr):
+
+        self.sites_lock.acquire()
+
+        try:
+
+            if assetSiteId in self.sites:
+                if assetConfigId not in self.sites[assetSiteId]['assets']:
+                    self.sites[assetSiteId]['assets'][assetConfigId] = {'assetSerial': assetSerial,
+                                                                        'assetConfigId': assetConfigId,
+                                                                        'assetDescr': assetDescr}
+                    return True, 'Successfully added asset with ID <{0}> to site with ID <{1}>'.format(assetConfigId,
+                                                                                                       assetSiteId)
+                else:
+                    return False, 'Asset with serial <{0}> already exists in databse'.format(assetConfigId)
+            else:
+                return False, 'Site with ID <{0}> does not exists in database'.format(assetSiteId)
+
+        finally:
+
+            self.sites_lock.release()
+
+    def get_site_by_id(self, siteId=None):
+
+        if siteId in self.sites:
+            return True, self.sites[siteId]
+        else:
+            return False, 'Site with id <{0}> not found in database'.format(siteId)
+
+    def get_asset_by_serial(self, assetSerial=None):
+        return
 
     def get_groups(self):
-        pass
+        return self.groups

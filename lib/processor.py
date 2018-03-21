@@ -55,8 +55,8 @@ class TaskProcessor(AMQPBlockingServerAdapter):
                 if sample_device is not None:
 
                     sample_device = Tools.get_device_facts(sample_device=sample_device)
-                    device_datavars = self._configurator.get_device_config(
-                        lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_DEVICE, sample_device=sample_device)
+                    device_datavars = self._configurator.get_config(
+                        lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE, sample_device=sample_device)
 
                     if device_datavars is not None:
 
@@ -71,16 +71,22 @@ class TaskProcessor(AMQPBlockingServerAdapter):
                             return
 
                         shared = dict()
-                        grp_cfg = self._configurator.get_device_config(
-                            lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GROUP, sample_device=sample_device)
+                        grp_cfg = self._configurator.get_config(
+                            lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_GROUP, sample_device=sample_device)
 
                         if grp_cfg is not None:
 
                             sample_device.deviceGroupData = grp_cfg
-                            grp_cfg = Tools.create_config_view(config_type='group', stream=grp_cfg)
+                            grp_cfg = Tools.create_config_view(config_type=c.CONFIG_TYPE_GROUP, stream=grp_cfg)
                             sample_device.deviceTaskSeq = grp_cfg.TASKS.Sequence
                             shared[c.TASK_SHARED_IPAM] = list()
                             shared[c.TASK_SHARED_PROGRESS] = 100 / len(grp_cfg.TASKS.Sequence)
+                            # Add task to taskState list in sample_device object before we use it
+                            # There should be a better place / way doing this
+                            for _task in sample_device.deviceTaskSeq:
+                                sample_device.deviceTasks.taskState[_task] = {'taskState': c.TASK_STATE_INIT,
+                                                                              'taskStateMsg': c.TASK_STATE_MSG_INIT}
+
                             dev_conn = sample_device.deviceConnection
                             sample_device.deviceConnection = hex(id(sample_device.deviceConnection))
                             message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_DEVICE_ADD, payload=sample_device,
@@ -90,6 +96,8 @@ class TaskProcessor(AMQPBlockingServerAdapter):
                             sample_device = resp.payload
                             sample_device.deviceConnection = dev_conn
                             tasks_sequence = grp_cfg.TASKS.Sequence
+                            # Set deviceSerial as reference in task observer
+                            sample_device.deviceTasks.deviceSerial = sample_device.deviceSerial
 
                             if c.DEVICE_STATUS_NEW == sample_device.deviceStatus \
                                     or c.DEVICE_STATUS_REBOOTED == sample_device.deviceStatus \
@@ -106,8 +114,7 @@ class TaskProcessor(AMQPBlockingServerAdapter):
                                     task = None
 
                                     for _task in tasks_sequence:
-                                        # Add task to taskState list in sample_device object before we use it
-                                        sample_device.deviceTasks.taskState[_task] = {'taskState': c.TASK_STATE_INIT, 'taskStateMsg': c.TASK_STATE_MSG_INIT}
+
                                         from lib.tasks.task import Task
 
                                         if isinstance(task, Task):

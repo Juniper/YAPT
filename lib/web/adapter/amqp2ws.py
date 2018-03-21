@@ -23,18 +23,13 @@ class Amqp2ws(UiAdapter):
         self.logger.debug(Tools.create_log_msg(self.__class__.__name__, self._clientName,
                                                logmsg.AMQP_CL_CONN_OK.format(self._clientName)))
 
-    def prepare_device_data(self, sample_device=None, action=None):
-       pass
+    def prepare_device_task_data(self, device_serial=None, action=None, task_name=None, task_state=None):
 
-    def prepare_device_task_data(self, sample_device=None, action=None, task_name=None):
-
-        data = {"deviceName": sample_device.deviceName, "softwareVersion": sample_device.softwareVersion,
-                "deviceIP": sample_device.deviceIP, "deviceSerial": sample_device.deviceSerial,
-                "deviceModel": sample_device.deviceModel, "deviceTimeStamp": sample_device.deviceTimeStamp,
-                "deviceConnection": sample_device.deviceConnection, "action": action,
+        data = {"action": action,
+                "deviceSerial": device_serial,
                 "taskName": task_name,
-                "taskState": sample_device.deviceTasks.taskState[task_name],
-                "taskProgress": sample_device.deviceTaskProgress}
+                "taskState": task_state,
+                }
 
         return json.dumps(data)
 

@@ -22,7 +22,7 @@ from lib.web.base import Init
 class Yapt(object):
     if __name__ == '__main__':
 
-        Tools.create_config_view('main')
+        Tools.create_config_view(c.CONFIG_TYPE_MAIN)
         EmitterPlgFact()
 
         BackendPluginFactory(plugin_name=c.conf.BACKEND.Module, target=Backend,

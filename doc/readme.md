@@ -1385,7 +1385,7 @@ Assign:
 #### Configuration ####
 Configuration task has global options regardless of which implementation is used. Global options are:
 
-- `Dependnecies`: Configuration task plugins often have dependencies like for `Ipam` or `Cert` task data to be pulled
+- `Dependencies`: Configuration task plugins often have dependencies like for `Ipam` or `Cert` task data to be pulled
 - `DeviceConfTemplateDir`: Defines directory where to look for device template files. Will be used when config source is set to `local`
 - `DeviceConfTemplateFile`: Defines the template file to be loaded for configuration generation
 - `ConfigFileHistory`: Saves rendered configuration file in configured directory
@@ -1477,7 +1477,7 @@ The discovery plugin is used to on-board device with Junos Space. There are two 
     * Example `conf/space/configlet/SRX300/connectionConfigletVars.yml`
     * Copy `connectionConfiglet.j2` file from doc boilerplate directory
 
-YAPT will automatically add additional instances to existing one. 
+YAPT will automatically add additional instances to existing model instance. 
 
 ```yaml
 Discovery:
@@ -1810,13 +1810,112 @@ security {
 ```
 
 # YAPT Rest API #
+YAPT Rest API base URL is `http://IP:APIPORT/api`
 
+## Common API Calls ##
 
-## Add device to trust store ##
+### Add device to PHS trust store ###
+To add device serial to YAPT PHS trust store use following API call:
 
 ```text
-http://172.16.146.1:9090/api/authenticate?sn=8809EA3C6C21
+/api/authenticate?sn=SERIALNUMBER
 ```
+
+#### Example ####
+
+```bash
+curl -X POST \
+  'http://10.16.116.142:6581/api/authenticate?sn=8809EA3C6C21' \
+  -H 'cache-control: no-cache' \
+```
+
+### Add device data file to local storage ###
+TBD
+
+### Add device template file to local storage ###
+TBD
+
+### Add group file to local storage ###
+TBD
+
+### Get all devices from database ###
+To fetch all devices with their task information from database use following API call:
+
+```text
+/api/device?sn=all
+```
+
+#### Example ####
+
+```bash
+curl -X GET \
+  'http://172.16.146.1:8080/api/device?sn=all' \
+  -H 'cache-control: no-cache'
+```
+
+## Out of band activation ##
+
+### Add new site ###
+To add new site to OOBA database use following API call:
+
+```text
+/api/site/action=add
+```
+
+#### Example ####
+
+```bash
+curl -X POST \
+  'http://172.16.146.1:8080/api/site?action=add' \
+  -H 'cache-control: no-cache' \
+  -H 'content-type: application/json' \
+  -d '{
+	"siteId": "ABC123",
+	"siteName": "Site A", 
+	"siteDescr": "Site A Description"
+}'
+```
+
+### Get all sites ###
+To get all sites in database use following API call:
+
+```text
+/api/site?siteId=all
+```
+
+#### Example ####
+
+```bash
+curl -X GET \
+  'http://172.16.146.1:9090/api/site?siteId=all' \
+  -H 'cache-control: no-cache' \
+```
+
+### Add asset to site ###
+To add new asset to site in OOBA database use following API call:
+
+```text
+/api/asset/action=add
+```
+
+#### Example ####
+
+```bash
+curl -X POST \
+  'http://172.16.146.1:8080/api/asset?action=add' \
+  -H 'cache-control: no-cache' \
+  -H 'content-type: application/json' \
+  -d '{  
+   "assetSiteId":"ABC123",
+   "assetSerial":"123456789",
+   "assetConfigId":"abcrtyfdefg",
+   "assetDescr":"Test Site A"
+}'
+```
+
+### Update asset config mapping ### 
+
+TBD
 
 # Directory structure #
 YAPT directory structure

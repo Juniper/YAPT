@@ -64,7 +64,7 @@ class Cgitlab(DeviceConfigSource):
     def get_config_template_file(self, serialnumber, grp_cfg):
         return False, None
 
-    def get_config_template(self, serialnumber, grp_cfg):
+    def get_config_template_data(self, serialnumber, grp_cfg):
         self.create_conn()
         project = self.gl.projects.get(c.conf.SOURCE.Cgitlab.DevCfgTemplate)
         oid = False
@@ -77,6 +77,12 @@ class Cgitlab(DeviceConfigSource):
         template = Environment(loader=BaseLoader).from_string(project.repository_raw_blob(oid))
         self.session.close()
         return True, template
+
+    def add_config_template_data(self, templateName=None, templateData=None, group=None):
+        pass
+
+    def del_config_template_data(self, templateName=None, group=None):
+        pass
 
     def get_bootstrap_config_template(self, serialnumber, path, file):
         self.create_conn()
@@ -151,3 +157,9 @@ class Cgitlab(DeviceConfigSource):
                                                                                exc))
             self.session.close()
             return False, None
+
+    def add_group_data(self, groupName=None, groupData=None):
+        pass
+
+    def del_group_data(self, groupName=None):
+        pass

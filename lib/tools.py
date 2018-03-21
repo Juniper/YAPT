@@ -62,7 +62,7 @@ class Tools:
     @classmethod
     def create_config_view(cls, config_type=None, filename=None, stream=None):
 
-        if config_type == 'main':
+        if config_type == c.CONFIG_TYPE_MAIN:
 
             try:
 
@@ -70,15 +70,15 @@ class Tools:
 
             except IOError as ioe:
                 print Tools.create_log_msg(logmsg.YAPT_CONF, '',
-                                                   logmsg.YAPT_CONF_LOAD_ERR.format(ioe.strerror, ioe.filename))
+                                           logmsg.YAPT_CONF_LOAD_ERR.format(ioe.strerror, ioe.filename))
                 sys.exit()
 
-        elif config_type == 'group':
+        elif config_type == c.CONFIG_TYPE_GROUP:
 
             if filename:
                 try:
                     return ObjectView(yaml.safe_load(open(c.conf.SOURCE.Local.DeviceGrpFilesDir + filename).read()))
-                    #return yaml.safe_load(open(c.conf.SOURCE.Local.DeviceGrpFilesDir + filename).read())
+                    # return yaml.safe_load(open(c.conf.SOURCE.Local.DeviceGrpFilesDir + filename).read())
 
                 except IOError as ioe:
                     c.logger.info(Tools.create_log_msg(logmsg.YAPT_CONF, '', logmsg.__format__(filename, ioe.message)))
@@ -834,6 +834,12 @@ class Tools:
         return config_source_plugins
 
     @classmethod
+    def load_dev_cfg_src_plugin(cls, name):
+        importlib.import_module('lib.config')
+        plugin = importlib.import_module('.' + name, package="lib.config")
+        return plugin
+
+    @classmethod
     def load_emitter_plugins(cls):
 
         log_re = re.compile('.py$', re.IGNORECASE)
@@ -914,7 +920,6 @@ class Tools:
         if scope == c.LOGGER_SCOPE_ALL:
 
             for log_plg_name, log_plg in c.active_log_plgs.iteritems():
-
                 log_plg.emit(task_name=task_name, task_state=task_state, sample_device=sample_device, grp_cfg=grp_cfg,
                              shared=shared, message=message, level=level)
 

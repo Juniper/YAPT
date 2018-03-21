@@ -43,11 +43,11 @@ class AnsibleapiTask(Task):
     def run_task(self):
 
         _configurator = Configuration()
-        template_file = _configurator.get_device_config(sample_device=self.sample_device,
-                                                        lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_TEMPLATE_FILE,
-                                                        grp_cfg=self.grp_cfg)
-        dev_data_file = _configurator.get_device_config(sample_device=self.sample_device,
-                                                        lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_DEVICE_FILE)
+        template_file = _configurator.get_config(sample_device=self.sample_device,
+                                                 lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_TEMPLATE_FILE,
+                                                 grp_cfg=self.grp_cfg)
+        dev_data_file = _configurator.get_config(sample_device=self.sample_device,
+                                                 lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE_FILE)
 
         if template_file and dev_data_file:
 

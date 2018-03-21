@@ -43,8 +43,7 @@ class UiProcessor(AMQPBlockingServerAdapter):
 
                 Tools.amqp_receive_to_logger(routing_key=method.routing_key, body_decoded=body_decoded)
                 message = body_decoded.payload.device_to_json(action=c.UI_ACTION_ADD_DEVICE)
-                #message = self.amqp2ws.prepare_device_data(sample_device=body_decoded.payload,
-                #                                           action=c.UI_ACTION_ADD_DEVICE)
+                print message
                 self.conn_hdlr(message=message)
 
             elif isinstance(body_decoded,
@@ -52,8 +51,6 @@ class UiProcessor(AMQPBlockingServerAdapter):
 
                 Tools.amqp_receive_to_logger(routing_key=method.routing_key, body_decoded=body_decoded)
                 message = body_decoded.payload.device_to_json(action=c.UI_ACTION_UPDATE_DEVICE)
-                #message = self.amqp2ws.prepare_device_data(sample_device=body_decoded.payload,
-                #                                           action=c.UI_ACTION_UPDATE_DEVICE)
                 self.conn_hdlr(message=message)
 
             elif isinstance(body_decoded,
@@ -61,11 +58,12 @@ class UiProcessor(AMQPBlockingServerAdapter):
 
                 Tools.amqp_receive_to_logger(routing_key=method.routing_key, body_decoded=body_decoded)
 
-                sample_device = body_decoded.payload[0]
+                device_serial = body_decoded.payload[0]
                 task_name = body_decoded.payload[1]
-                message = self.amqp2ws.prepare_device_task_data(sample_device=sample_device,
+                task_state = body_decoded.payload[2]
+                message = self.amqp2ws.prepare_device_task_data(device_serial=device_serial,
                                                                 action=c.UI_ACTION_UPDATE_TASK_STATE,
-                                                                task_name=task_name)
+                                                                task_name=task_name, task_state=task_state)
                 self.conn_hdlr(message=message)
 
             elif isinstance(body_decoded,
@@ -73,8 +71,6 @@ class UiProcessor(AMQPBlockingServerAdapter):
 
                 Tools.amqp_receive_to_logger(routing_key=method.routing_key, body_decoded=body_decoded)
                 message = body_decoded.payload.device_to_json(action=c.UI_ACTION_UPDATE_DEVICE_AND_RESET_TASK)
-                #message = self.amqp2ws.prepare_device_data(sample_device=body_decoded.payload,
-                #                                           action=c.UI_ACTION_UPDATE_DEVICE)
                 self.conn_hdlr(message=message)
 
             elif isinstance(body_decoded,

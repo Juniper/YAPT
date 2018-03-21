@@ -33,7 +33,7 @@ class Local(DeviceConfigSource):
                 template_file_path + filename)))
             return False, None
 
-    def get_config_template(self, serialnumber=None, grp_cfg=None):
+    def get_config_template_data(self, serialnumber=None, grp_cfg=None):
 
         try:
             env = Environment(autoescape=False,
@@ -47,7 +47,46 @@ class Local(DeviceConfigSource):
             self.logger.info(Tools.create_log_msg(self.name, serialnumber,
                                                   'Error({0}): {1} --> {2})'.format(err.errno, err.strerror,
                                                                                     err.filename)))
-            return False, None
+            return False, err
+
+    def add_config_template_data(self, templateName=None, templateData=None, group=None):
+
+        if group and templateName and templateData:
+
+            isFile, grp_cfg = self.get_group_data(serialnumber=group, group=group)
+
+            if isFile:
+
+                grp_cfg = Tools.create_config_view(config_type=c.CONFIG_TYPE_GROUP, stream=grp_cfg)
+
+                try:
+
+                    with open(grp_cfg.TASKS.Provision.Configuration.DeviceConfTemplateDir + templateName + '.j2',
+                              'w') as fp:
+                        fp.write(templateData)
+
+                    return True, 'Successfully added template <{0}>'.format(templateName)
+
+                except Exception as e:
+                    return False, e.message
+
+    def del_config_template_data(self, templateName=None, group=None):
+
+        if group and templateName:
+
+            isFile, grp_cfg = self.get_group_data(serialnumber=group, group=group)
+
+            if isFile:
+
+                grp_cfg = Tools.create_config_view(config_type=c.CONFIG_TYPE_GROUP, stream=grp_cfg)
+
+                if os.path.exists(grp_cfg.TASKS.Provision.Configuration.DeviceConfTemplateDir + templateName + '.j2'):
+
+                    os.remove(grp_cfg.TASKS.Provision.Configuration.DeviceConfTemplateDir + templateName + '.j2')
+                    return True, 'Successfully deleted template <{0}>'.format(templateName)
+
+                else:
+                    return False, 'File \<{0}\> not found'.format(templateName)
 
     def get_bootstrap_config_template(self, serialnumber=None, path=None, file=None):
 
@@ -65,11 +104,11 @@ class Local(DeviceConfigSource):
 
     def get_config_data_file(self, serialnumber=None, deviceOsshId=None):
 
-        dev_conf_path = c.conf.SOURCE.File.DeviceConfDataDir
+        dev_conf_path = c.conf.SOURCE.Local.DeviceConfDataDir
 
         if serialnumber is not None:
 
-            filename = serialnumber + '.yml'
+            filename = serialnumber + c.CONFIG_FILE_SUFFIX_DEVICE
 
             if os.path.exists(dev_conf_path + filename) and os.path.isfile(dev_conf_path + filename):
                 self.logger.info(
@@ -82,7 +121,7 @@ class Local(DeviceConfigSource):
 
                 if deviceOsshId is not None:
 
-                    filename = deviceOsshId + '.yml'
+                    filename = deviceOsshId + c.CONFIG_FILE_SUFFIX_DEVICE
 
                     if os.path.exists(dev_conf_path + filename) and os.path.isfile(dev_conf_path + filename):
                         self.logger.info(
@@ -103,7 +142,7 @@ class Local(DeviceConfigSource):
 
         elif deviceOsshId is not None:
 
-            filename = deviceOsshId + '.yml'
+            filename = deviceOsshId + c.CONFIG_FILE_SUFFIX_DEVICE
 
             if os.path.exists(dev_conf_path + filename) and os.path.isfile(dev_conf_path + filename):
                 self.logger.info(
@@ -124,16 +163,16 @@ class Local(DeviceConfigSource):
 
     def get_config_data(self, serialnumber=None, deviceOsshId=None):
 
-        dev_conf_path = c.conf.SOURCE.File.DeviceConfDataDir
+        dev_conf_path = c.conf.SOURCE.Local.DeviceConfDataDir
 
         if serialnumber is not None:
 
-            filename = serialnumber + '.yml'
+            filename = serialnumber + c.CONFIG_FILE_SUFFIX_DEVICE
 
             if os.path.exists(dev_conf_path + filename) and os.path.isfile(dev_conf_path + filename):
 
                 try:
-                    with open(c.conf.SOURCE.File.DeviceConfDataDir + filename, 'r') as fp:
+                    with open(c.conf.SOURCE.Local.DeviceConfDataDir + filename, 'r') as fp:
 
                         try:
 
@@ -160,12 +199,12 @@ class Local(DeviceConfigSource):
 
                 if deviceOsshId is not None:
 
-                    filename = deviceOsshId + '.yml'
+                    filename = deviceOsshId + c.CONFIG_FILE_SUFFIX_DEVICE
 
                     if os.path.exists(dev_conf_path + filename) and os.path.isfile(dev_conf_path + filename):
 
                         try:
-                            with open(c.conf.SOURCE.File.DeviceConfDataDir + filename, 'r') as fp:
+                            with open(c.conf.SOURCE.Local.DeviceConfDataDir + filename, 'r') as fp:
 
                                 try:
 
@@ -204,12 +243,12 @@ class Local(DeviceConfigSource):
 
         elif deviceOsshId is not None:
 
-            filename = deviceOsshId + '.yml'
+            filename = deviceOsshId + c.CONFIG_FILE_SUFFIX_DEVICE
 
             if os.path.exists(dev_conf_path + filename) and os.path.isfile(dev_conf_path + filename):
 
                 try:
-                    with open(c.conf.SOURCE.File.DeviceConfDataDir + filename, 'r') as fp:
+                    with open(c.conf.SOURCE.Local.DeviceConfDataDir + filename, 'r') as fp:
 
                         try:
 
@@ -244,7 +283,7 @@ class Local(DeviceConfigSource):
     def get_group_data_file(self, serialnumber=None, group=None):
 
         group_file_path = c.conf.SOURCE.Local.DeviceGrpFilesDir
-        filename = group + '.yml'
+        filename = group + c.CONFIG_FILE_SUFFIX_GROUP
 
         if os.path.exists(group_file_path + filename) and os.path.isfile(group_file_path + filename):
 
@@ -269,7 +308,7 @@ class Local(DeviceConfigSource):
 
     def get_group_data(self, serialnumber=None, group=None):
 
-        filename = group + '.yml'
+        filename = group + c.CONFIG_FILE_SUFFIX_GROUP
 
         try:
 
@@ -279,3 +318,28 @@ class Local(DeviceConfigSource):
             c.logger.info(
                 Tools.create_log_msg(self.name, serialnumber, logmsg.__format__(filename, ioe.message)))
             return False, None
+
+    def add_group_data(self, groupName=None, groupData=None):
+
+        if groupName and groupData:
+
+            try:
+
+                with open(c.conf.SOURCE.Local.DeviceGrpFilesDir + groupName + c.CONFIG_FILE_SUFFIX_GROUP,
+                          'w') as fp:
+                    fp.write(groupData)
+
+                return True, logmsg.LOCAL_GRP_CFG_FILE_ADD_OK.format(groupName)
+
+            except Exception as e:
+                return False, e.message
+
+    def del_group_data(self, groupName=None):
+
+        if os.path.exists(c.conf.SOURCE.Local.DeviceGrpFilesDir + groupName + c.CONFIG_FILE_SUFFIX_GROUP):
+
+            os.remove(c.conf.SOURCE.Local.DeviceGrpFilesDir + groupName + c.CONFIG_FILE_SUFFIX_GROUP)
+            return True, logmsg.LOCAL_GRP_CFG_FILE_DEL_OK.format(groupName)
+
+        else:
+            return False, 'File \<{0}\> not found'.format(groupName)

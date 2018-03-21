@@ -41,8 +41,8 @@ class CertTask(Task):
         cancel_chan = ChannelCancellation()
         e = threading.Event()
         _configurator = Configuration()
-        datavars = _configurator.get_device_config(sample_device=self.sample_device,
-                                                   lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_DEVICE)
+        datavars = _configurator.get_config(sample_device=self.sample_device,
+                                            lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE)
 
         if datavars:
 

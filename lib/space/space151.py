@@ -744,7 +744,7 @@ class Space151(SpaceRestConnector):
                              sample_device.deviceIP,
                              sample_device.deviceIP)
 
-            grp_cfg = Tools.create_config_view(config_type='group', stream=sample_device.deviceGroupData)
+            grp_cfg = Tools.create_config_view(config_type=c.CONFIG_TYPE_GROUP, stream=sample_device.deviceGroupData)
 
             sample_device.deviceTasks.taskState['Discovery'] = 'Copy configlet'
 

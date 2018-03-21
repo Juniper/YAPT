@@ -27,7 +27,7 @@ YAPT:
 ########################################################################################################################
 SOURCE:
   DeviceConfOoba: false                         #Enable OOBA DB check
-  DeviceConfSrcPlugins: [cgitlab]               #Configuration source plugin order
+  DeviceConfSrcPlugins: [local]                 #Configuration source plugin order
 
   Local:
     DeviceGrpFilesDir: conf/groups/                 #Map device to a provisioning group
@@ -50,7 +50,7 @@ SOURCE:
 #Backend Section (Configure Backend settings)
 ########################################################################################################################
 BACKEND:
-  Module: sql                                  #Backend Type (internal / sql)
+  Module: sql                                 #Backend Type (internal / sql)
 
   Sqlite:
     DbName: yapt.db                            #SQLite DB Name
