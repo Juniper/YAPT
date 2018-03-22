@@ -42,7 +42,7 @@ SOURCE:
     Password: password
     DevCfg: demo_ops/yapt_dev_conf
     DevCfgTemplate: demo_ops/yapt_dev_conf_template
-    DevGrpCfg: demo_ops/yapt_dev_grp_conf
+    DevCfgGrp: demo_ops/yapt_dev_grp_conf
     VnfBoostrapTemplate: demo_ops/yapt_vnf_bootstrap_template
 
 

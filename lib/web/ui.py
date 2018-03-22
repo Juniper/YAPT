@@ -43,7 +43,6 @@ class UiProcessor(AMQPBlockingServerAdapter):
 
                 Tools.amqp_receive_to_logger(routing_key=method.routing_key, body_decoded=body_decoded)
                 message = body_decoded.payload.device_to_json(action=c.UI_ACTION_ADD_DEVICE)
-                print message
                 self.conn_hdlr(message=message)
 
             elif isinstance(body_decoded,

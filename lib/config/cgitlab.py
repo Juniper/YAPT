@@ -137,7 +137,7 @@ class Cgitlab(DeviceConfigSource):
 
     def get_group_data(self, serialnumber, group):
         self.create_conn()
-        project = self.gl.projects.get(c.conf.SOURCE.Cgitlab.DevGrpCfg)
+        project = self.gl.projects.get(c.conf.SOURCE.Cgitlab.DevCfgGrp)
 
         oid = [d['id'] for d in project.repository_tree() if d['name'] == group + '.yml'][0]
 
