@@ -55,7 +55,7 @@ class ConfigurationTask(Task):
         Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
                        message=logmsg.CONF_TASK_INIT.format(self.sample_device.deviceSerial))
         configurator = Configuration()
-        resp = configurator.prepare_device_config(sample_device=self.sample_device, grp_cfg=self.grp_cfg)
+        resp = configurator.prepare_device_config(sample_device=self.sample_device)
 
         if resp is not None:
 

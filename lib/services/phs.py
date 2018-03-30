@@ -187,17 +187,15 @@ class PhoneHomeServer(object):
 
         self.deviceIP = cherrypy.request.headers['Remote-Addr']
         self.serialnumber = params['uid']
-        from lib.tasks.tasktools import Configuration
-        _configurator = Configuration()
-        datavars = _configurator.get_config(
-            serialnumber=self.serialnumber, deviceOsshId=None, lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE)
+        status, data = Tools.get_config(lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE_CFG,
+                                        serialnumber=self.serialnumber, deviceOsshId=None)
 
-        if datavars:
+        if status:
 
             try:
 
-                self.device_type = datavars['yapt']['device_type']
-                self.service_chain = datavars['yapt']['service_chain']
+                self.device_type = data['yapt']['device_type']
+                self.service_chain = data['yapt']['service_chain']
 
             except KeyError as ke:
                 self.logger.info(

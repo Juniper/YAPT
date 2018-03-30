@@ -9,18 +9,20 @@ import inspect
 import os
 import re
 import sys
+import StringIO
+import jsonpickle
 
 import jnpr.junos.exception
 import napalm
 import requests
 import ruamel.yaml
 import yaml
+import constants as c
+
 from cryptography.fernet import Fernet
 from jnpr.junos import Device
 from napalm_base import NetworkDriver
-
-import constants as c
-
+from ruamel.yaml.comments import CommentedMap
 from lib.logmsg import LogTools as logmsg
 from lib.objectstore import ObjectView
 
@@ -137,7 +139,7 @@ class Tools:
                                     indent=ind, block_seq_indent=bsi)
 
     @classmethod
-    def create_dev_conn(cls, sample_device=None):
+    def create_dev_conn(cls, sample_device=None, connect=True):
         """
         Creates a device connection object according to driver settings. If an OSSH session is used hand over sock_fd.
         :param sample_device. Create a connection object for sample_device.
@@ -157,16 +159,19 @@ class Tools:
 
                     if dev_conn is not None:
 
-                        try:
-                            dev_conn.open()
+                        if connect:
+                            try:
+                                dev_conn.open()
+                                sample_device.deviceConnection = dev_conn
+                                return True, sample_device
+
+                            except jnpr.junos.exception.ConnectError as err:
+                                c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceIP,
+                                                                   logmsg.CONN_MGMT_OPEN_FAILED.format(err)))
+                                return False, err
+                        else:
                             sample_device.deviceConnection = dev_conn
-                            return sample_device
-
-                        except jnpr.junos.exception.ConnectError as err:
-                            c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceIP,
-                                                               logmsg.CONN_MGMT_OPEN_FAILED.format(err)))
-                            return None
-
+                            return True, sample_device
                 else:
 
                     dev_conn = Device(host=None, sock_fd=sample_device.deviceConnection, user=c.conf.YAPT.DeviceUsr,
@@ -174,15 +179,20 @@ class Tools:
 
                     if dev_conn is not None:
 
-                        try:
-                            dev_conn.open()
-                            sample_device.deviceConnection = dev_conn
-                            return sample_device
+                        if connect:
 
-                        except jnpr.junos.exception.ConnectError as err:
-                            c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceIP,
-                                                               logmsg.CONN_MGMT_OPEN_FAILED.format(err)))
-                            return None
+                            try:
+                                dev_conn.open()
+                                sample_device.deviceConnection = dev_conn
+                                return True, sample_device
+
+                            except jnpr.junos.exception.ConnectError as err:
+                                c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceIP,
+                                                                   logmsg.CONN_MGMT_OPEN_FAILED.format(err)))
+                                return False, err
+                        else:
+                            sample_device.deviceConnection = dev_conn
+                            return True, sample_device
             else:
 
                 if c.conf.YAPT.DevicePwdIsRsa:
@@ -200,22 +210,28 @@ class Tools:
                                                            logmsg.CONN_MGMT_PROBING_OK.format(
                                                                sample_device.deviceIP,
                                                                c.conf.YAPT.ConnectionProbeTimeout)))
+                        if connect:
 
-                        try:
+                            try:
+                                dev_conn.open()
+                                sample_device.deviceConnection = dev_conn
+                                return True, sample_device
+
+                            except jnpr.junos.exception.ConnectError as err:
+                                c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceIP,
+                                                                   logmsg.CONN_MGMT_OPEN_FAILED.format(err)))
+                                return False, err
+                        else:
                             sample_device.deviceConnection = dev_conn
-                            dev_conn.open()
-                            return sample_device
-
-                        except jnpr.junos.exception.ConnectError as err:
-                            c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceIP,
-                                                               logmsg.CONN_MGMT_OPEN_FAILED.format(err)))
-                            return None
+                            return True, sample_device
 
                     else:
                         c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceIP,
                                                            logmsg.CONN_MGMT_PROBING_FAILED.format(
                                                                sample_device.deviceIP)))
-                        return None
+                        return False, Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceIP,
+                                                           logmsg.CONN_MGMT_PROBING_FAILED.format(
+                                                               sample_device.deviceIP))
 
                 else:
 
@@ -232,21 +248,28 @@ class Tools:
                                                            logmsg.CONN_MGMT_PROBING_OK.format(
                                                                sample_device.deviceIP,
                                                                c.conf.YAPT.ConnectionProbeTimeout)))
-                        try:
-                            sample_device.deviceConnection = dev_conn
-                            dev_conn.open()
-                            return sample_device
+                        if connect:
 
-                        except jnpr.junos.exception.ConnectError as err:
-                            c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceIP,
-                                                               logmsg.CONN_MGMT_OPEN_FAILED.format(err)))
-                            return None
+                            try:
+                                dev_conn.open()
+                                sample_device.deviceConnection = dev_conn
+                                return True, sample_device
+
+                            except jnpr.junos.exception.ConnectError as err:
+                                c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceIP,
+                                                                   logmsg.CONN_MGMT_OPEN_FAILED.format(err)))
+                                return False, err
+                        else:
+                            sample_device.deviceConnection = dev_conn
+                            return True, sample_device
 
                     else:
                         c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceSerial,
                                                            logmsg.CONN_MGMT_PROBING_FAILED.format(
                                                                sample_device.deviceIP)))
-                        return None
+                        return False, Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceSerial,
+                                                           logmsg.CONN_MGMT_PROBING_FAILED.format(
+                                                               sample_device.deviceIP))
 
         elif c.conf.DEVICEDRIVER.Driver == c.YAPT_DEVICE_DRIVER_NAPALM:
 
@@ -262,18 +285,20 @@ class Tools:
 
                 sample_device.deviceConnection = dev_conn
                 dev_conn.open()
-                return sample_device
+                return True, sample_device
 
             except (napalm.base.exceptions.ConnectionException, napalm.base.exceptions.ConnectAuthError,
                     jnpr.junos.exception.ConnectError) as err:
                 c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceIP,
                                                    logmsg.CONN_MGMT_OPEN_FAILED.format(err)))
-                return None
+                return False, Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceIP,
+                                                   logmsg.CONN_MGMT_OPEN_FAILED.format(err))
 
         else:
             c.logger.info(
                 Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceIP, logmsg.CONN_MGMT_DEV_DRIVER_NOK))
-            return None
+            return False, Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceIP,
+                                               logmsg.CONN_MGMT_DEV_DRIVER_NOK)
 
     @classmethod
     def get_device_facts(cls, sample_device=None):
@@ -530,6 +555,175 @@ class Tools:
             return Fernet(mkey['MasterKey']).decrypt(c.conf.AMQP.Password)
         else:
             c.logger.info('Unknown password type')
+
+    @classmethod
+    def get_config(self, lookup_type=None, **kvargs):
+        """
+        obtain specific config type <lookup_type> from configured source in <DeviceConfSrcPlugins>
+        :param lookup_type: defines which data we looking for e.g. device_data / group_data / template
+        :return:
+        """
+
+        osshid = None
+        isRaw = None
+
+        from lib.pluginfactory import StoragePlgFact
+        storageFact = StoragePlgFact()
+        storage_plgs = storageFact.init_plugins()
+
+        c.logger.debug(Tools.create_log_msg('TOOLS', 'get_config', kvargs))
+
+        if 'sample_device' in kvargs:
+            sample_device = kvargs.get('sample_device')
+            sn = sample_device.deviceSerial
+            osshid = sample_device.deviceOsshId
+            groupName = sample_device.deviceGroup
+            templateName = sample_device.deviceTemplate
+
+        elif 'serialnumber' in kvargs and 'deviceOsshId' in kvargs:
+            sn = kvargs.get('serialnumber')
+            osshid = kvargs.get('deviceOsshId')
+
+        elif 'templateName' in kvargs and 'groupName' in kvargs and 'isRaw' in kvargs:
+            templateName = kvargs.get('templateName')
+            groupName = kvargs.get('groupName')
+            isRaw = kvargs.get('isRaw')
+            sn = templateName
+
+        elif 'groupName' in kvargs and 'isRaw' in kvargs:
+            groupName = kvargs.get('groupName')
+            isRaw = kvargs.get('isRaw')
+            sn = groupName
+
+        elif 'configSerial' in kvargs and 'isRaw' in kvargs:
+            sn = kvargs.get('configSerial')
+            isRaw = kvargs.get('isRaw')
+
+        else:
+            return False, 'Parameters not matching'
+
+        c.logger.debug(logmsg.STORAGE_PLG, sn if sn else osshid,
+                       logmsg.STORAGE_PLG_LOAD.format(c.conf.SOURCE.DeviceConfSrcPlugins))
+
+        # check ooba
+
+        if c.conf.SOURCE.DeviceConfOoba:
+            c.logger.info(Tools.create_log_msg(logmsg.STORAGE_PLG, sn if sn else osshid,
+                                               'Checking config id mapping in asset database'))
+            from lib.amqp.amqpmessage import AMQPMessage
+            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_ASSET_GET_BY_SERIAL,
+                                  payload=sn if sn else osshid,
+                                  source=c.AMQP_PROCESSOR_REST)
+            from lib.processor import BackendClientProcessor
+            _backendp = BackendClientProcessor(exchange='', routing_key=c.AMQP_RPC_BACKEND_QUEUE)
+            response = _backendp.call(message=message)
+            response = jsonpickle.decode(response)
+
+            if response.payload:
+                c.logger.info(Tools.create_log_msg(logmsg.STORAGE_PLG, sn if sn else osshid,
+                                                   'Successfully retrieved config id mapping for {0}<-->{1}'.format(
+                                                       sn, response.payload)))
+                sn = response.payload
+
+        if c.conf.SOURCE.DeviceConfSrcPlugins:
+
+            for key, storage in storage_plgs.iteritems():
+
+                if lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE_CFG:
+
+                    status, data = storage.get_device_config_data(serialnumber=sn, deviceOsshId=osshid, isRaw=isRaw)
+
+                    if status:
+                        return status, data
+                    else:
+                        continue
+
+                elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE_CFG_FILE:
+
+                    status, filename = storage.get_device_config_data_file(serialnumber=sn, deviceOsshId=osshid)
+                    c.logger.debug(logmsg.STORAGE_PLG, sn if sn else osshid,
+                                   logmsg.STORAGE_PLG_EXEC.format(storage))
+
+                    if status:
+                        return status, filename
+                    else:
+                        continue
+
+                elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GET_TEMPLATE:
+
+                    if sn and templateName and groupName:
+
+                        isFile, template = storage.get_config_template_data(serialnumber=sn,
+                                                                            templateName=templateName,
+                                                                            groupName=groupName, isRaw=isRaw)
+                        c.logger.debug(logmsg.STORAGE_PLG, sn if sn else osshid,
+                                       logmsg.STORAGE_PLG_EXEC.format(storage))
+
+                        if isFile:
+                            return isFile, template
+                        else:
+                            continue
+
+                elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GET_TEMPLATE_FILE:
+
+                    if sn and templateName:
+
+                        isFile, template = storage.get_config_template_file(serialnumber=sn,
+                                                                            templateName=templateName)
+                        c.logger.debug(logmsg.STORAGE_PLG, sn if sn else osshid,
+                                       logmsg.STORAGE_PLG_EXEC.format(storage))
+
+                        if isFile:
+                            return isFile, template
+                        else:
+                            continue
+
+                elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_TEMPLATE_BOOTSTRAP:
+
+                    if osshid:
+
+                        isFile, template = storage.get_bootstrap_config_template(serialnumber=osshid,
+                                                                                 path=kvargs.get('path'),
+                                                                                 file=kvargs.get('file'))
+                        c.logger.debug(logmsg.STORAGE_PLG, sn if sn else osshid,
+                                       logmsg.STORAGE_PLG_EXEC.format(storage))
+
+                        if isFile:
+                            return template
+                        else:
+                            continue
+
+                elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GET_GROUP:
+
+                    if sn and groupName:
+
+                        status, groupvars = storage.get_group_data(serialnumber=sn, groupName=groupName, isRaw=isRaw)
+                        c.logger.debug(logmsg.STORAGE_PLG, sn if sn else osshid,
+                                       logmsg.STORAGE_PLG_EXEC.format(storage))
+
+                        if status:
+                            return True, groupvars
+                        else:
+                            continue
+
+                elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GET_GROUP_FILE:
+
+                    if sn and groupName:
+
+                        isFile, filename = storage.get_group_data_file(serialnumber=sn, group=groupName)
+                        c.logger.debug(logmsg.STORAGE_PLG, sn if sn else osshid,
+                                       logmsg.STORAGE_PLG_EXEC.format(storage))
+
+                        if isFile:
+                            return filename
+                        else:
+                            continue
+
+            return False, 'No device or group or template data found'
+
+        else:
+            c.logger.info(logmsg.STORAGE_PLG, sn if sn else osshid, 'Config Source plugin sequence empty')
+            return
 
     @classmethod
     def load_task_plugins(cls, sequence):
@@ -813,29 +1007,29 @@ class Tools:
         return space_plugins
 
     @classmethod
-    def load_dev_cfg_src_plugins(cls):
+    def load_storage_plugins(cls):
 
         log_re = re.compile('.py$', re.IGNORECASE)
-        pluginfiles = filter(log_re.search, os.listdir(os.path.join(os.path.dirname(__file__), 'config')))
+        pluginfiles = filter(log_re.search, os.listdir(os.path.join(os.path.dirname(__file__), 'storage')))
         _module = lambda fp: '.' + os.path.splitext(fp)[0]
         plugins = map(_module, pluginfiles)
-        importlib.import_module('lib.config')
-        config_source_plugins = dict()
+        importlib.import_module('lib.storage')
+        storage_plugins = dict()
 
         for plugin in plugins:
 
-            if not plugin.startswith('.__') and not plugin.startswith('.source'):
+            if not plugin.startswith('.__') and not plugin.startswith('.storage'):
 
                 if plugin[1:] in c.conf.SOURCE.DeviceConfSrcPlugins:
                     plugin_name = plugin[1:]
-                    config_source_plugins[plugin_name] = {importlib.import_module(plugin, package="lib.config")}
+                    storage_plugins[plugin_name] = {importlib.import_module(plugin, package="lib.storage")}
 
-        return config_source_plugins
+        return storage_plugins
 
     @classmethod
-    def load_dev_cfg_src_plugin(cls, name):
-        importlib.import_module('lib.config')
-        plugin = importlib.import_module('.' + name, package="lib.config")
+    def load_storage_plugin(cls, name):
+        importlib.import_module('lib.storage')
+        plugin = importlib.import_module('.' + name, package="lib.storage")
         return plugin
 
     @classmethod

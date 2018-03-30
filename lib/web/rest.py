@@ -11,14 +11,14 @@ import cherrypy
 import jsonpickle
 import ruamel.yaml
 import six
+import lib.constants as c
+
+from lib.pluginfactory import StoragePlgFact
 from cherrypy._cpserver import Server
 from ruamel.yaml.util import load_yaml_guess_indent
-
 from lib.amqp.amqpmessage import AMQPMessage
-import lib.constants as c
 from lib.processor import BackendClientProcessor
 from ws4py.client.threadedclient import WebSocketClient
-from lib.tasks.tasktools import Configuration
 
 """
 # First draft YAPT Rest API. Lot of stuff still missing
@@ -134,26 +134,81 @@ def yaml_tool():
 class RestBase(object):
     def __init__(self, args=None):
         self._backendp = args
-        self._configurator = Configuration()
+        self.storageFact = StoragePlgFact()
 
 
 class Device(RestBase):
     exposed = True
 
     @cherrypy.tools.yaml_tool()
-    def POST(self, sn=None):
-        new_device = cherrypy.serving.request.unserialized_data
+    def POST(self, action=None, name=None, descr=None, storage=None):
 
-        with open(c.conf.SOURCE.Local.DeviceConfDataDir + sn + '.yml', 'w') as fp:
-            ruamel.yaml.dump(new_device, fp, Dumper=ruamel.yaml.RoundTripDumper)
+        if action == 'add':
 
-        return json.dumps(True, escape('Successfully added device config <{0}> to data store'.format(sn)))
+            if name and storage:
 
-    def GET(self, sn=None):
+                new_device = cherrypy.serving.request.unserialized_data
 
-        if sn == 'all':
+                payload = {'configSerial': name, 'configDescr': descr,
+                           'configConfigSource': storage}
+                message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_DEVICE_CFG_ADD, payload=payload,
+                                      source=c.AMQP_PROCESSOR_REST)
+                response = self._backendp.call(message=message)
+                response = jsonpickle.decode(response)
 
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_DEV_GET_ALL, payload=sn,
+                if response.payload[0]:
+
+                    storage = self.storageFact.init_plugin(plugin_name=storage)
+                    status, msg = storage.add_device_config_data()(deviceSerial=name, deviceData=new_device)
+
+                    if status:
+                        return json.dumps((response.payload[0], escape(response.payload[1])))
+
+                    else:
+                        message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_DEVICE_CFG_DEL, payload=name,
+                                              source=c.AMQP_PROCESSOR_REST)
+                        response = self._backendp.call(message=message)
+                        response = jsonpickle.decode(response)
+
+                        if response.payload[0]:
+                            return json.dumps((status, escape(msg)))
+
+                else:
+                    return json.dumps((response.payload[0], escape(response.payload[1])))
+
+            else:
+                return json.dumps((False, escape('Mandatory value missing')))
+
+        elif action == 'del':
+
+            if name and storage:
+
+                message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_DEVICE_CFG_DEL, payload=name,
+                                      source=c.AMQP_PROCESSOR_REST)
+                response = self._backendp.call(message=message)
+                response = jsonpickle.decode(response)
+
+                if response.payload[0]:
+
+                    storage = self.storageFact.init_plugin(plugin_name=storage)
+                    status, msg = storage.del_device_config_data(configSerial=name)
+
+                    if status:
+                        return json.dumps((status, escape(response.payload[1])))
+                    else:
+                        return json.dumps((status, escape(msg)))
+                else:
+                    return json.dumps((response.payload[0], escape(response.payload[1])))
+            else:
+                return json.dumps((False, escape('Device serial or Config Source empty')))
+        else:
+            return json.dumps((False, escape('Action not defined')))
+
+    def GET(self, action=None, name=None):
+
+        if action == 'all':
+
+            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_DEVICE_GET_ALL, payload=name,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
@@ -165,38 +220,61 @@ class Device(RestBase):
 
             return '[{0}]'.format(', '.join(devices))
 
-        else:
+        elif action == 'cfgall':
 
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_DEV_GET_BY_SN, payload=sn,
+            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_DEVICE_GET_CFG_ALL, payload=name,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
 
             return json.dumps(response.payload)
 
+        elif action == 'config':
+
+            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_DEVICE_GET_CFG_BY_SERIAL, payload=name,
+                                  source=c.AMQP_PROCESSOR_REST)
+            response = self._backendp.call(message=message)
+            response = jsonpickle.decode(response)
+
+            if response.payload[0]:
+
+                storageName = response.payload[1]['configConfigSource']
+                storage = self.storageFact.init_plugin(plugin_name=storageName)
+                status, msg = storage.get_device_config_data(serialnumber=name, isRaw=True)
+
+                return json.dumps((status, msg))
+
+            else:
+                return json.dumps((response.payload[0], escape(response.payload[1])))
+
+        else:
+            return json.dumps((False, escape('Action not defined')))
+
 
 class Template(RestBase):
     exposed = True
 
-    @cherrypy.tools.yaml_tool()
-    def POST(self, action=None, name=None, group=None, configSrc=None, descr=None):
+    def POST(self, action=None, name=None, descr=None, group=None, storage=None):
 
         if action == 'add':
 
             if name:
 
-                new_template = cherrypy.serving.request.unserialized_data
+                new_template = cherrypy.request.body.read()
                 payload = {'templateName': name, 'templateConfig': new_template, 'templateDescr': descr,
-                           'templateConfigSource': configSrc}
+                           'templateDevGrp': group, 'templateConfigSource': storage}
                 message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_TEMPLATE_ADD, payload=payload,
                                       source=c.AMQP_PROCESSOR_REST)
                 response = self._backendp.call(message=message)
                 response = jsonpickle.decode(response)
 
-                if response[0]:
+                if response.payload[0]:
 
-                    self._configurator.add_config(lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_ADD_TEMPLATE, groupName=group)
-                    return json.dumps((response.payload[0], escape(response.payload[1])))
+                    storage = self.storageFact.init_plugin(plugin_name=storage)
+                    status, msg = storage.add_config_template_data(templateName=name, templateData=new_template,
+                                                                   groupName=group)
+
+                    return json.dumps((status, msg))
                 else:
                     return json.dumps((response.payload[0], escape(response.payload[1])))
 
@@ -210,7 +288,7 @@ class Template(RestBase):
             if response.payload[0]:
 
                 groupName = response.payload[1]['templateDevGrp']
-                configSource = response.payload[1]['templateConfigSource']
+                storage = response.payload[1]['templateConfigSource']
 
                 message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_TEMPLATE_DEL, payload=name,
                                       source=c.AMQP_PROCESSOR_REST)
@@ -219,11 +297,14 @@ class Template(RestBase):
 
                 if response.payload[0]:
 
-                    self._configurator.del_config(
-                        lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_DEL_TEMPLATE, templateName=name,
-                        templateDevGrp=groupName, templateConfigSource=configSource)
+                    storage = self.storageFact.init_plugin(plugin_name=storage)
+                    status, msg = storage.del_config_template_data(templateName=name, groupName=groupName)
 
-                    return json.dumps((response.payload[0], escape(response.payload[1])))
+                    if status:
+                        return json.dumps((status, escape(response.payload[1])))
+                    else:
+                        return json.dumps((status, msg))
+
                 else:
                     return json.dumps((response.payload[0], escape(response.payload[1])))
             else:
@@ -234,6 +315,7 @@ class Template(RestBase):
     def GET(self, action=None, name=None):
 
         if action == 'all':
+
             message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_TEMPLATE_GET_ALL, payload=action,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
@@ -243,51 +325,70 @@ class Template(RestBase):
 
         elif action == 'config':
 
-            try:
-
-                # template dir hardcoded sine we do not know group at this stage
-                with open(os.getcwd() + '/conf/devices/template/' + name + '.j2', 'r') as stream:
-                    content = stream.read()
-                    return content
-
-            except EnvironmentError as ee:  # parent of IOError, OSError *and* WindowsError where available
-                return json.dumps((False, ee.message))
-
-        else:
-
             message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_TEMPLATE_GET_BY_NAME, payload=name,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
 
-            return json.dumps(response.payload)
+            if response.payload[0]:
+
+                groupName = response.payload[1]['templateDevGrp']
+                storageName = response.payload[1]['templateConfigSource']
+                storage = self.storageFact.init_plugin(plugin_name=storageName)
+                status, msg = storage.get_config_template_data(serialnumber=name, templateName=name,
+                                                               groupName=groupName, isRaw=True)
+
+                if status:
+                    return json.dumps((status, msg))
+                else:
+                    return json.dumps((status, escape(msg)))
+            else:
+                return json.dumps((response.payload[0], escape(response.payload[1])))
+        else:
+            return json.dumps((False, escape('Action not defined')))
 
 
 class Group(RestBase):
     exposed = True
 
     @cherrypy.tools.yaml_tool()
-    def POST(self, action=None, name=None, descr=None, configSource=None):
+    def POST(self, action=None, name=None, descr=None, storage=None):
 
         if action == 'add':
-            new_group = cherrypy.serving.request.unserialized_data
 
-            try:
+            if name and storage:
 
-                with open(c.conf.SOURCE.Local.DeviceGrpFilesDir + name + '.yml', 'w') as fp:
-                    ruamel.yaml.dump(new_group, fp, Dumper=ruamel.yaml.RoundTripDumper)
+                new_group = cherrypy.serving.request.unserialized_data
 
-            except Exception as e:
-                return json.dumps(False, str(e))
+                payload = {'groupName': name, 'groupConfig': new_group, 'groupDescr': descr,
+                           'groupConfigSource': storage}
+                message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_GROUP_ADD, payload=payload,
+                                      source=c.AMQP_PROCESSOR_REST)
+                response = self._backendp.call(message=message)
+                response = jsonpickle.decode(response)
 
-            payload = {'groupName': name, 'groupConfig': new_group, 'groupDescr': descr,
-                       'groupConfigSource': configSource}
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_GROUP_ADD, payload=payload,
-                                  source=c.AMQP_PROCESSOR_REST)
-            response = self._backendp.call(message=message)
-            response = jsonpickle.decode(response)
+                if response.payload[0]:
 
-            return json.dumps((response.payload[0], escape(response.payload[1])))
+                    storage = self.storageFact.init_plugin(plugin_name=storage)
+                    status, msg = storage.add_group_data(groupName=name, groupData=new_group)
+
+                    if status:
+                        return json.dumps((response.payload[0], escape(response.payload[1])))
+
+                    else:
+                        message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_GROUP_DEL, payload=name,
+                                              source=c.AMQP_PROCESSOR_REST)
+                        response = self._backendp.call(message=message)
+                        response = jsonpickle.decode(response)
+
+                        if response.payload[0]:
+                            return json.dumps((status, escape(msg)))
+
+                else:
+                    return json.dumps((response.payload[0], escape(response.payload[1])))
+
+            else:
+                return json.dumps((False, escape('Mandatory value missing')))
 
         elif action == 'del':
 
@@ -298,7 +399,7 @@ class Group(RestBase):
 
             if response.payload[0]:
 
-                configSource = response.payload[1]['groupConfigSource']
+                storage = response.payload[1]['groupConfigSource']
 
                 if response.payload[0]:
 
@@ -309,11 +410,14 @@ class Group(RestBase):
 
                     if response.payload[0]:
 
-                        self._configurator.del_config(
-                            lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_DEL_GROUP, groupName=name,
-                            groupConfigSource=configSource)
+                        storage = self.storageFact.init_plugin(plugin_name=storage)
+                        status, msg = storage.del_group_data(groupName=name)
 
-                        return json.dumps((response.payload[0], escape(response.payload[1])))
+                        if status:
+                            return json.dumps((response.payload[0], escape(response.payload[1])))
+
+                        else:
+                            return json.dumps((status, escape(msg)))
                     else:
                         return json.dumps((response.payload[0], escape(response.payload[1])))
                 else:
@@ -332,22 +436,27 @@ class Group(RestBase):
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
 
-            return json.dumps(response.payload)
+            return json.dumps((response.payload[0], response.payload[1]))
 
         elif action == 'config':
-
-            with open(c.conf.SOURCE.Local.DeviceGrpFilesDir + name + '.yml', 'r') as stream:
-                content = stream.read()
-                return content
-
-        else:
 
             message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_GROUP_GET_BY_NAME, payload=name,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
 
-            return json.dumps(response.payload)
+            if response.payload[0]:
+
+                storageName = response.payload[1]['groupConfigSource']
+                storage = self.storageFact.init_plugin(plugin_name=storageName)
+                status, msg = storage.get_group_data(serialnumber=name, groupName=name, isRaw=True)
+
+                return json.dumps((status, msg))
+
+            else:
+                return json.dumps((response.payload[0], escape(response.payload[1])))
+        else:
+            return json.dumps((False, escape('Action not defined')))
 
 
 class Image(RestBase):
@@ -375,7 +484,6 @@ class Image(RestBase):
                     return json.dumps(response.payload[0], 'File \<{0}\> not found'.format(name))
             else:
                 return json.dumps((response.payload[0], escape(response.payload[1])))
-
         else:
             return json.dumps((False, escape('Action not defined')))
 
@@ -419,8 +527,7 @@ class Site(RestBase):
 
         elif action == 'del':
 
-            input_json = cherrypy.request.json
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_SITE_DEL, payload=input_json,
+            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_SITE_DEL, payload=name,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
@@ -574,14 +681,14 @@ class Configsrc(RestBase):
 class Upload(RestBase):
     exposed = True
 
-    def POST(self, name=None, descr=None, type=None, obj=None, objSize=None, group=None, configSource=None):
+    def POST(self, name=None, descr=None, type=None, obj=None, objSize=None, group=None, storage=None):
 
         if type == 'group':
 
-            if name and obj and objSize and configSource:
+            if name and obj and objSize and storage:
 
                 payload = {'groupName': name, 'groupConfig': None, 'groupDescr': descr,
-                           'groupConfigSource': configSource}
+                           'groupConfigSource': storage}
                 message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_GROUP_ADD, payload=payload,
                                       source=c.AMQP_PROCESSOR_REST)
                 response = self._backendp.call(message=message)
@@ -601,14 +708,20 @@ class Upload(RestBase):
 
                         size += __data.len
 
-                    status, msg =self._configurator.add_config(
-                        lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_ADD_GROUP, groupName=name,
-                        groupData=__data.getvalue(), configSource=configSource)
+                    storage = self.storageFact.init_plugin(plugin_name=storage)
+                    status, msg = storage.add_group_data(groupName=name, groupData=__data.getvalue())
 
                     if status:
-                        return json.dumps((response.payload[0], escape(response.payload[1])))
+                        return json.dumps((status, escape(response.payload[1])))
                     else:
-                        return json.dumps((response.payload[0], escape(msg)))
+
+                        message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_GROUP_DEL, payload=name,
+                                              source=c.AMQP_PROCESSOR_REST)
+                        response = self._backendp.call(message=message)
+                        response = jsonpickle.decode(response)
+
+                        if response.payload[0]:
+                            return json.dumps((status, escape(msg)))
 
                 else:
                     return json.dumps((response.payload[0], escape(response.payload[1])))
@@ -618,10 +731,10 @@ class Upload(RestBase):
 
         elif type == 'template':
 
-            if name and obj and objSize and group and configSource:
+            if name and obj and objSize and group and storage:
 
                 payload = {'templateName': name, 'templateConfig': None, 'templateDescr': descr,
-                           'templateDevGrp': group, 'templateConfigSource': configSource}
+                           'templateDevGrp': group, 'templateConfigSource': storage}
                 message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_TEMPLATE_ADD, payload=payload,
                                       source=c.AMQP_PROCESSOR_REST)
                 response = self._backendp.call(message=message)
@@ -641,11 +754,66 @@ class Upload(RestBase):
 
                         size += __data.len
 
-                    isFile, datavars = self._configurator.add_config(
-                        lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_ADD_TEMPLATE, templateName=name,
-                        tempateData=__data.getvalue(), groupName=group, configSource=configSource)
+                    storage = self.storageFact.init_plugin(plugin_name=storage)
+                    status, msg = storage.add_config_template_data(templateName=name, templateData=__data.getvalue(),
+                                                                   groupName=group)
 
+                    if status:
+                        return json.dumps((response.payload[0], escape(response.payload[1])))
+
+                    else:
+                        message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_TEMPLATE_DEL, payload=name,
+                                              source=c.AMQP_PROCESSOR_REST)
+                        response = self._backendp.call(message=message)
+                        response = jsonpickle.decode(response)
+
+                        if response.payload[0]:
+                            return json.dumps((status, escape(msg)))
+                else:
                     return json.dumps((response.payload[0], escape(response.payload[1])))
+
+            else:
+                return json.dumps((False, escape('Mandatory value missing')))
+
+        elif type == 'device':
+
+            if name and obj and objSize and storage:
+
+                payload = {'configSerial': name, 'configDescr': descr,
+                           'configConfigSource': storage}
+                message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_DEVICE_CFG_ADD, payload=payload,
+                                      source=c.AMQP_PROCESSOR_REST)
+                response = self._backendp.call(message=message)
+                response = jsonpickle.decode(response)
+
+                if response.payload[0]:
+
+                    size = 0
+                    __data = StringIO.StringIO()
+
+                    while True:
+                        __data.write(obj.file.read(8192))
+
+                        if size <= int(objSize):
+                            __data.write(obj.file.read(8192))
+                            break
+
+                        size += __data.len
+
+                    storage = self.storageFact.init_plugin(plugin_name=storage)
+                    status, msg = storage.add_device_config_data(configSerial=name, configData=__data.getvalue())
+
+                    if status:
+                        return json.dumps((response.payload[0], escape(response.payload[1])))
+
+                    else:
+                        message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_DEVICE_CFG_DEL, payload=name,
+                                              source=c.AMQP_PROCESSOR_REST)
+                        response = self._backendp.call(message=message)
+                        response = jsonpickle.decode(response)
+
+                        if response.payload[0]:
+                            return json.dumps((status, escape(msg)))
 
                 else:
                     return json.dumps((response.payload[0], escape(response.payload[1])))
@@ -700,19 +868,44 @@ class Authenticate(RestBase):
 class Logs(RestBase):
     exposed = True
 
-    def GET(self, ):
+    def GET(self):
+
+
+
         url = 'ws://{0}:{1}/yapt/ws?clientname={2}'.format(c.conf.YAPT.WebUiAddress,
                                                            str(c.conf.YAPT.WebUiPort), c.conf.YAPT.WebUiPlugin)
         wsc = WebSocketClient(url=url)
         wsc.connect()
 
-        with open('./logs/info.log', 'r') as stream:
-            log_data = stream.read()
+        #with open('./logs/info.log', 'r') as stream:
+        #    log_data = stream.read()
 
-        if log_data:
-            wsc.send(payload=json.dumps({'action': c.UI_ACTION_INIT_LOG_VIEWER, 'data': log_data}))
+        #if log_data:
+        #    wsc.send(payload=json.dumps({'action': c.UI_ACTION_INIT_LOG_VIEWER, 'data': log_data}))
 
+        # bufsize = 8192
+        fname = './logs/info.log'
+        fsize = os.stat(fname).st_size
+        iter = 0
+        lines = 17
+
+        with open(fname, 'r') as f:
+
+            bufsize = fsize - 1
+            data = []
+
+            while True:
+
+                iter += 1
+                f.seek(fsize - bufsize * iter)
+                data.extend(f.readlines())
+
+                if len(data) >= lines or f.tell() == 0:
+                    #print(''.join(data[-lines:]))
+                    wsc.send(payload=json.dumps({'action': c.UI_ACTION_INIT_LOG_VIEWER, 'data': ''.join(data[-lines:])}))
+                    break
         wsc.close()
+        pass
 
 
 class YaptRestApi(object):

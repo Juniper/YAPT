@@ -8,7 +8,8 @@ class LogTaskProcessor(object):
     TASKP_NOT_FOUND_PLG_ENABLED = 'Task plugin <{0}> not found'
     TASKP_STOP_DEV_REBOOT = 'Stop proccessing tasks since device <{0}> rebooting'
     TASKP_STOP_NO_DEVGRP = 'Can\'t find <{0} in device conf file'
-    TASKP_STOP_NO_DEVGRP_CFG = 'No deivce group config found'
+    TASKP_STOP_NO_DEVGRP_CFG = 'No device group config found with reason: <{0}>'
+    TASKP_STOP_NO_DEV_CFG = 'No device config found with reason: <{0}>'
     TASKP_SEQ_EMPTY = 'Task sequence empty'
     TASKP_CLOSE_DEV_CONN = 'Closing device connection <{0}>'
     TASKP_STOP_VERFIY_FAILURE = 'Do not start verification for device <{0}> since task failure'
@@ -17,6 +18,7 @@ class LogTaskProcessor(object):
     TASKP_DEFECT_MSG = 'Received defect message'
     TASKP_GROUP_CFG_NOK = 'Error in getting device group config <{0}>'
     TASKP_CONN_ERR_CLOSE = 'Error in closing connection for device {0} with error: {1}'
+    TASKP_CONN_ERR = 'Error connection device stop task processing for device {0}'
 
 
 class LogInitTask(object):
@@ -105,7 +107,8 @@ class LogAnsibleTask(object):
     PLAYBOOK_TASK_ERROR = '<{0}> failed'
     PLAYBOOK_TASK_OK = '<{0}> ok'
     ERROR_UNREACHABLE = '<{0}> unreachable'
-    ERROR_DEV_CFG_FILE = 'Error in reading device config files'
+    ERROR_DEV_CFG_FILE = 'Error in reading device config file with reason: <{0}>'
+    ERROR_DEV_TEMPLATE_FILE = 'Error in reading device template file with reson: <{0}>'
 
 
 class Logvnfstage(object):
@@ -238,6 +241,13 @@ class LogPlgFactory(object):
     SPACEPLG_FOUND = 'Found Junos Space plugin <{0}>'
     SPACEPLG_LOAD = 'Loading Junos Space plugin: <{0}>'
     SPACEPLG_NOT_FOUND = 'No Junos Space plugin found with name: {0}'
+    SOURCE_DEV_TYPE_NOK = 'Error reading device type in config source <{0}>'
+    STORAGE_PLG = 'STORAGE'
+    STORAGE_PLG_LOAD = 'Loading config source plugins <{0}>'
+    STORAGE_PLG_FOUND = 'Found enabled config source plugin <{0}>'
+    STORAGE_PLG_LOADED = 'Loaded enabled config source plugin <{0}>'
+    STORAGE_PLG_EXEC = 'Executed enabled config source plugin <{0}>'
+    STORAGE_PLG_NOK = 'Failed loading source plugin <{0}>'
 
 
 class LogSqlBackend(object):
@@ -298,15 +308,23 @@ class LogLocal(object):
     LOCAL_GRP_CFG_FILE_MISS = 'Missing group config file <{0}>'
     LOCAL_GRP_CFG_FILE_ADD_OK = 'Successfully added group <{0}>'
     LOCAL_GRP_CFG_FILE_DEL_OK = 'Successfully deleted group <{0}>'
+    CONF_VALIDATE = 'CONFVALIDATE'
+    CONF_VALIDATE_INIT = 'Validating <{0}> configuration'
+    CONF_VALIDATE_OK = '<{0}> configuration validation successful'
+    CONF_VALIDATE_NOK = '<{0}> configuration validation failed with error <{0}>'
 
 
 class LogGit(object):
+    GIT_AUTH_OK = 'Authentication successful'
+    GIT_AUTH_NOK = 'Authentication failed'
+    GIT_AUTH_ACCESS_TOKEN_NOK = 'Authentication failed no Acess-Token received'
     GIT_DEV_CFG_OK = 'Found device config file <{0}>'
     GIT_DEV_CFG_NOK = 'Missing config file for serialnumber <{0}>'
     GIT_DEV_GRP_CFG_OK = 'Found group config file <{0}>'
     GIT_DEV_GRP_CFG_NOK = 'Error in getting device group config <{0}> <{1}>'
     GIT_DEV_TEMPL_OK = ''
     GIT_DEV_TEMPL_NOK = ''
+
 
 class LogTools(object):
     CONN_MGMT = 'CONNMGMT'
@@ -320,6 +338,12 @@ class LogTools(object):
     YAPT_CONF = 'YAPTCONF'
     YAPT_CONF_LOAD_ERR = 'Loading YAPT config file with error <{0}:{1}>'
     YAPT_CONF_LOAD_GRP_ERR = 'Loading group file <{0}> failed with error <{1}>'
+    STORAGE_PLG = 'STORAGE'
+    STORAGE_PLG_LOAD = 'Loading config source plugins <{0}>'
+    STORAGE_PLG_FOUND = 'Found enabled config source plugin <{0}>'
+    STORAGE_PLG_LOADED = 'Loaded enabled config source plugin <{0}>'
+    STORAGE_PLG_EXEC = 'Executed enabled config source plugin <{0}>'
+    STORAGE_PLG_NOK = 'Failed loading source plugin <{0}>'
 
 
 class LogTaskTools(object):
@@ -336,16 +360,6 @@ class LogTaskTools(object):
     CONF_DEV_CFG = 'PREPDEVCONF'
     CONF_DEV_CFG_TEMPLATE_ERROR = 'Template error({1}): {2} --> {3}'
     CONF_DEV_CFG_DEV_DATA_ERROR = 'Error in reading device data'
-    CONF_SOURCE_PLG = 'CONFSOURCE'
-    CONF_SOURCE_PLG_LOAD = 'Loading config source plugins <{0}>'
-    CONF_SOURCE_PLG_FOUND = 'Found enabled config source plugin <{0}>'
-    CONF_SOURCE_PLG_LOADED = 'Loaded enabled config source plugin <{0}>'
-    CONF_SOURCE_PLG_EXEC = 'Executed enabled config source plugin <{0}>'
-    CONF_SOURCE_PLG_NOK = 'Failed loading source plugin <{0}>'
-    CONF_VALIDATE = 'CONFVALIDATE'
-    CONF_VALIDATE_INIT = 'Validating <{0}> configuration'
-    CONF_VALIDATE_OK = '<{0}> configuration validation successful'
-    CONF_VALIDATE_NOK = '<{0}> configuration validation failed with error <{0}>'
 
 
 class LogYaptOobaUi(object):
@@ -389,5 +403,6 @@ class LogCommon(object):
 class LogSampleDevice(object):
     SAMPLEDEV_STATUS_NOK = 'Current device status is <{0}>. Not sending update to UI'
 
-class LogConfigSource(object):
+
+class LogStorage(object):
     SOURCE_DEV_TYPE_NOK = 'Error reading device type in config source <{0}>'

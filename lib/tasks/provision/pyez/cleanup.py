@@ -4,11 +4,12 @@
 # Authors: cklewar@juniper.net
 #
 
+import lib.constants as c
+
 from jnpr.junos.exception import ConnectClosedError
 from napalm_base.base import NetworkDriver
 from ncclient.operations import TimeoutExpiredError
 
-import lib.constants as c
 from lib.logmsg import LogCleanupTask as logmsg
 from lib.logmsg import LogCommon
 from lib.tasks.task import Task
@@ -42,7 +43,6 @@ class CleanupTask(Task):
             if c.SOURCEPLUGIN_OSSH in self.sample_device.deviceSourcePlugin:
 
                 try:
-
                     self.sample_device.deviceConnection.cli('op cleanup', warning=False)
 
                 except ConnectClosedError as cce:

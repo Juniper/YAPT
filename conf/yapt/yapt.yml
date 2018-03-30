@@ -27,7 +27,7 @@ YAPT:
 ########################################################################################################################
 SOURCE:
   DeviceConfOoba: false                         #Enable OOBA DB check
-  DeviceConfSrcPlugins: [local]                 #Configuration source plugin order
+  DeviceConfSrcPlugins: [cgitlab]               #Configuration source plugin order
 
   Local:
     DeviceGrpFilesDir: conf/groups/                 #Map device to a provisioning group
@@ -37,7 +37,7 @@ SOURCE:
     Address: 10.16.116.142
     Port: 9080
     Protocol: http
-    LoginUrl: /users/sign_in
+    LoginUrl: /oauth/token
     User: root
     Password: password
     DevCfg: demo_ops/yapt_dev_conf

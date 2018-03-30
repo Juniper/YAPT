@@ -11,6 +11,8 @@ import uuid
 import jnpr.junos
 import jsonpickle
 import pika
+import lib.constants as c
+
 from napalm_base import NetworkDriver
 from ncclient.operations.errors import TimeoutExpiredError
 
@@ -18,7 +20,6 @@ from lib.amqp.amqpadapter import AMQPBlockingClientAdapter
 from lib.amqp.amqpadapter import AMQPBlockingServerAdapter
 from lib.amqp.amqpadapter import AMQPRpcClientAdapter
 from lib.amqp.amqpmessage import AMQPMessage
-import lib.constants as c
 from lib.logmsg import LogCommon
 from lib.logmsg import LogTaskProcessor as logmsg
 from lib.pluginfactory import SourcePluginFactory
@@ -49,21 +50,21 @@ class TaskProcessor(AMQPBlockingServerAdapter):
             if isinstance(body_decoded,
                           AMQPMessage) and c.AMQP_MESSAGE_TYPE_DEVICE_ADD == body_decoded.message_type:
 
-                sample_device_decoded = body_decoded.payload
-                sample_device = Tools.create_dev_conn(sample_device=sample_device_decoded)
+                sample_device = body_decoded.payload
+                status, sample_device = Tools.create_dev_conn(sample_device=sample_device)
 
-                if sample_device is not None:
+                if status:
 
                     sample_device = Tools.get_device_facts(sample_device=sample_device)
-                    device_datavars = self._configurator.get_config(
-                        lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE, sample_device=sample_device)
+                    status, data = Tools.get_config(lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE_CFG,
+                                                    sample_device=sample_device)
 
-                    if device_datavars is not None:
+                    if status:
 
-                        sample_device.deviceConfigData = device_datavars
+                        sample_device.deviceConfigData = data
 
                         try:
-                            sample_device.deviceGroup = device_datavars['yapt']['device_group']
+                            sample_device.deviceGroup = data['yapt']['device_group']
 
                         except KeyError as ke:
                             self._logger.info(Tools.create_log_msg(logmsg.TASKP, sample_device.deviceSerial,
@@ -71,13 +72,14 @@ class TaskProcessor(AMQPBlockingServerAdapter):
                             return
 
                         shared = dict()
-                        grp_cfg = self._configurator.get_config(
-                            lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_GROUP, sample_device=sample_device)
+                        status, grp_cfg = Tools.get_config(lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_GROUP,
+                                                           sample_device=sample_device)
 
-                        if grp_cfg is not None:
+                        if status:
 
                             sample_device.deviceGroupData = grp_cfg
                             grp_cfg = Tools.create_config_view(config_type=c.CONFIG_TYPE_GROUP, stream=grp_cfg)
+                            sample_device.deviceTemplate = grp_cfg.TASKS.Provision.Configuration.DeviceConfTemplateFile
                             sample_device.deviceTaskSeq = grp_cfg.TASKS.Sequence
                             shared[c.TASK_SHARED_IPAM] = list()
                             shared[c.TASK_SHARED_PROGRESS] = 100 / len(grp_cfg.TASKS.Sequence)
@@ -104,7 +106,8 @@ class TaskProcessor(AMQPBlockingServerAdapter):
                                     or c.DEVICE_STATUS_EXISTS == sample_device.deviceStatus:
 
                                 self._logger.info(Tools.create_log_msg(logmsg.TASKP, sample_device.deviceSerial,
-                                                                       logmsg.TASKP_LOAD_TASK_SEQ.format(tasks_sequence)))
+                                                                       logmsg.TASKP_LOAD_TASK_SEQ.format(
+                                                                           tasks_sequence)))
                                 task_plugins = Tools.load_task_plugins(tasks_sequence)
                                 self._logger.debug(Tools.create_log_msg(logmsg.TASKP, sample_device.deviceSerial,
                                                                         logmsg.TASKP_FOUND_TASKPLG.format(
@@ -157,7 +160,7 @@ class TaskProcessor(AMQPBlockingServerAdapter):
                                                     Tools.create_log_msg(logmsg.TASKP, sample_device.deviceSerial,
                                                                          logmsg.TASKP_TASK_ERROR.format(
                                                                              _task)))
-                                                self.close_dev_conn(sample_device)
+                                                self.close_dev_conn(sample_device=sample_device)
                                                 break
 
                                             else:
@@ -200,12 +203,18 @@ class TaskProcessor(AMQPBlockingServerAdapter):
                                     return
                         else:
                             self._logger.info(Tools.create_log_msg(logmsg.TASKP, sample_device.deviceSerial,
-                                                                   logmsg.TASKP_STOP_NO_DEVGRP_CFG))
+                                                                   logmsg.TASKP_STOP_NO_DEVGRP_CFG.format(grp_cfg)))
+                            self.close_dev_conn(sample_device=sample_device)
                             return
-
                     else:
-                        self.close_dev_conn(sample_device)
-
+                        self._logger.info(Tools.create_log_msg(logmsg.TASKP, sample_device.deviceSerial,
+                                                               logmsg.TASKP_STOP_NO_DEV_CFG.format(data)))
+                        self.close_dev_conn(sample_device=sample_device)
+                        return
+                else:
+                    self._logger.info(Tools.create_log_msg(logmsg.TASKP, sample_device.deviceSerial,
+                                                           logmsg.TASKP_CONN_ERR.format(sample_device.deviceSerial)))
+                    return
             else:
                 Tools.amqp_receive_error_to_logger(routing_key=method.routing_key, body_decoded=body_decoded)
 
@@ -281,8 +290,8 @@ class ServiceProcessor(AMQPBlockingServerAdapter):
 
             if isinstance(body_decoded,
                           AMQPMessage) and c.AMQP_MESSAGE_TYPE_CLOSE_OSSH_SOCKET == body_decoded.message_type:
-
                 sample_device = body_decoded.payload
+
                 if sample_device.deviceIP in c.oss_seen_devices:
 
                     sock = c.oss_seen_devices[sample_device.deviceIP]['socket']

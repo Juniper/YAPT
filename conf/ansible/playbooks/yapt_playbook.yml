@@ -11,19 +11,25 @@
   tasks:
 
     - name: Checking NETCONF connectivity
-      wait_for: host={{ inventory_hostname }} port=22 timeout=30
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        timeout: 30
 
     - name: Include device specific variables
-      include_vars: file={{ device_vars }}
+      include_vars:
+        file: "{{ device_vars }}"
 
     - name: Create device specific template
-      template: src={{ template_src }} dest={{ template_dst }}
+      template:
+        src: "{{ template_src }}"
+        dest: "{{ template_dst }}"
 
-    - name: Install Junos configuration
-      junos_install_config:
-        overwrite=false
-        replace=true
-        host={{ inventory_hostname }}
-        user={{ junos_user }}
-        passwd={{ junos_password }}
-        file={{ template_dst }}
+    - name: Commit device configuration
+      juniper_junos_config:
+        load: "merge"
+        format: "text"
+        src: "{{ template_dst }}"
+        comment: "Merge config with YAPT/Ansible"
+        user: "{{ junos_user }}"
+        passwd: "{{ junos_password }}"

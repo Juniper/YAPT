@@ -47,6 +47,32 @@ class Backend(AMQPRpcServerAdapter):
                 ch.basic_ack(delivery_tag=method.delivery_tag)
 
             elif isinstance(body_decoded,
+                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_DEVICE_CFG_ADD == body_decoded.message_type:
+
+                response = self.add_device_config(configSerial=body_decoded.payload['configSerial'],
+                                                  configDescr=body_decoded.payload['configDescr'],
+                                                  configConfigSource=body_decoded.payload['configConfigSource'])
+                self.processRequest(ch=ch, method=method, props=props, response=response)
+
+            elif isinstance(body_decoded,
+                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_DEVICE_CFG_DEL == body_decoded.message_type:
+
+                response = self.del_device_config(configSerial=body_decoded.payload)
+                self.processRequest(ch=ch, method=method, props=props, response=response)
+
+            elif isinstance(body_decoded,
+                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_DEVICE_GET_CFG_BY_SERIAL == body_decoded.message_type:
+
+                response = self.get_device_config_by_sn(configSerial=body_decoded.payload)
+                self.processRequest(ch=ch, method=method, props=props, response=response)
+
+            elif isinstance(body_decoded,
+                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_DEVICE_GET_CFG_ALL == body_decoded.message_type:
+
+                response = self.get_device_configs()
+                self.processRequest(ch=ch, method=method, props=props, response=response)
+
+            elif isinstance(body_decoded,
                             AMQPMessage) and c.AMQP_MESSAGE_TYPE_DEVICE_UPDATE == body_decoded.message_type:
 
                 response = self.update_device(body_decoded.payload)
@@ -76,7 +102,7 @@ class Backend(AMQPRpcServerAdapter):
                 ch.basic_ack(delivery_tag=method.delivery_tag)
 
             elif isinstance(body_decoded,
-                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_DEV_GET_BY_SN == body_decoded.message_type:
+                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_DEVICE_GET_BY_SN == body_decoded.message_type:
 
                 response = self.get_device(body_decoded.payload)
                 message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
@@ -87,7 +113,7 @@ class Backend(AMQPRpcServerAdapter):
                 ch.basic_ack(delivery_tag=method.delivery_tag)
 
             elif isinstance(body_decoded,
-                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_DEV_GET_ALL == body_decoded.message_type:
+                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_DEVICE_GET_ALL == body_decoded.message_type:
 
                 response = self.get_devices()
                 message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
@@ -112,8 +138,7 @@ class Backend(AMQPRpcServerAdapter):
 
             elif isinstance(body_decoded,
                             AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_SITE_DEL == body_decoded.message_type:
-
-                response = self.del_site(siteId=body_decoded.payload['siteId'])
+                response = self.del_site(siteId=body_decoded.payload)
                 self.processRequest(ch=ch, method=method, props=props, response=response)
 
             elif isinstance(body_decoded,
@@ -136,12 +161,6 @@ class Backend(AMQPRpcServerAdapter):
 
                 response = self.get_asset_by_site_id(assetSiteId=body_decoded.payload)
                 self.processRequest(ch=ch, method=method, props=props, response=response)
-                # message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
-                #                      source=c.AMQP_PROCESSOR_BACKEND)
-                # encoded = jsonpickle.encode(message)
-                # ch.basic_publish(exchange='', routing_key=props.reply_to,
-                #                 properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
-                # ch.basic_ack(delivery_tag=method.delivery_tag)
 
             elif isinstance(body_decoded,
                             AMQPMessage) and c.AMQP_MESSAGE_TYPE_REST_ASSET_GET_BY_SERIAL == body_decoded.message_type:
@@ -345,12 +364,6 @@ class Backend(AMQPRpcServerAdapter):
 
                 response = self.get_services()
                 self.processRequest(ch=ch, method=method, props=props, response=response)
-                # message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_RESPONSE, payload=response,
-                #                      source=c.AMQP_PROCESSOR_BACKEND)
-                # encoded = jsonpickle.encode(message)
-                # ch.basic_publish(exchange='', routing_key=props.reply_to,
-                #                 properties=pika.BasicProperties(correlation_id=props.correlation_id), body=encoded)
-                # ch.basic_ack(delivery_tag=method.delivery_tag)
 
             else:
                 Tools.amqp_receive_error_to_logger(routing_key=method.routing_key, body_decoded=body_decoded)
@@ -369,6 +382,22 @@ class Backend(AMQPRpcServerAdapter):
 
     @abc.abstractmethod
     def add_device(self, new_device):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def add_device_config(self, configSerial, configDescr, configConfigSource):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def del_device_config(self, configSerial):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def get_device_config_by_sn(self, configSerial):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def get_device_configs(self):
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -436,7 +465,7 @@ class Backend(AMQPRpcServerAdapter):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def add_template(self, templateName, templateConfig, templateDescr, tempalteConfigSource, templateDevGrp):
+    def add_template(self, templateName, templateConfig, templateDescr, templateConfigSource, templateDevGrp):
         raise NotImplementedError()
 
     @abc.abstractmethod

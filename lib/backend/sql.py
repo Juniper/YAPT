@@ -52,7 +52,7 @@ class Sql(Backend):
     @classmethod
     def create_tables(cls, dbname=None, fields=None, refName=None):
         dynTable = taskFactory(dbName=dbname, fields=fields, refName=refName)
-        tables = [Device, dynTable, Site, Asset, Group, Template, Image, Service]
+        tables = [Device, dynTable, Site, Asset, Group, Template, Image, Service, DeviceConfig]
         database.connect()
         database.create_tables(tables, safe=True)
         database.close()
@@ -120,6 +120,58 @@ class Sql(Backend):
             self.amqpCl.send_message(message=message)
 
             return new_device
+
+    def add_device_config(self, configSerial=None, configDescr=None, configConfigSource=None):
+
+        try:
+            DeviceConfig.create(configSerial=configSerial, configDescr=configDescr,
+                                configConfigSource=configConfigSource)
+            database.close()
+            return True, "Successfully added new device configuration <{0}>".format(configSerial)
+
+        except IntegrityError as ie:
+            self._logger.info('YAPTBACKEND-[%s]: %s', configSerial, ie.message)
+            return False, "Failed to add new device configuration <{0}> with error <{1}>".format(configSerial,
+                                                                                                 ie.message)
+
+    def del_device_config(self, configSerial=None):
+
+        try:
+
+            config = DeviceConfig.get(DeviceConfig.configSerial == configSerial)
+            config.delete_instance()
+            return True, "Successfully deleted device config <{0}>".format(configSerial)
+
+        except DoesNotExist as dne:
+            return False, dne.message
+
+    def get_device_config_by_sn(self, configSerial=None):
+
+        try:
+            devcfg = DeviceConfig.get(DeviceConfig.configSerial == configSerial)
+
+            return True, {'configId': devcfg.configId, 'configSerial': devcfg.configSerial, 'configDescr': devcfg.configDescr,
+                          'configConfigSource': devcfg.configConfigSource}
+
+        except DoesNotExist as dne:
+            return False, dne.message
+
+    def get_device_configs(self):
+
+        configs = list()
+
+        try:
+            query = prefetch(DeviceConfig.select())
+
+            for config in query:
+                configData = {'configId': config.configId, 'configSerial': config.configSerial,
+                              'configDescr': config.configDescr, 'configConfigSource': config.configConfigSource}
+                configs.append(configData)
+
+            return True, configs
+
+        except DoesNotExist as dne:
+            return False, dne.message
 
     def update_device(self, sample_device):
 
@@ -374,7 +426,8 @@ class Sql(Backend):
             query = prefetch(Group.select())
 
             for group in query:
-                groupData = {'groupId': group.groupId, 'groupName': group.groupName, 'groupDescr': group.groupDescr}
+                groupData = {'groupId': group.groupId, 'groupName': group.groupName, 'groupDescr': group.groupDescr,
+                             'groupConfigSource': group.groupConfigSource}
                 groups.append(groupData)
 
             return True, groups
@@ -427,7 +480,7 @@ class Sql(Backend):
 
             for template in query:
                 templateData = {'templateId': template.templateId, 'templateName': template.templateName,
-                                'templateDescr': template.templateDescr}
+                                'templateDescr': template.templateDescr, 'templateConfigSource': template.templateConfigSource }
                 templates.append(templateData)
 
             return True, templates
@@ -542,6 +595,13 @@ class Device(BaseModel):
     deviceSourcePlugin = CharField(default='')
     deviceTaskSeq = DeviceTaskSeqField(default='')
     deviceTasks = dict()
+
+
+class DeviceConfig(BaseModel):
+    configId = IntegerField(unique=True, primary_key=True)
+    configSerial = CharField(unique=True, null=False)
+    configDescr = CharField(default='new device config')
+    configConfigSource = CharField(default='local')
 
 
 class Site(BaseModel):

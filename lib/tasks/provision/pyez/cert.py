@@ -42,7 +42,7 @@ class CertTask(Task):
         e = threading.Event()
         _configurator = Configuration()
         datavars = _configurator.get_config(sample_device=self.sample_device,
-                                            lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE)
+                                            lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE_CFG)
 
         if datavars:
 
@@ -57,14 +57,19 @@ class CertTask(Task):
                                                                   self.sample_device.deviceSerial)))
 
                     self.sample_device.deviceConnection.close()
-                    self.sample_device = Tools.create_dev_conn(self.sample_device)
+                    status, self.sample_device = Tools.create_dev_conn(self.sample_device)
 
-                    thr = threading.Thread(target=self.do_cert_requests, args=(datavars, e, cancel_chan,))
-                    thr.start()
+                    if status:
 
-                    sshpfwd = SSHPortForward(sample_device=self.sample_device, grp_cfg=self.grp_cfg, event=e,
-                                             cancel_chan=cancel_chan)
-                    sshpfwd.init_port_fwd()
+                        thr = threading.Thread(target=self.do_cert_requests, args=(datavars, e, cancel_chan,))
+                        thr.start()
+
+                        sshpfwd = SSHPortForward(sample_device=self.sample_device, grp_cfg=self.grp_cfg, event=e,
+                                                 cancel_chan=cancel_chan)
+                        sshpfwd.init_port_fwd()
+
+                    else:
+                        return False, 'Error in device connection'
 
                 else:
 

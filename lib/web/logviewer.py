@@ -1,9 +1,10 @@
-# Copyright (c) 1999-2017, Juniper Networks Inc.
+# Copyright (c) 2017, Juniper Networks Inc.
 # All rights reserved.
 #
-# Authors: cklewar@juniper.net
+# Authors: cklewar
 #
 
+import os
 import json
 import threading
 import time
@@ -33,35 +34,23 @@ class TailfSvc(threading.Thread):
         self.log_file = args[0]
         self.logger.info(Tools.create_log_msg('LOGVIEWER', None, 'Successfully started Logviewer service'))
         self.logger.info(Tools.create_log_msg('LOGVIEWER', None, 'Observing log file <{0}>'.format(self.log_file)))
+        self.clp = ClientProcessor(exchange=c.conf.AMQP.Exchange, routing_key=c.AMQP_PROCESSOR_UI,
+                                   queue=c.AMQP_PROCESSOR_UI)
 
     def run(self):
-        with open(self.log_file, 'r') as fin:
-            self.readlines_then_tail(fin)
+        fd = open('./logs/info.log', 'r+')
 
-    def readlines_then_tail(self, fin):
+        for line in self.tail(fd):
+            payload = json.dumps({'data': line.strip(), 'action': c.UI_ACTION_UPDATE_LOG_VIEWER})
+            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_UI_UPDATE_LOG_VIEWER,
+                                  payload=payload, source=c.AMQP_PROCESSOR_SVC)
+            self.clp.send_message(message=message)
 
+    def tail(self, theFile):
+        theFile.seek(0, 2)  # Go to the end of the file
         while True:
-            line = fin.readline()
-            if line:
-                pass
-            else:
-                self.tail(fin)
-
-    def tail(self, fin):
-
-        while True:
-
-            where = fin.tell()
-            line = fin.readline()
-
+            line = theFile.readline()
             if not line:
                 time.sleep(LogViewer.SLEEP_INTERVAL)
-                fin.seek(where)
-            else:
-                payload = json.dumps(
-                    {'data': line.strip(), 'action': c.UI_ACTION_UPDATE_LOG_VIEWER})
-                message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_UI_UPDATE_LOG_VIEWER,
-                                      payload=payload, source=c.AMQP_PROCESSOR_SVC)
-                clp = ClientProcessor(exchange=c.conf.AMQP.Exchange, routing_key=c.AMQP_PROCESSOR_UI,
-                                      queue=c.AMQP_PROCESSOR_UI)
-                clp.send_message(message=message)
+                continue
+            yield line

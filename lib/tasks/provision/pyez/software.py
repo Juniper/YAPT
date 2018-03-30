@@ -278,7 +278,6 @@ class SoftwareTask(Task):
                                                                         remote_path=self.grp_cfg.TASKS.Provision.Software.RemoteDir,
                                                                         cleanfs=True, no_copy=False,
                                                                         progress=SoftwareTask.install_progress)
-
             except Exception as err:
 
                 Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
@@ -322,19 +321,21 @@ class SoftwareTask(Task):
                 self.update_task_state(new_task_state=c.TASK_STATE_REBOOT,
                                        task_state_message=logmsg.SW_CONN_LOOSE_REBOOT)
             finally:
-
-                device = Device(host=self.sample_device.deviceIP, user=c.conf.YAPT.DeviceUsr,
-                                password=c.conf.YAPT.DevicePwd)
-                alive = self.probe_device_not_alive(device, self.grp_cfg.TASKS.Provision.Software.RetryProbeCounter)
+                # Should use conn mgr?
+                sample_device = Tools.create_dev_conn(self.sample_device, connect=False)
+                #device = Device(host=self.sample_device.deviceIP, user=c.conf.YAPT.DeviceUsr,
+                #                password=c.conf.YAPT.DevicePwd)
+                alive = self.probe_device_not_alive(sample_device, self.grp_cfg.TASKS.Provision.Software.RetryProbeCounter)
 
                 if not alive:
 
                     Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
                                    message=logmsg.SW_PROBE_WAKEUP.format(self.sample_device.deviceIP))
                     # Should use conn mgr?
-                    device = Device(host=self.sample_device.deviceIP, user=c.conf.YAPT.DeviceUsr,
-                                    password=c.conf.YAPT.DevicePwd)
-                    alive = self.probe_device_alive(device, self.grp_cfg.TASKS.Provision.Software.RebootProbeTimeout)
+                    sample_device = Tools.create_dev_conn(self.sample_device, connect=False)
+                    #device = Device(host=self.sample_device.deviceIP, user=c.conf.YAPT.DeviceUsr,
+                    #                password=c.conf.YAPT.DevicePwd)
+                    alive = self.probe_device_alive(sample_device, self.grp_cfg.TASKS.Provision.Software.RebootProbeTimeout)
 
                     if alive:
 
@@ -343,9 +344,9 @@ class SoftwareTask(Task):
                         self.update_task_state(new_task_state=c.TASK_STATE_PROGRESS,
                                                task_state_message=logmsg.SW_PROBE_WAKUP_OK.format(
                                                    self.sample_device.deviceIP))
-                        self.sample_device = Tools.create_dev_conn(self.sample_device)
+                        status, self.sample_device = Tools.create_dev_conn(self.sample_device)
 
-                        if self.sample_device is not None:
+                        if status:
 
                             self.sample_device.deviceConnection.bind(cu=Config, sw=SW)
                             # Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
@@ -382,7 +383,7 @@ class SoftwareTask(Task):
         :return:
         """
 
-        alive = device.probe(timeout=5)
+        alive = device.deviceConnection.probe(timeout=5)
         probe_attemps = self.grp_cfg.TASKS.Provision.Software.RebootProbeCounter
         probe_cntr = 0
 
@@ -391,7 +392,7 @@ class SoftwareTask(Task):
             if probe_cntr <= probe_attemps:
                 alive = device.probe(timeout)
                 probe_cntr += 1
-                Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
+                Tools.emit_log(task_name=self.task_name, sample_device=device,
                                message=logmsg.SW_PROBE_DEV.format(timeout))
                 self.update_task_state(new_task_state=c.TASK_STATE_REBOOT,
                                        task_state_message=logmsg.SW_PROBE_WAIT_REBOOT.format(str(probe_cntr)))
@@ -409,7 +410,7 @@ class SoftwareTask(Task):
         :return:
         """
 
-        alive = device.probe(timeout=5)
+        alive = device.deviceConnection.probe(timeout=5)
         probe_attemps = self.grp_cfg.TASKS.Provision.Software.RebootProbeCounter
         probe_cntr = 0
 
@@ -418,7 +419,7 @@ class SoftwareTask(Task):
             if probe_cntr <= probe_attemps:
                 alive = device.probe(1)
                 probe_cntr += 1
-                Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
+                Tools.emit_log(task_name=self.task_name, sample_device=device,
                                message=logmsg.SW_PROBE_DEV.format(timeout))
                 self.update_task_state(new_task_state=c.TASK_STATE_REBOOT,
                                        task_state_message=logmsg.SW_PROBE_WAIT_REBOOT.format(str(probe_cntr)))

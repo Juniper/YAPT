@@ -1,0 +1,121 @@
+---
+#**********************************************************************************************************************
+#GROUP: SRX
+#***********************************************************************************************************************
+
+########################################################################################################################
+#Tasks Section (turn on/off provisioning tasks / configure specific task settings)
+########################################################################################################################
+TASKS:
+  #Enable tasks and set processing order within sequence
+  #Sequence: Init, Filecp, Software, Ipam, Configuration, Cert, Discovery, Policy, Assign, Rule, Publish, Cleanup
+  Sequence: [Init, Filecp, Software, Ansibleapi, Cleanup]
+
+  Provision:
+
+    Init:
+      Dependencies: [Configuration, Software]
+
+    Assign:
+      AssignTemplate: conf/space/151/tempaltes/assignDevice.j2
+
+    Configuration:
+      Dependencies: []
+      DeviceConfTemplateDir: conf/devices/template/   #device specific template config directory
+      DeviceConfTemplateFile: srx_no_ipam_no_ossh.j2  #device config template name
+      ConfigFileHistory: history/                     #path to dir where commited device config being saved
+      Merge: True                                     #Merge Configuration
+      Overwrite: False                                #Replace Configuration
+
+      Internal:
+        CommitTimeout: 120                            #Set Commit Timeout to x sec
+        ConfirmedTimeout: 1                           #Set Commit confirmed timeout to x min
+
+      Ansibleapi:
+        PlaybookPath: conf/ansible/playbooks/         #Set path to playbook
+        Playbook: yapt_playbook.yml                   #Set Playbook file name. Playbooks stored in conf/ansible/playbook
+
+    Cert:
+      PortForwarding: false                                         #Enable Port Forwarding for cert retrieval
+      LocalFwdPort: 5554                                            #Forwarding Port on device
+      RemoteFwdHost: 10.15.115.2                                    #Remote host to forward to
+      RemoteFwdHostPort: 8080                                       #Port on remote host to forward to
+      EnrollmentUrl: ejbca/publicweb/apply/scep/advpn/pkiclient.exe #
+      RevocationUrl: ejbca/publicweb/status/ocsp                    #
+
+    Discovery:
+      Mode: Discovery                                 #Set discovery mode to either Discovery or Configlet
+      UsePing: false                                  #If Mode 'Discovery' use ping
+      UseSnmp: true                                   #If Mode 'Discovery' use snmp
+      ConnectionConfigletDir: conf/space/configlet/   #modeled device configlet file path
+
+    Filecp:
+      Files: [cleanup.slax]                           #File(s) to be copied to device (e.g. SLAX)
+      FileLocalDir: scripts/                          #source directory where to find files (defaults to script dir)
+      FileRemoteDir: /var/db/scripts/op               #Event/Commit/OP Script or any other directory path on device
+
+    Ipam:
+      Module: nipap
+      Address: 10.15.115.6
+      Port: '1337'
+      Prefixes: [10.200.0.0/24, 10.13.113.0/24]
+      User: nipap
+      Password: nipap
+
+    Policy:
+      PolicyTemplate: conf/space/templates/151/fwpolicy.j2
+      LookupType: DEVICE
+
+    Rule:
+      RuleTemplate: conf/space/templates/151/fwdefaultrule.j2
+      RuleTemplateVars: conf/space/templates/151/fwdefaultrule.yml
+
+    Software:
+      ImageDir: images/                               #device software images directory
+      RemoteDir: /var/tmp/                            #destination directory
+      RebootProbeCounter: 30                          #How many times probe should be send while dev rebooting
+      RebootProbeTimeout: 30                          #wait n sec starting probing after device is rebooted
+      RetryProbeCounter: 5                            #How many times probe should be send while going into reboot
+      PkgAddDevTimeout: 1800                          #Timeout for pkgadd function (OSSH)
+
+      TargetVersion:
+        FIREFLY-PERIMETER: 12.1X47-D40.1
+        VSRX: 15.1X49-D100.6
+        SRX100: 12.3X48-D40
+        SRX110: 12.3X48-D40
+        SRX210: 12.3X48-D40
+        SRX220: 12.3X48-D40
+        SRX300: 15.1X49-D70
+        SRX320: 15.1X49-D70
+        SRX340: 15.1X49-D70
+        SRX345: 15.1X49-D70
+
+    Ticket:
+      Module: rt                                                  #Module currently only request_tracker ticketing system
+      Mode: detail                                                #Mode could be "summary" to give a summarization at the end or "detail" to get update after every task
+      Address: 10.86.9.14                                         #Ticket System IP address
+      Port: 8000                                                  #Ticket System Port
+      Protocol: https                                             #HTTP / HTTPS
+      User: juniper                                               #Ticket system user
+      Password: juniper123                                        #Ticket system passsword
+      Eauth: pam                                                  #EDI authentication module
+      Functions: [request_tracker.create_ticket, request_tracker.update_ticket]   #call edi runner functions
+      NextEvent: None                                             #
+      TemplateDir: lib/emitter/templates/                             #Template directory
+      TicketCreateTemplate: ticket_create_detail_mode.j2          #Template file used for tickte creation
+      TicketUpdateTemplate: ticket_update_detail_mode.j2          #Template file used for ticker update
+
+########################################################################################################################
+#Verification Task Section
+########################################################################################################################
+  Verification:
+
+    Ping:
+      Destination: 10.12.111.1
+      Count: '10'
+
+    Vpn:
+      SaRemoteAddress: 10.11.111.115
+
+    Jsnap:
+      Tests: [test_is_equal.yml]

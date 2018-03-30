@@ -21,33 +21,36 @@ class CallbackModule(CallbackBase):
     CALLBACK_NAME = 'amqp_and_yapt_log'
     CALLBACK_NEEDS_WHITELIST = False
 
-    def __init__(self, sample_device=None, shared=None):
+    def __init__(self, sample_device=None, shared=None, update_task_state=None):
 
         super(CallbackModule, self).__init__()
         self.logger = c.logger
         self.sample_device = sample_device
         self.shared = shared
+        self.update_task_state = update_task_state
+        self.task_name = 'Ansibleapi'
 
     def v2_runner_on_failed(self, res, ignore_errors=False):
-        self.logger.info(Tools.create_log_msg(logmsg.ANSIBLEAPI, self.sample_device.deviceSerial,
-                                              logmsg.PLAYBOOK_TASK_ERROR.format(res._task.get_name())))
-        self.sample_device.deviceTasks.taskState['Ansibleapi'] = res._task.get_name()
-        self.shared[c.TASK_SHARED_STATE] = c.TASK_STATE_RESULT_FAILURE
+        self.update_task_state(new_task_state=c.TASK_STATE_FAILED,
+                               task_state_message=res._task.get_name())
+        Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
+                       message=logmsg.PLAYBOOK_ERROR.format(res._task.get_name()))
         return
 
     def v2_runner_on_ok(self, res):
-        self.logger.info(Tools.create_log_msg(logmsg.ANSIBLEAPI, self.sample_device.deviceSerial,
-                                              logmsg.PLAYBOOK_TASK_OK.format(res._task.get_name())))
-        self.sample_device.deviceTasks.taskState['Ansibleapi'] = res._task.get_name()
+        self.update_task_state(new_task_state=c.TASK_STATE_PROGRESS,
+                               task_state_message=res._task.get_name())
+        Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
+                       message=logmsg.PLAYBOOK_TASK_OK.format(res._task.get_name()))
 
     def v2_runner_on_skipped(self, host, item=None):
         pass
 
     def v2_runner_on_unreachable(self, res):
-        self.logger.info(Tools.create_log_msg(logmsg.ANSIBLEAPI, self.sample_device.deviceSerial,
-                                              logmsg.ERROR_UNREACHABLE.format(res._task.get_name())))
-        self.sample_device.deviceTasks.taskState['Ansibleapi'] = res._task.get_name()
-        self.shared[c.TASK_SHARED_STATE] = c.TASK_STATE_RESULT_FAILURE
+        self.update_task_state(new_task_state=c.TASK_STATE_FAILED,
+                               task_state_message=res._task.get_name())
+        Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
+                       message=logmsg.ERROR_UNREACHABLE.format(res._task.get_name()))
 
     def v2_runner_on_async_failed(self, res):
         pass

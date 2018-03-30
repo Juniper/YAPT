@@ -157,3 +157,55 @@ class EmitterPlgFact(object):
                 c.active_log_plgs[_plg_name.title()] = emitter_plugin
         else:
             print Tools.create_log_msg(self.__class__.__name__, None, 'Emitter plugin sequence is empty')
+
+
+class StoragePlgFact(object):
+
+    def __init__(self):
+        self.logger = c.logger
+
+    def init_plugins(self):
+
+        if c.conf.SOURCE.DeviceConfSrcPlugins:
+
+            storage_plgs = Tools.load_storage_plugins()
+            active_storage_plgs = dict()
+
+            self.logger.debug(Tools.create_log_msg(self.__class__.__name__, None,
+                                       'Loading storage plugin sequence <{0}>'.format(c.conf.SOURCE.DeviceConfSrcPlugins)))
+
+            for _plg_name, _storage_plg in storage_plgs.iteritems():
+
+                storage_plugin = storage_plgs[_plg_name]
+                storage_plugin = getattr(storage_plugin.pop(), _plg_name.title())
+                storage_plugin = storage_plugin()
+                active_storage_plgs[_plg_name.title()] = storage_plugin
+
+            self.logger.debug(Tools.create_log_msg(self.__class__.__name__, None,
+                                                  'Successfully loaded storage plugin sequence <{0}>'.format(
+                                                      c.conf.SOURCE.DeviceConfSrcPlugins)))
+            return active_storage_plgs
+
+        else:
+            self.logger.info(Tools.create_log_msg(self.__class__.__name__, None, 'Storage plugin sequence is empty'))
+
+    def init_plugin(self, plugin_name=None):
+
+        if c.conf.SOURCE.DeviceConfSrcPlugins:
+
+            self.logger.debug(Tools.create_log_msg(self.__class__.__name__, None,
+                                       'Loading storage plugin <{0}>'.format(plugin_name)))
+
+            storage = Tools.load_storage_plugin(name=plugin_name)
+            self.logger.debug(logmsg.STORAGE_PLG, plugin_name,
+                              logmsg.STORAGE_PLG_FOUND.format(plugin_name))
+            storage = getattr(storage, plugin_name.title())
+            self.logger.debug(logmsg.STORAGE_PLG, plugin_name,
+                              logmsg.STORAGE_PLG_LOADED.format(plugin_name))
+            storage = storage()
+            self.logger.debug(Tools.create_log_msg(self.__class__.__name__, None,
+                                                  'Successfully loaded storage plugin <{0}>'.format(plugin_name)))
+            return storage
+
+        else:
+            self.logger.info(Tools.create_log_msg(self.__class__.__name__, None, 'Storage plugin sequence is empty'))
