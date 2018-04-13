@@ -63,32 +63,23 @@ class Phs(Service):
                                                   logmsg.PHS_VALIDATION_FAILED.format(username)))
             return False
 
-    def run_service(self):
+    def start_service(self):
 
-        if c.conf.SERVICES.Phs.Containerized:
+        p = multiprocessing.Process(target=PhsInitC, args=(self.source_plugin, self.plugin_cfg))
+        p.start()
 
-            p = multiprocessing.Process(target=PhsInitC, args=(self.source_plugin, self.plugin_cfg))
-            p.start()
 
-        else:
+@cherrypy.tools.register('before_finalize', priority=60)
+def secureHeaders():
 
-            phs = PhoneHomeServer(self.source_plugin, self.plugin_cfg)
-            rd = cherrypy.dispatch.RoutesDispatcher()
-            rd.connect('phs', c.PHS_INIT_URL, controller=phs, action='init')
-            # rd.connect('phs', '/restconf/data/juniper-zerotouch-bootstrap-server:devices/device={uid}/activation-code',
-            #           controller=phs, action='activation')
-            rd.connect('phs', c.PHS_NOTIFICATION_URL, controller=phs, action='notification')
+    headers = cherrypy.response.headers
+    headers['X-Frame-Options'] = 'DENY'
+    headers['X-XSS-Protection'] = '1; mode=block'
+    headers['X-Content-Type-Options'] = 'nosniff'
+    headers['Content-Security-Policy'] = "default-src='self'"
 
-            conf = {
-                '/': {
-                    'log.screen': False,
-                    'request.dispatch': rd,
-                    'tools.auth_basic.on': True,
-                    'tools.auth_basic.realm': 'localhost',
-                    'tools.auth_basic.checkpassword': self.validate_phc
-                }
-            }
-            cherrypy.tree.mount(root=None, config=conf)
+    if (cherrypy.server.ssl_certificate != None and cherrypy.server.ssl_private_key != None):
+        headers['Strict-Transport-Security'] = 'max-age=31536000'
 
 
 class PhsInitC(object):
@@ -96,26 +87,28 @@ class PhsInitC(object):
     def __init__(self, source_plugin, plugin_cfg):
         self._devices_auth = dict()
         self.logger = c.logger
-
+        srv_conf_path = 'conf/services/phs/phs.conf'
+        cherrypy.config.update('{0}/{1}'.format(os.getcwd(), srv_conf_path))
         phs = PhoneHomeServer(source_plugin, plugin_cfg)
         rd = cherrypy.dispatch.RoutesDispatcher()
         rd.connect('phs', c.PHS_INIT_URL, controller=phs, action='init')
         # rd.connect('phs', '/restconf/data/juniper-zerotouch-bootstrap-server:devices/device={uid}/activation-code',
         #           controller=phs, action='activation')
         rd.connect('phs', c.PHS_NOTIFICATION_URL, controller=phs, action='notification')
-        cherrypy.config.update({'engine.autoreload.on': False})
+
         conf = {
             '/': {
-                'log.screen': False,
                 'request.dispatch': rd,
-                'tools.auth_basic.on': True,
-                'tools.auth_basic.realm': 'localhost',
                 'tools.auth_basic.checkpassword': self.validate_phc
             }
         }
-        cherrypy.tree.mount(root=None, config=conf)
+
+        app = cherrypy.tree.mount(root=None, config='{0}/{1}'.format(os.getcwd(), srv_conf_path))
+        app.merge(conf)
         cherrypy.engine.start()
         cherrypy.engine.block()
+
+
 
     def validate_phc(self, realm, username, password):
 
@@ -264,8 +257,8 @@ class PhoneHomeServer(object):
                         datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), device=self.deviceIP)
 
                     # NFX JDM facts return empty serial number so we have to add it here
-                    # if self.device_type == 'nfx':
-                    sample_device.deviceSerial = self.serialnumber
+                    if self.device_type == 'nfx':
+                        sample_device.deviceSerial = self.serialnumber
 
                     message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_DEVICE_ADD,
                                           payload=sample_device,

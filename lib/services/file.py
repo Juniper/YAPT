@@ -26,7 +26,7 @@ class File(Service):
         self.logger.debug(Tools.create_log_msg(logmsg.FILESVC, None, LogCommon.IS_SUBCLASS.format(self.__class__.__name__, issubclass(File, Service))))
         self.logfile = self.logfile = getattr(c.conf.SERVICES, (plugin_cfg['pluginName']).title()).LogFile
 
-    def run_service(self):
+    def start_service(self):
         file_service_thread = FileServiceThread(target=self.plugin_cfg['serviceName'].title(),
                                                 name=self.plugin_cfg['serviceName'],
                                                 args=(self.logfile, self.source_plugin,))

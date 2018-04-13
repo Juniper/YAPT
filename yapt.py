@@ -14,9 +14,8 @@ from lib.processor import TaskProcessor
 from lib.processor import ServiceProcessor
 from lib.web.ui import UiProcessor
 from lib.pluginfactory import SpacePluginFactory
-
 from lib.tools import Tools
-from lib.web.base import Init
+from lib.web.base import UiInit
 
 
 class Yapt(object):
@@ -47,5 +46,5 @@ class Yapt(object):
             c.conf.AMQP.Exchange, c.conf.AMQP.Type, c.AMQP_PROCESSOR_UI, c.AMQP_PROCESSOR_UI,))
         uiprocessor.start()
 
-        p = multiprocessing.Process(target=Init, args=())
+        p = multiprocessing.Process(target=UiInit, args=())
         p.start()

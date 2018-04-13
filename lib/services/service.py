@@ -15,8 +15,17 @@ class Service(object):
         self.plugin_cfg = plugin_cfg
         self.logger = c.logger
         self.source_plugin = source_plugin
+        self.status = c.SVC_INIT
         self._backendp = BackendClientProcessor(exchange='', routing_key=c.AMQP_RPC_BACKEND_QUEUE)
 
     @abc.abstractmethod
-    def run_service(self):
+    def start_service(self):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def stop_service(self):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def restart_service(self):
         raise NotImplementedError()

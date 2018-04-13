@@ -252,7 +252,7 @@ class TaskProcessor(AMQPBlockingServerAdapter):
             if sample_device.deviceSourcePlugin == c.SOURCEPLUGIN_OSSH:
                 sample_device.deviceConnection = ''
                 message = AMQPMessage(
-                    message_type=c.AMQP_MESSAGE_TYPE_CLOSE_OSSH_SOCKET,
+                    message_type=c.AMQP_MESSAGE_TYPE_SVC_OSSH_CLOSE_SOCKET,
                     payload=sample_device,
                     source=c.AMQP_PROCESSOR_TASK)
                 self.send_message(message=message,
@@ -278,7 +278,7 @@ class ServiceProcessor(AMQPBlockingServerAdapter):
                                                 LogCommon.IS_SUBCLASS.format(self.__class__.__name__,
                                                                              issubclass(ServiceProcessor,
                                                                                         AMQPBlockingServerAdapter))))
-        SourcePluginFactory(c.conf.YAPT.SourcePlugins)
+        self.registry = SourcePluginFactory(c.conf.YAPT.SourcePlugins).registry
 
     def receive_message(self, ch, method, properties, body):
 
@@ -289,7 +289,7 @@ class ServiceProcessor(AMQPBlockingServerAdapter):
             Tools.amqp_receive_to_logger(routing_key=method.routing_key, body_decoded=body_decoded)
 
             if isinstance(body_decoded,
-                          AMQPMessage) and c.AMQP_MESSAGE_TYPE_CLOSE_OSSH_SOCKET == body_decoded.message_type:
+                          AMQPMessage) and c.AMQP_MESSAGE_TYPE_SVC_OSSH_CLOSE_SOCKET == body_decoded.message_type:
                 sample_device = body_decoded.payload
 
                 if sample_device.deviceIP in c.oss_seen_devices:
@@ -301,6 +301,21 @@ class ServiceProcessor(AMQPBlockingServerAdapter):
                     with c.oss_seen_devices_lck:
                         if sample_device.deviceIP in c.oss_seen_devices:
                             c.oss_seen_devices.pop(sample_device.deviceIP, None)
+
+            elif isinstance(body_decoded,
+                          AMQPMessage) and c.AMQP_MESSAGE_TYPE_SVC_OSSH_START == body_decoded.message_type:
+                print 'starting service'
+
+            elif isinstance(body_decoded,
+                          AMQPMessage) and c.AMQP_MESSAGE_TYPE_SVC_OSSH_STOP == body_decoded.message_type:
+                print 'stopping service'
+
+            elif isinstance(body_decoded,
+                          AMQPMessage) and c.AMQP_MESSAGE_TYPE_SVC_OSSH_RESART == body_decoded.message_type:
+                print 'restarting service'
+
+            else:
+                print 'unknow AMQP Message Type'
 
 
 class BackendClientProcessor(AMQPRpcClientAdapter):

@@ -9,7 +9,7 @@ import argparse
 from lib.web.ui import UiProcessor
 import lib.constants as c
 from lib.tools import Tools
-from lib.web.base import Init
+from lib.web.base import UiInit
 from lib.pluginfactory import EmitterPlgFact
 
 
@@ -29,5 +29,5 @@ class YaptUi(object):
             c.conf.AMQP.Exchange, c.conf.AMQP.Type, c.AMQP_PROCESSOR_UI, c.AMQP_PROCESSOR_UI,))
         uiprocessor.start()
 
-        p = multiprocessing.Process(target=Init, args=())
+        p = multiprocessing.Process(target=UiInit, args=())
         p.start()

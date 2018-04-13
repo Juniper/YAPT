@@ -619,6 +619,20 @@ class Asset(RestBase):
 class Service(RestBase):
     exposed = True
 
+    @cherrypy.tools.json_out()
+    def POST(self, action=None, name=None):
+
+        if action == 'start':
+            print 'start service ' + name
+            return json.dumps((True, 'start service ' + name))
+        elif action == 'stop':
+            print 'stop service ' + name
+            return json.dumps((True, 'stop service ' + name))
+        elif action == 'restart':
+            print 'restart service ' + name
+            return json.dumps((True, 'restart service ' + name))
+
+    @cherrypy.tools.json_out()
     def GET(self, action=None, name=None):
 
         if action == 'all':
@@ -627,7 +641,7 @@ class Service(RestBase):
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
 
-            return json.dumps(response.payload)
+            return response.payload[0], response.payload[1]
 
         elif action == 'config':
 
@@ -639,10 +653,10 @@ class Service(RestBase):
                     code = code['SERVICES'][name]
                     output = StringIO.StringIO()
                     ruamel.yaml.dump(code, output, Dumper=ruamel.yaml.RoundTripDumper)
-                    return output.getvalue()
+                    return True, output.getvalue()
 
             except EnvironmentError as ee:  # parent of IOError, OSError *and* WindowsError where available
-                return json.dumps(False, ee.message)
+                return False, ee.message
 
         elif action == 'mod':
 
@@ -652,10 +666,10 @@ class Service(RestBase):
 
                     y = ruamel.yaml.load(stream, ruamel.yaml.RoundTripLoader)
                     y = y['SERVICES'][name]
-                    return json.dumps(y)
+                    return True, y
 
             except EnvironmentError as ee:  # parent of IOError, OSError *and* WindowsError where available
-                return json.dumps(False, ee.message)
+                return False, ee.message
 
         else:
 
@@ -664,7 +678,7 @@ class Service(RestBase):
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
 
-            return json.dumps(response.payload)
+            return response.payload[0], response.payload[1]
 
 
 class Configsrc(RestBase):
@@ -926,15 +940,15 @@ class YaptRestApi(object):
             setattr(self, url, cls(args=args))
 
     def __init__(self):
-        self._backendp = BackendClientProcessor(exchange='', routing_key=c.AMQP_RPC_BACKEND_QUEUE)
-        self._setattr_url_map(args=self._backendp)
-        self._host = c.conf.YAPT.WebUiAddress
-        self._port = str(c.conf.YAPT.RestApiPort)
+        _backendp = BackendClientProcessor(exchange='', routing_key=c.AMQP_RPC_BACKEND_QUEUE)
+        self._setattr_url_map(args=_backendp)
+
+        _host = c.conf.YAPT.WebUiAddress
+        _port = int(c.conf.YAPT.RestApiPort)
+
         yapt_rest_server = Server()
-        yapt_rest_server.socket_host = self._host
-        yapt_rest_server.socket_port = int(self._port)
+        yapt_rest_server.socket_host = _host
+        yapt_rest_server.socket_port = _port
         yapt_rest_server.subscribe()
         cherrypy.tools.cors_tool = cherrypy.Tool('before_request_body', cors_tool, name='cors_tool', priority=50)
-        cherrypy.config.update({'log.screen': False,
-                                'engine.autoreload.on': False,
-                                })
+

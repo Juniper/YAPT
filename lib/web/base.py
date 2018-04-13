@@ -29,78 +29,55 @@ from lib.web.rest import YaptRestApi
 env = Environment(loader=FileSystemLoader('lib/web/ui'))
 
 
-class Init(object):
+class UiInit(object):
     ##############################
     # Start Cherrypy environment #
     ##############################
 
     def __init__(self):
         self._current_dir = os.path.dirname(os.path.abspath(__file__))
+
         USERS = {'jon': 'secret'}
 
-        if c.conf.YAPT.WebUiNat:
-            print '\n\n############## Starting YAPT WebUI at: http://{0}:{1}/yapt/ui ##############\n\n'.format(
-                c.conf.YAPT.WebUiNatIp, str(
-                    str(c.conf.YAPT.WebUiPort)))
-        else:
-            print '\n\n############## Starting YAPT WebUI at: http://{0}:{1}/yapt/ui ##############\n\n'.format(
-                c.conf.YAPT.WebUiAddress, str(
-                    str(c.conf.YAPT.WebUiPort)))
+        cherrypy.config.update('{0}/{1}'.format(os.getcwd(), 'conf/yapt/ui.conf'))
 
         if c.conf.YAPT.StartWebUi:
-            cherrypy.config.update({'engine.autoreload.on': False})
-            cherrypy.tree.mount(Web(), '/yapt', config={
+
+            if c.conf.YAPT.WebUiProxy:
+                print '\n\n############## Starting YAPT WebUI at: http://{0}:{1}/yapt/ui ##############\n\n'.format(
+                    c.conf.YAPT.WebUiProxyIp, str(
+                        str(c.conf.YAPT.WebUiPort)))
+            else:
+                print '\n\n############## Starting YAPT WebUI at: http://{0}:{1}/yapt/ui ##############\n\n'.format(
+                    c.conf.YAPT.WebUiAddress, str(
+                        str(c.conf.YAPT.WebUiPort)))
+
+            web = cherrypy.tree.mount(Web(), '/yapt', '{0}/{1}'.format(os.getcwd(), 'conf/yapt/ui.conf'))
+
+            config = {
                 '/ui': {
-                    'tools.sessions.on': True,
-                    'tools.response_headers.on': True,
-                    'tools.response_headers.headers': [
-                        ('X-Frame-options', 'deny'),
-                        ('X-XSS-Protection', '1; mode=block'),
-                        ('X-Content-Type-Options', 'nosniff'),
-                    ],
-                    'log.screen': False, 'response.stream': True,
-                    'tools.staticdir.root': self._current_dir, 'tools.staticdir.on': True,
-                    'tools.staticdir.dir': "ui",
-                },
+                    'tools.staticdir.root': self._current_dir
 
+                },
                 '/ws': {
-                    'tools.websocket.on': True,
-                    'tools.websocket.handler_cls': WSHandler,
-                    'tools.websocket.protocols': ['yapt'],
-                },
+                    'tools.websocket.handler_cls': WSHandler
+                }
+            }
+            web.merge(config=config)
 
-            })
+        cherrypy.tree.mount(YaptRestApi(), '/api', config='{0}/{1}'.format(os.getcwd(), 'conf/yapt/api.conf'))
 
-        cherrypy.tree.mount(YaptRestApi(), '/api', config={
+        ooba = cherrypy.tree.mount(YaptOoba(), '/ooba', config='{0}/{1}'.format(os.getcwd(), 'conf/yapt/ooba.conf'))
+
+        config = {
             '/': {
-                'tools.auth_digest.on': False,
-                'tools.auth_digest.realm': 'yapt',
-                'tools.auth_digest.get_ha1': auth_digest.get_ha1_dict_plain(USERS),
-                'tools.auth_digest.key': 'a565c27146791cfb',
-                'request.dispatch': cherrypy.dispatch.MethodDispatcher(),
-                'tools.sessions.on': True,
-                'tools.response_headers.on': True,
-                'tools.cors_tool.on': True,
-            },
-        })
+                'tools.staticdir.root': self._current_dir,
+            }
+        }
+        ooba.merge(config)
 
-        cherrypy.tree.mount(YaptOoba(), '/ooba', config={
-            '/': {
-                'tools.sessions.on': True,
-                'tools.response_headers.on': True,
-                'tools.response_headers.headers': [
-                    ('X-Frame-options', 'deny'),
-                    ('X-XSS-Protection', '1; mode=block'),
-                    ('X-Content-Type-Options', 'nosniff'),
-                ],
-                'log.screen': False, 'response.stream': True,
-                'tools.staticdir.root': self._current_dir, 'tools.staticdir.on': True,
-                'tools.staticdir.dir': "ooba",
-            },
-        })
-
-        cherrypy.log.error_log.propagate = False
-        cherrypy.log.access_log.propagate = False
+        #cherrypy.log.error_log.propagate = False
+        #cherrypy.log.access_log.propagate = False
 
         cherrypy.engine.start()
         cherrypy.engine.block()
@@ -114,7 +91,7 @@ class AMQP(plugins.SimplePlugin):
                                       queue=c.AMQP_PROCESSOR_UI)
 
     def start(self):
-        self.bus.log('Starting up AMQP access')
+        self.bus.log('Starting AMQP processing')
         self.bus.subscribe('CPAMQPPlugin', self.send_message_to_amqp)
 
     start.priority = 78
@@ -265,7 +242,7 @@ class Web(object):
     def __init__(self):
 
         self._host = c.conf.YAPT.WebUiAddress
-        self._port = c.conf.YAPT.WebUiPort
+        self._port = int(c.conf.YAPT.WebUiPort)
         self._scheme = 'ws'
 
         Plugin(cherrypy.engine).subscribe()
@@ -275,23 +252,25 @@ class Web(object):
 
         yapt_server = Server()
         yapt_server.socket_host = self._host
-        yapt_server.socket_port = int(self._port)
+        yapt_server.socket_port = self._port
         yapt_server.max_request_body_size = 838860800
         yapt_server.subscribe()
 
     @cherrypy.expose
     def ui(self):
 
-        if c.conf.YAPT.WebUiNat:
-            _host = c.conf.YAPT.WebUiNatIp
+        if c.conf.YAPT.WebUiProxy:
+            _host = c.conf.YAPT.WebUiProxyIp
+            _port = int(c.conf.YAPT.WebUiProxyPort)
         else:
             _host = self._host
+            _port = self._port
 
         try:
 
             tmpl = env.get_template(c.conf.YAPT.WebUiIndex)
             index = tmpl.render(devices=list(), scheme=self._scheme, host=_host,
-                                port=self._port, clientname="Client%d" % random.randint(0, 100),
+                                port=_port, clientname="Client%d" % random.randint(0, 100),
                                 action_update_status=c.UI_ACTION_UPDATE_STATUS,
                                 action_add_device=c.UI_ACTION_ADD_DEVICE,
                                 action_update_device=c.UI_ACTION_UPDATE_DEVICE,

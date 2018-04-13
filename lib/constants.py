@@ -90,8 +90,17 @@ AMQP_MESSAGE_TYPE_REST_SERVICE_RESTART = 'rest_service_restart'
 AMQP_MESSAGE_TYPE_UI_UPDATE_AND_RESET = 'ui_updateAndReset'
 AMQP_MESSAGE_TYPE_UI_UPDATE_LOG_VIEWER = 'update_log_viewer'
 AMQP_MESSAGE_TYPE_RESPONSE = 'response'
-AMQP_MESSAGE_TYPE_CLOSE_OSSH_SOCKET = 'clearOsshSocket'
+AMQP_MESSAGE_TYPE_SVC_OSSH_CLOSE_SOCKET = 'svc_ossh_close_socket'
+AMQP_MESSAGE_TYPE_SVC_OSSH_START = 'svc_ossh_start'
+AMQP_MESSAGE_TYPE_SVC_OSSH_STOP = 'svc_ossh_stop'
+AMQP_MESSAGE_TYPE_SVC_OSSH_RESART = 'svc_ossh_restart'
+AMQP_MESSAGE_TYPE_SVC_OSSH_STATUS = 'svc_ossh_status'
 AMQP_MESSAGE_TYPE_REST_LOG_GET = 'rest_log_get'
+
+# Service Stauts
+SVC_INIT = 'svc_init'
+SVC_STARTED = 'svc_started'
+SVC_STOPPED = 'svc_stopped'
 
 # Task Types
 TASK_TYPE_PROVISION = 'provision'
@@ -126,7 +135,8 @@ SRC = None
 SRC_RESPONSE_FAILURE = 'failure'
 
 YAPT_LOGGER_FILE = 'conf/yapt/logging.yml'
-YAPT_LOGGER_LEVEL = logging.DEBUG
+YAPT_LOGGER_LEVEL_INFO = logging.INFO
+YAPT_LOGGER_LEVEL_DEBUG = logging.DEBUG
 YAPT_MASTER_KEY_FILE = 'conf/yapt/masterkey.yml'
 YAPT_MASTER_KEY_SEED = None
 YAPT_PASSWORD_TYPE_OSSH = 'ossh'
@@ -207,7 +217,8 @@ oss_seen_devices = dict()
 oss_seen_devices_lck = threading.Lock()
 
 # logger stuff
-FIRST_PAD = 18
+#FIRST_PAD = 18
+FIRST_PAD = 22
 SECOND_PAD = 20
 FILL_PAD = '##################'
 LOGGER_SCOPE_ALL = 'logger_scope_all'

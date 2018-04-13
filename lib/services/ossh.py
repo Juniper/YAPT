@@ -30,10 +30,16 @@ class Ossh(Service):
                                                LogCommon.IS_SUBCLASS.format(logmsg.OSSH_SERVICE,
                                                                             issubclass(Ossh, Service))))
 
-    def run_service(self):
+    def start_service(self):
         ossh_svc_t = OSSHServiceThread(target=None, name=self.plugin_cfg['serviceName'],
-                                       args=('OSSH', self.source_plugin,))
+                                       args=('OSSH', self.source_plugin, self.status))
         ossh_svc_t.start()
+
+    def stop_service(self):
+        pass
+
+    def restart_service(self):
+        pass
 
 
 class OSSHServiceThread(threading.Thread):
@@ -53,6 +59,7 @@ class OSSHServiceThread(threading.Thread):
         self._logger = c.logger
         self._logmodule = args[0]
         self._source_plugin = args[1]
+        self.status = args[2]
         self._ssh_server_bind_address = c.conf.SERVICES.Ossh.ServiceBindAddress
         self._ssh_server_listen_port = c.conf.SERVICES.Ossh.ServiceListenPort
         self._logger.info(Tools.create_log_msg(logmsg.OSSH_SERVICE, None, logmsg.OSSH_START))
@@ -74,6 +81,7 @@ class OSSHServiceThread(threading.Thread):
         try:
             self._sock.listen(5)
             self._logger.info(Tools.create_log_msg(logmsg.OSSH_SERVICE, None, logmsg.OSSH_LISTEN))
+            self.status = c.SVC_STARTED
 
         except Exception as e:
             self._logger.info(
@@ -193,9 +201,9 @@ class OSSHServiceThread(threading.Thread):
         """
 
         dmi = dict()
-
         msg = ''
         count = 5
+
         while len(msg) < 1024 and count > 0:
             c_recv = conn.recv(1)
             c_recv = c_recv.decode()

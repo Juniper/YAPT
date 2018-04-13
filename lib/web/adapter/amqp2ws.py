@@ -20,8 +20,9 @@ class Amqp2ws(UiAdapter):
         self._clientName = name
 
     def opened(self):
+
         self.logger.debug(Tools.create_log_msg(self.__class__.__name__, self._clientName,
-                                               logmsg.AMQP_CL_CONN_OK.format(self._clientName)))
+                                               logmsg.AMQP_CL_CONN_OK.format(self._clientName, self.bind_addr)))
 
     def prepare_device_task_data(self, device_serial=None, action=None, task_name=None, task_state=None):
 

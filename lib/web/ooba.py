@@ -21,29 +21,32 @@ class YaptOoba(object):
 
     def __init__(self):
         self._host = c.conf.YAPT.WebUiAddress
-        self._port = c.conf.YAPT.OobaUiPort
+        self._port = int(c.conf.YAPT.OobaUiPort)
         self._current_dir = os.path.dirname(os.path.abspath(__file__))
+
         yapt_rest_server = Server()
         yapt_rest_server.socket_host = self._host
-        yapt_rest_server.socket_port = int(self._port)
+        yapt_rest_server.socket_port = self._port
         yapt_rest_server.subscribe()
-        cherrypy.config.update({'log.screen': False, 'engine.autoreload.on': False, })
 
     @cherrypy.expose
     def index(self):
 
-        if c.conf.YAPT.WebUiNat:
-            _host = c.conf.YAPT.WebUiNatIp
+        if c.conf.YAPT.WebUiProxy:
+            _host = c.conf.YAPT.WebUiProxyIp
+            _port = int(c.conf.YAPT.OobaUiProxyPort)
         else:
             _host = self._host
+            _port = self._port
 
         try:
 
             tmpl = env.get_template('ooba.html')
-            index = tmpl.render(host=_host, port=self._port)
+            index = tmpl.render(host=_host, port=_port)
 
             return index
         except (TemplateNotFound, IOError) as ioe:
 
-            Tools.create_log_msg(self.__class__.__name__, '', logmsg.OOBA_FILE_NOK.format(ioe.filename if ioe.filename else ioe))
+            Tools.create_log_msg(self.__class__.__name__, '',
+                                 logmsg.OOBA_FILE_NOK.format(ioe.filename if ioe.filename else ioe))
             return logmsg.OOBA_FILE_NOK.format(ioe.filename if ioe.filename else ioe)

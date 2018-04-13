@@ -13,13 +13,15 @@ YAPT:
   LogFileDirectory: logs                          #directory to keep the logs
   StartWebUi: true                                #start web interface listening on port <WebUiPort>
   WebUiAddress: 172.16.146.1                      #Webserver IP Address (Used for WebSocket Client)
-  WebUiPort: 8080                                 #Webserver Listener Port
+  WebUiPort: 6580                                 #Webserver Listener Port
   WebUiIndex: index.html                          #UI index file to load
-  WebUiNat: false                                 #Enable YAPT WebUI being behind NAT
-  WebUiNatIp: 10.86.9.14                          #NAT IP
+  WebUiProxy: false                               #Enable YAPT WebUI being behind NAT / Proxy device
+  WebUiProxyIp: 10.86.9.14                        #WebUI Proxy IP
+  WebUiProxyPort: 6580                            #WebUI Proxy Port
   WebUiPlugin: amqp2ws                            #WebUI Plugin (right now only amqp2ws)
-  RestApiPort: 9090                               #YAPT Rest Api Listener Port
-  OobaUiPort: 9091                                #YAPT Internal OOBA web interface port
+  RestApiPort: 6581                               #YAPT Rest Api Listener Port
+  OobaUiPort: 6582                                #YAPT internal OOBA web interface port
+  OobaUiProxyPort: 6582                           #OOBA Proxy port
   WorkerThreads: 2                                #Amount of task queue worker threads to be started
 
 ########################################################################################################################
@@ -85,9 +87,8 @@ SERVICES:
     SigHubCmd: kill -HUP `cat /var/run/inetd.pid`           #Sig HUP inetd to re-read it's configuration
 
   Phs:
-    Containerized: false                                    #Is PHS running in container env
     ServiceBindAddress: 172.16.146.1                        #HTTP Server bind address
-    ServiceListenPort: 8082                                 #HTTP Server listen port
+    ServiceListenPort: 6583                                 #HTTP Server listen port
     InitConfPath: conf/services/phs/                        #Inital bootstrap config file directory
     EnableSSL: false                                        #HTTP or HTTPS used by PHC connection
     SSLCertificate: conf/yapt/ssl/cert.pem                  #SSL Certificate
@@ -133,3 +134,5 @@ AMQP:
 EMITTER:
   Plugins: [local, ticket]
   MainLogFile: logs/info.log
+  Local:
+    LogLevel: 20   # LogLevel info=20 // debug=10

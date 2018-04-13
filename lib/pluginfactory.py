@@ -17,6 +17,8 @@ class SourcePluginFactory(object):
     def __init__(self, plugin_names):
 
         self.logger = c.logger
+        self.registry = dict()
+
         try:
 
             with open("conf/plugins/mapping.yml", 'r') as mapping:
@@ -59,8 +61,9 @@ class SourcePluginFactory(object):
             service = getattr(service, plugin_cfg['serviceName'].title())
             self.logger.debug(Tools.create_log_msg(logmsg.SVCPLG, None, logmsg.SVCPLG_LOAD.format(service)))
             service = service(source_plugin, plugin_cfg)
+            self.registry[plugin_cfg['serviceName']] = service
             self.logger.debug(Tools.create_log_msg(logmsg.SVCPLG, None, logmsg.SVCPLG_LOAD.format(service)))
-            service.run_service()
+            service.start_service()
 
         else:
             self.logger.info(
@@ -155,6 +158,7 @@ class EmitterPlgFact(object):
                 emitter_plugin = getattr(emitter_plugin.pop(), _plg_name.title())
                 emitter_plugin = emitter_plugin()
                 c.active_log_plgs[_plg_name.title()] = emitter_plugin
+
         else:
             print Tools.create_log_msg(self.__class__.__name__, None, 'Emitter plugin sequence is empty')
 

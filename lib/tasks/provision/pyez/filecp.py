@@ -17,10 +17,10 @@ from lib.tools import Tools
 
 class FilecpTask(Task):
     """
-    copy_file_to_device copies given file to device.
+    filecp copies given file(s) to device.
 
     :param sample_device: A device object to copy the file to
-    :param file: the filename to copy
+    :param file: the file names to copy
     :param remote_path: the remote path on the device
     :return:
     """

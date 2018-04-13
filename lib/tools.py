@@ -45,12 +45,12 @@ class Tools:
 
         if devid is None:
 
-            header = '{0:{1}}{2:{3}}'.format(name.upper(), c.FIRST_PAD, c.FILL_PAD, c.SECOND_PAD)
-            return '{0}{1}'.format(header, message)
+            header = '[{0:{1}}][{2:{3}}]'.format(name.upper(), c.FIRST_PAD, c.FILL_PAD, c.SECOND_PAD)
+            return '{0}[{1}]'.format(header, message)
 
         else:
-            header = '{0:{1}}{2:{3}}'.format(name.upper(), c.FIRST_PAD, devid, c.SECOND_PAD)
-            return '{0}{1}'.format(header, message)
+            header = '[{0:{1}}][{2:{3}}]'.format(name.upper(), c.FIRST_PAD, devid, c.SECOND_PAD)
+            return '{0}[{1}]'.format(header, message)
 
     @classmethod
     def create_amqp_startup_log(cls, exchange=None, type=None, routing_key=None, host=None, channel=None):
@@ -237,6 +237,7 @@ class Tools:
 
                     dev_conn = Device(host=sample_device.deviceIP, user=c.conf.YAPT.DeviceUsr,
                                       password=Tools.get_password(c.YAPT_PASSWORD_TYPE_DEVICE), gather_facts=False)
+
                     c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceSerial,
                                                        logmsg.CONN_MGMT_PROBING_DEV.format(sample_device.deviceIP,
                                                                                            c.conf.YAPT.ConnectionProbeTimeout)))
@@ -566,6 +567,8 @@ class Tools:
 
         osshid = None
         isRaw = None
+        templateName = None
+        groupName = None
 
         from lib.pluginfactory import StoragePlgFact
         storageFact = StoragePlgFact()
@@ -602,8 +605,8 @@ class Tools:
         else:
             return False, 'Parameters not matching'
 
-        c.logger.debug(logmsg.STORAGE_PLG, sn if sn else osshid,
-                       logmsg.STORAGE_PLG_LOAD.format(c.conf.SOURCE.DeviceConfSrcPlugins))
+        c.logger.debug(Tools.create_log_msg(logmsg.STORAGE_PLG, sn if sn else osshid,
+                       logmsg.STORAGE_PLG_LOAD.format(c.conf.SOURCE.DeviceConfSrcPlugins)))
 
         # check ooba
 
@@ -698,8 +701,8 @@ class Tools:
                     if sn and groupName:
 
                         status, groupvars = storage.get_group_data(serialnumber=sn, groupName=groupName, isRaw=isRaw)
-                        c.logger.debug(logmsg.STORAGE_PLG, sn if sn else osshid,
-                                       logmsg.STORAGE_PLG_EXEC.format(storage))
+                        c.logger.debug(Tools.create_log_msg(logmsg.STORAGE_PLG, sn if sn else osshid,
+                                       logmsg.STORAGE_PLG_EXEC.format(storage)))
 
                         if status:
                             return True, groupvars
@@ -1058,12 +1061,12 @@ class Tools:
         frame = inspect.stack()[1][0]
         caller_name = Tools.get_class_from_frame(frame)
 
-        c.logger.debug("YAPT%s: ##########################################################" % caller_name)
-        c.logger.debug("YAPT%s: Send Routing-Key: %r", caller_name, routing_key)
-        c.logger.debug("YAPT%s: Send Message: %r", caller_name, type(body_decoded))
-        c.logger.debug("YAPT%s: Send Message from: %r", caller_name, body_decoded.source)
-        c.logger.debug("YAPT%s: Send Message type: %r", caller_name, body_decoded.message_type)
-        c.logger.debug("YAPT%s: ##########################################################" % caller_name)
+        c.logger.debug(Tools.create_log_msg(caller_name, 'Send', '#' * 60))
+        c.logger.debug(Tools.create_log_msg(caller_name, 'Send', "Routing-Key: {0}".format(routing_key)))
+        c.logger.debug(Tools.create_log_msg(caller_name, 'Send', "Message: {0}".format(type(body_decoded))))
+        c.logger.debug(Tools.create_log_msg(caller_name, 'Send', "Message from: {0}".format(body_decoded.source)))
+        c.logger.debug(Tools.create_log_msg(caller_name, 'Send', "Message type: {0}".format(body_decoded.message_type)))
+        c.logger.debug(Tools.create_log_msg(caller_name, 'Send', '#' * 60))
 
     @classmethod
     def amqp_receive_to_logger(cls, routing_key=None, body_decoded=None):
@@ -1071,26 +1074,25 @@ class Tools:
         frame = inspect.stack()[1][0]
         caller_name = Tools.get_class_from_frame(frame)
 
-        c.logger.debug("YAPT%s: ##########################################################" % caller_name)
-        c.logger.debug("YAPT%s: Received Routing-Key: %r", caller_name, routing_key)
-        c.logger.debug("YAPT%s: Received Message: %r", caller_name, type(body_decoded))
-        c.logger.debug("YAPT%s: Received Message from: %r", caller_name, body_decoded.source)
-        c.logger.debug("YAPT%s: Received Message type: %r", caller_name, body_decoded.message_type)
-        c.logger.debug("YAPT%s: ##########################################################" % caller_name)
+        c.logger.debug(Tools.create_log_msg(caller_name, 'Received', '#' * 60))
+        c.logger.debug(Tools.create_log_msg(caller_name, 'Received', "Routing-Key: {0}".format(routing_key)))
+        c.logger.debug(Tools.create_log_msg(caller_name, 'Received', "Message: {0}".format(type(body_decoded))))
+        c.logger.debug(Tools.create_log_msg(caller_name, 'Received', "Message from: {0}".format(body_decoded.source)))
+        c.logger.debug(Tools.create_log_msg(caller_name, 'Received', "Message type: {0}".format(body_decoded.message_type)))
+        c.logger.debug(Tools.create_log_msg(caller_name, 'Received', '#' * 60))
 
     @classmethod
     def amqp_send_error_to_logger(cls, routing_key=None, body_decoded=None):
 
         frame = inspect.stack()[1][0]
         caller_name = Tools.get_class_from_frame(frame)
-
-        c.logger.debug("YAPT%s: ##########################################################", caller_name)
-        c.logger.debug("YAPT%s: Something is wrong with message to be send", caller_name)
-        c.logger.debug("YAPT%s: Send Routing-Key: %r", caller_name, routing_key)
-        c.logger.debug("YAPT%s: Send Message: %r", caller_name, type(body_decoded))
-        c.logger.debug("YAPT%s: Send Message Type: %r", caller_name, body_decoded.message_type)
-        c.logger.debug("YAPT%s: Send Message Source: %r", caller_name, body_decoded.source)
-        c.logger.debug("YAPT%s: ##########################################################")
+        c.logger.debug(Tools.create_log_msg(caller_name, 'Send', '#' * 60))
+        c.logger.debug(Tools.create_log_msg(caller_name, 'Send', "Something is wrong with message to be send"))
+        c.logger.debug(Tools.create_log_msg(caller_name, 'Send', "Routing-Key: {0}".format(routing_key)))
+        c.logger.debug(Tools.create_log_msg(caller_name, 'Send', "Message: {0}".format(type(body_decoded))))
+        c.logger.debug(Tools.create_log_msg(caller_name, 'Send', "Type: {0}".format(body_decoded.message_type)))
+        c.logger.debug(Tools.create_log_msg(caller_name, 'Send', "Message Source: {0}".format(body_decoded.source)))
+        c.logger.debug(Tools.create_log_msg(caller_name, 'Send', '#' * 60))
 
     @classmethod
     def amqp_receive_error_to_logger(cls, routing_key=None, body_decoded=None):
@@ -1098,13 +1100,13 @@ class Tools:
         frame = inspect.stack()[1][0]
         caller_name = Tools.get_class_from_frame(frame)
 
-        c.logger.debug("YAPT%s: ##########################################################", caller_name)
-        c.logger.debug("YAPT%s: Something is wrong with received message", caller_name)
-        c.logger.debug("YAPT%s: Received Routing-Key: %r", caller_name, routing_key)
-        c.logger.debug("YAPT%s: Received Message: %r", caller_name, type(body_decoded))
-        c.logger.debug("YAPT%s: Received Message Type: %r", caller_name, body_decoded.message_type)
-        c.logger.debug("YAPT%s: Received Message Source: %r", caller_name, body_decoded.source)
-        c.logger.debug("YAPT%s: ##########################################################")
+        c.logger.debug("[{0:12}] {1}", format(caller_name, 60 * '#'))
+        c.logger.debug("[{0:12}] Something is wrong with received message", caller_name)
+        c.logger.debug("[{0:12}] Received Routing-Key: {1}", caller_name, routing_key)
+        c.logger.debug("[{0:12}] Received Message: {1}", caller_name, type(body_decoded))
+        c.logger.debug("[{0:12}] Received Message Type: {1}", caller_name, body_decoded.message_type)
+        c.logger.debug("[{0:12}] Received Message Source: {1}", caller_name, body_decoded.source)
+        c.logger.debug("[{0:12}] {1}", format(caller_name, 60 * '#'))
 
     @classmethod
     def emit_log(cls, task_name=None, task_state=None, sample_device=None, grp_cfg=None, shared=None, message=None,

@@ -547,7 +547,7 @@ class Sql(Backend):
             query = prefetch(Service.select())
 
             for service in query:
-                serviceData = {'serviceName': service.serviceName, 'serviceDescr': service.serviceDescr,
+                serviceData = {'serviceId': service.serviceId, 'serviceName': service.serviceName, 'serviceDescr': service.serviceDescr,
                                'serviceStatus': service.serviceStatus}
                 services.append(serviceData)
 

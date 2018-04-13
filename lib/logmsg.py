@@ -381,7 +381,7 @@ class LogUiProcessor(object):
 
 
 class LogAmqp(object):
-    AMQP_CL_CONN_OK = 'Client <{0}> connected to WS server'
+    AMQP_CL_CONN_OK = 'Client <{0}> connected to WS server <{1}>'
     AMQP_CL_STATUS_NOK = 'Status <{0}> not defined. Failed to prepare json data'
     AMQP_BUS_NOK = 'Error in connecting to amqp bus <{0}>'
 

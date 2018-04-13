@@ -25,7 +25,7 @@ from lib.tools import Tools
 class Space151(SpaceRestConnector):
     def __init__(self, space_ip=None, space_user=None, space_password=None):
         super(Space151, self).__init__(space_ip=space_ip, space_user=space_user, space_password=space_password)
-        self.logger.info(Tools.create_log_msg(logmsg.SPACE, c.FILL_PAD, logmsg.SPACEPLG_LOADED.format('15.1')))
+        self.logger.info(Tools.create_log_msg(logmsg.SPACE, None, logmsg.SPACEPLG_LOADED.format('15.1')))
 
     def add_fw_policy(self, body):
 
