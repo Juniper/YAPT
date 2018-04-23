@@ -56,7 +56,7 @@ class TaskProcessor(AMQPBlockingServerAdapter):
                 if status:
 
                     sample_device = Tools.get_device_facts(sample_device=sample_device)
-                    status, data = Tools.get_config(lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE_CFG,
+                    status, data = Tools.get_config(lookup_type=c.CONFIG_LOOKUP_TYPE_GET_DEVICE_CFG,
                                                     sample_device=sample_device)
 
                     if status:
@@ -72,7 +72,7 @@ class TaskProcessor(AMQPBlockingServerAdapter):
                             return
 
                         shared = dict()
-                        status, grp_cfg = Tools.get_config(lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_GROUP,
+                        status, grp_cfg = Tools.get_config(lookup_type=c.CONFIG_LOOKUP_TYPE_GET_GROUP,
                                                            sample_device=sample_device)
 
                         if status:

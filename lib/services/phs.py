@@ -180,7 +180,7 @@ class PhoneHomeServer(object):
 
         self.deviceIP = cherrypy.request.headers['Remote-Addr']
         self.serialnumber = params['uid']
-        status, data = Tools.get_config(lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE_CFG,
+        status, data = Tools.get_config(lookup_type=c.CONFIG_LOOKUP_TYPE_GET_DEVICE_CFG,
                                         serialnumber=self.serialnumber, deviceOsshId=None)
 
         if status:

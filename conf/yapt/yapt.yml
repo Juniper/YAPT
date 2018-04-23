@@ -27,7 +27,7 @@ YAPT:
 ########################################################################################################################
 #Config Source Section
 ########################################################################################################################
-SOURCE:
+STORAGE:
   DeviceConfOoba: false                         #Enable OOBA DB check
   DeviceConfSrcPlugins: [cgitlab]               #Configuration source plugin order
 

@@ -13,18 +13,6 @@
                         <netconf>
                             <ssh></ssh>
                         </netconf>
-                        <outbound-ssh>
-                            <client>
-                                <name>yapt</name>
-                                <device-id>abc123</device-id>
-                                <secret>$9$r0/KWxbs4Di.Ndi.P56/lKM8NdwYgJUj</secret>
-                                <services>netconf</services>
-                                <servers>
-                                    <name>10.11.111.250</name>
-                                    <port>7804</port>
-                                </servers>
-                            </client>
-                        </outbound-ssh>
                     </services>
                 </system>
             </configuration>

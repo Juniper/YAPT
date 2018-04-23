@@ -41,9 +41,9 @@ class AnsibleapiTask(Task):
 
     def run_task(self):
 
-        status_dev_cfg, dev_data_file = Tools.get_config(lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE_CFG_FILE,
+        status_dev_cfg, dev_data_file = Tools.get_config(lookup_type=c.CONFIG_LOOKUP_TYPE_GET_DEVICE_CFG_FILE,
                                                          sample_device=self.sample_device)
-        status_template, template_file = Tools.get_config(lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_TEMPLATE_FILE,
+        status_template, template_file = Tools.get_config(lookup_type=c.CONFIG_LOOKUP_TYPE_GET_TEMPLATE_FILE,
                                                           sample_device=self.sample_device)
         if status_dev_cfg:
 

@@ -170,13 +170,13 @@ class StoragePlgFact(object):
 
     def init_plugins(self):
 
-        if c.conf.SOURCE.DeviceConfSrcPlugins:
+        if c.conf.STORAGE.DeviceConfSrcPlugins:
 
             storage_plgs = Tools.load_storage_plugins()
             active_storage_plgs = dict()
 
             self.logger.debug(Tools.create_log_msg(self.__class__.__name__, None,
-                                       'Loading storage plugin sequence <{0}>'.format(c.conf.SOURCE.DeviceConfSrcPlugins)))
+                                       'Loading storage plugin sequence <{0}>'.format(c.conf.STORAGE.DeviceConfSrcPlugins)))
 
             for _plg_name, _storage_plg in storage_plgs.iteritems():
 
@@ -187,7 +187,7 @@ class StoragePlgFact(object):
 
             self.logger.debug(Tools.create_log_msg(self.__class__.__name__, None,
                                                   'Successfully loaded storage plugin sequence <{0}>'.format(
-                                                      c.conf.SOURCE.DeviceConfSrcPlugins)))
+                                                      c.conf.STORAGE.DeviceConfSrcPlugins)))
             return active_storage_plgs
 
         else:
@@ -195,7 +195,7 @@ class StoragePlgFact(object):
 
     def init_plugin(self, plugin_name=None):
 
-        if c.conf.SOURCE.DeviceConfSrcPlugins:
+        if c.conf.STORAGE.DeviceConfSrcPlugins:
 
             self.logger.debug(Tools.create_log_msg(self.__class__.__name__, None,
                                        'Loading storage plugin <{0}>'.format(plugin_name)))

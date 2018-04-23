@@ -137,17 +137,20 @@ class Configuration:
             heading = "## Last changed: " + now + "\n"
             heading += "version " + version + ";"
             sample_device.deviceConfigData['heading'] = heading
-            status, template = Tools.get_config(lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_TEMPLATE,
-                                                sample_device=sample_device)
+            status, data = Tools.get_config(lookup_type=c.CONFIG_LOOKUP_TYPE_GET_TEMPLATE,
+                                            sample_device=sample_device)
 
             if status:
-                config = template.render(sample_device.deviceConfigData)
+                config = data.render(sample_device.deviceConfigData)
                 sample_device.deviceConfiguration = config
                 _device_config_file = '{0}-{1}.conf'.format(sample_device.deviceSerial, now)
                 target = open(grp_cfg.TASKS.Provision.Configuration.ConfigFileHistory + _device_config_file, 'w')
                 target.write(sample_device.deviceConfiguration)
                 target.close()
-                return {'sample_device': sample_device, 'configfilename': _device_config_file}
+                return {'status': True, 'sample_device': sample_device, 'configfilename': _device_config_file}
+
+            else:
+                return {'status': False, 'sample_device': sample_device, 'configfilename': data}
 
         else:
             self.logger.info(Tools.create_log_msg(logmsg.CONF_DEV_CFG, sample_device.deviceSerial,
@@ -157,7 +160,7 @@ class Configuration:
     def prepare_vnf_boostrap_config(self, serialnumber=None, grp_cfg=None, vnf_type=None):
 
         now = datetime.datetime.now().strftime('%Y-%m-%d-%H%M')
-        status, data = Tools.get_config(lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE_CFG,
+        status, data = Tools.get_config(lookup_type=c.CONFIG_LOOKUP_TYPE_GET_DEVICE_CFG,
                                         serialnumber=None, deviceOsshId=serialnumber)
 
         if status:
@@ -169,7 +172,7 @@ class Configuration:
 
             heading = "## Last changed: " + now + "\n"
             data['heading'] = heading
-            status, template = Tools.get_config(lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_TEMPLATE,
+            status, template = Tools.get_config(lookup_type=c.CONFIG_LOOKUP_TYPE_GET_TEMPLATE,
                                                 serialnumber=None,
                                                 deviceOsshId=serialnumber,
                                                 path=data['yapt']['bootstrap_template_dir'],

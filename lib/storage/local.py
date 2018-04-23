@@ -132,7 +132,7 @@ class Local(Storage):
 
     def get_device_config_data_file(self, serialnumber=None, deviceOsshId=None):
 
-        dev_conf_path = c.conf.SOURCE.Local.DeviceConfDataDir
+        dev_conf_path = c.conf.STORAGE.Local.DeviceConfDataDir
 
         if serialnumber is not None:
 
@@ -191,7 +191,7 @@ class Local(Storage):
 
     def get_device_config_data(self, serialnumber=None, deviceOsshId=None, isRaw=None):
 
-        dev_conf_path = c.conf.SOURCE.Local.DeviceConfDataDir
+        dev_conf_path = c.conf.STORAGE.Local.DeviceConfDataDir
 
         if serialnumber is not None:
 
@@ -202,7 +202,7 @@ class Local(Storage):
                 if isRaw:
 
                     try:
-                        with open(c.conf.SOURCE.Local.DeviceConfDataDir + filename) as dfile:
+                        with open(c.conf.STORAGE.Local.DeviceConfDataDir + filename) as dfile:
                             d_data = dfile.read()
                             return True, d_data
 
@@ -212,7 +212,7 @@ class Local(Storage):
                 else:
 
                     try:
-                        with open(c.conf.SOURCE.Local.DeviceConfDataDir + filename, 'r') as fp:
+                        with open(c.conf.STORAGE.Local.DeviceConfDataDir + filename, 'r') as fp:
 
                             try:
 
@@ -225,7 +225,7 @@ class Local(Storage):
                                                          serialnumber if serialnumber else deviceOsshId,
                                                          logmsg.CONF_VALIDATE_INIT.format('device')))
                                 resp, err = self.validate(source=datavars,
-                                                          lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE_CFG)
+                                                          lookup_type=c.CONFIG_LOOKUP_TYPE_GET_DEVICE_CFG)
 
                                 if resp:
                                     self.logger.info(Tools.create_log_msg(logmsg.CONF_VALIDATE,
@@ -264,7 +264,7 @@ class Local(Storage):
                     if os.path.exists(dev_conf_path + filename) and os.path.isfile(dev_conf_path + filename):
 
                         try:
-                            with open(c.conf.SOURCE.Local.DeviceConfDataDir + filename, 'r') as fp:
+                            with open(c.conf.STORAGE.Local.DeviceConfDataDir + filename, 'r') as fp:
 
                                 try:
 
@@ -308,7 +308,7 @@ class Local(Storage):
             if os.path.exists(dev_conf_path + filename) and os.path.isfile(dev_conf_path + filename):
 
                 try:
-                    with open(c.conf.SOURCE.Local.DeviceConfDataDir + filename, 'r') as fp:
+                    with open(c.conf.STORAGE.Local.DeviceConfDataDir + filename, 'r') as fp:
 
                         try:
 
@@ -346,7 +346,7 @@ class Local(Storage):
 
             try:
 
-                with open(c.conf.SOURCE.Local.DeviceConfDataDir + configSerial + c.CONFIG_FILE_SUFFIX_DEVICE,
+                with open(c.conf.STORAGE.Local.DeviceConfDataDir + configSerial + c.CONFIG_FILE_SUFFIX_DEVICE,
                           'w') as fp:
                     fp.write(configData)
 
@@ -357,9 +357,9 @@ class Local(Storage):
 
     def del_device_config_data(self, configSerial=None):
 
-        if os.path.exists(c.conf.SOURCE.Local.DeviceConfDataDir + configSerial + c.CONFIG_FILE_SUFFIX_DEVICE):
+        if os.path.exists(c.conf.STORAGE.Local.DeviceConfDataDir + configSerial + c.CONFIG_FILE_SUFFIX_DEVICE):
 
-            os.remove(c.conf.SOURCE.Local.DeviceConfDataDir + configSerial + c.CONFIG_FILE_SUFFIX_DEVICE)
+            os.remove(c.conf.STORAGE.Local.DeviceConfDataDir + configSerial + c.CONFIG_FILE_SUFFIX_DEVICE)
             return True, logmsg.LOCAL_GRP_CFG_FILE_DEL_OK.format(configSerial)
 
         else:
@@ -367,7 +367,7 @@ class Local(Storage):
 
     def get_group_data_file(self, serialnumber=None, group=None, isRaw=None):
 
-        group_file_path = c.conf.SOURCE.Local.DeviceGrpFilesDir
+        group_file_path = c.conf.STORAGE.Local.DeviceGrpFilesDir
         filename = group + c.CONFIG_FILE_SUFFIX_GROUP
 
         if os.path.exists(group_file_path + filename) and os.path.isfile(group_file_path + filename):
@@ -398,7 +398,7 @@ class Local(Storage):
         if isRaw:
 
             try:
-                with open(c.conf.SOURCE.Local.DeviceGrpFilesDir + filename) as gfile:
+                with open(c.conf.STORAGE.Local.DeviceGrpFilesDir + filename) as gfile:
                     g_data = gfile.read()
                     return True, g_data
 
@@ -408,7 +408,7 @@ class Local(Storage):
 
             try:
 
-                with open(c.conf.SOURCE.Local.DeviceGrpFilesDir + filename, 'r') as fp:
+                with open(c.conf.STORAGE.Local.DeviceGrpFilesDir + filename, 'r') as fp:
 
                     try:
                         datavars = yaml.safe_load(fp.read())
@@ -420,7 +420,7 @@ class Local(Storage):
                             Tools.create_log_msg(logmsg.CONF_VALIDATE, serialnumber,
                                                  logmsg.CONF_VALIDATE_INIT.format('group')))
                         resp, err = self.validate(source=datavars,
-                                                  lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_GROUP)
+                                                  lookup_type=c.CONFIG_LOOKUP_TYPE_GET_GROUP)
 
                         if resp:
                             self.logger.info(Tools.create_log_msg(logmsg.CONF_VALIDATE, serialnumber,
@@ -447,7 +447,7 @@ class Local(Storage):
 
             try:
 
-                with open(c.conf.SOURCE.Local.DeviceGrpFilesDir + groupName + c.CONFIG_FILE_SUFFIX_GROUP,
+                with open(c.conf.STORAGE.Local.DeviceGrpFilesDir + groupName + c.CONFIG_FILE_SUFFIX_GROUP,
                           'w') as fp:
                     fp.write(groupData)
 
@@ -458,9 +458,9 @@ class Local(Storage):
 
     def del_group_data(self, groupName=None):
 
-        if os.path.exists(c.conf.SOURCE.Local.DeviceGrpFilesDir + groupName + c.CONFIG_FILE_SUFFIX_GROUP):
+        if os.path.exists(c.conf.STORAGE.Local.DeviceGrpFilesDir + groupName + c.CONFIG_FILE_SUFFIX_GROUP):
 
-            os.remove(c.conf.SOURCE.Local.DeviceGrpFilesDir + groupName + c.CONFIG_FILE_SUFFIX_GROUP)
+            os.remove(c.conf.STORAGE.Local.DeviceGrpFilesDir + groupName + c.CONFIG_FILE_SUFFIX_GROUP)
             return True, logmsg.LOCAL_GRP_CFG_FILE_DEL_OK.format(groupName)
 
         else:

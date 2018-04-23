@@ -70,7 +70,7 @@ class Storage(object):
 
     def validate(self, source=None, lookup_type=None):
 
-        if lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE_CFG or lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_ADD_DEVICE_CFG:
+        if lookup_type == c.CONFIG_LOOKUP_TYPE_GET_DEVICE_CFG or lookup_type == c.CONFIG_LOOKUP_TYPE_ADD_DEVICE_CFG:
 
             if 'device_type' in source['yapt']:
                 with open('conf/schema/device/' + source['yapt']['device_type'].lower() + c.CONFIG_FILE_SUFFIX_DEVICE,
@@ -84,7 +84,7 @@ class Storage(object):
                 Tools.create_log_msg(self.name, None, logmsg.SOURCE_DEV_TYPE_NOK.format(hex(id(source))))
                 return False, None
 
-        elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE_CFG_FILE:
+        elif lookup_type == c.CONFIG_LOOKUP_TYPE_GET_DEVICE_CFG_FILE:
 
             with open(source, 'r') as stream:
                 doc = yaml.safe_load(stream)
@@ -103,7 +103,7 @@ class Storage(object):
                 Tools.create_log_msg(self.name, None, logmsg.SOURCE_DEV_TYPE_NOK.format(hex(id(source))))
                 return False, None
 
-        elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GET_GROUP or lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_ADD_GROUP:
+        elif lookup_type == c.CONFIG_LOOKUP_TYPE_GET_GROUP or lookup_type == c.CONFIG_LOOKUP_TYPE_ADD_GROUP:
 
             with open('conf/schema/group/group.yml', 'r') as stream:
                 schema = yaml.safe_load(stream)

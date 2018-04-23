@@ -103,3 +103,15 @@ body {
     color: black;
     border-radius: 0px;
 }
+
+.pre-logviewer-scrollable {
+    height: auto;
+    width: auto;
+    max-height: 600px;
+    overflow: auto;
+    background-color: #eeeeee;
+    word-break: normal !important;
+    word-wrap: normal !important;
+    white-space: pre !important;
+}
+

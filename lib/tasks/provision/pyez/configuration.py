@@ -57,7 +57,7 @@ class ConfigurationTask(Task):
         configurator = Configuration()
         resp = configurator.prepare_device_config(sample_device=self.sample_device)
 
-        if resp is not None:
+        if resp['status']:
 
             self._device_config_file = resp['configfilename']
 
@@ -199,6 +199,13 @@ class ConfigurationTask(Task):
                                            self.sample_device.deviceSerial))
                 Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
                                message=logmsg.CONF_TASK_CONN_NOK.format(self.sample_device.deviceSerial))
+
+        else:
+            self.update_task_state(new_task_state=c.TASK_STATE_FAILED,
+                                   task_state_message=logmsg.CONF_TASK_CFG_TEMPLATE_ERROR.format(
+                                       '', '', resp['configfilename']))
+            Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
+                           message=logmsg.CONF_TASK_CFG_TEMPLATE_ERROR.format('', '', resp['configfilename']))
 
     def post_run_task(self):
         pass

@@ -687,7 +687,7 @@ class Configsrc(RestBase):
     def GET(self, action=None):
 
         if action == 'sources':
-            return json.dumps((True, c.conf.SOURCE.DeviceConfSrcPlugins))
+            return json.dumps((True, c.conf.STORAGE.DeviceConfSrcPlugins))
         else:
             pass
 

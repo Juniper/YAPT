@@ -79,7 +79,7 @@ class LogConfigurationTask(object):
     CONF_TASK_COMMIT_NOK = 'Unable to commit configuration. Reason: {0}'
     CONF_TASK_COMMIT_OK = 'Configuration file <{0}> committed on device'
     CONF_TASK_CONN_NOK = 'No connection to device <{0}>'
-    CONF_TASK_CFG_TEMPLATE_ERROR = 'Template error({1}): {2} --> {3}'
+    CONF_TASK_CFG_TEMPLATE_ERROR = 'Template error({0}): {1} --> {2}'
     CONF_TASK_CFG_DEV_DATA_ERROR = 'Error in reading device data'
 
 

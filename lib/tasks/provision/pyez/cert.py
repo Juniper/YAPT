@@ -42,7 +42,7 @@ class CertTask(Task):
         e = threading.Event()
         _configurator = Configuration()
         datavars = _configurator.get_config(sample_device=self.sample_device,
-                                            lookup_type=c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE_CFG)
+                                            lookup_type=c.CONFIG_LOOKUP_TYPE_GET_DEVICE_CFG)
 
         if datavars:
 

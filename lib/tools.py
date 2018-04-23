@@ -79,7 +79,7 @@ class Tools:
 
             if filename:
                 try:
-                    return ObjectView(yaml.safe_load(open(c.conf.SOURCE.Local.DeviceGrpFilesDir + filename).read()))
+                    return ObjectView(yaml.safe_load(open(c.conf.STORAGE.Local.DeviceGrpFilesDir + filename).read()))
 
                 except IOError as ioe:
                     c.logger.info(Tools.create_log_msg(logmsg.YAPT_CONF, '', logmsg.__format__(filename, ioe.message)))
@@ -606,33 +606,43 @@ class Tools:
             return False, 'Parameters not matching'
 
         c.logger.debug(Tools.create_log_msg(logmsg.STORAGE_PLG, sn if sn else osshid,
-                       logmsg.STORAGE_PLG_LOAD.format(c.conf.SOURCE.DeviceConfSrcPlugins)))
+                       logmsg.STORAGE_PLG_LOAD.format(c.conf.STORAGE.DeviceConfSrcPlugins)))
 
-        # check ooba
-
-        if c.conf.SOURCE.DeviceConfOoba:
-            c.logger.info(Tools.create_log_msg(logmsg.STORAGE_PLG, sn if sn else osshid,
-                                               'Checking config id mapping in asset database'))
-            from lib.amqp.amqpmessage import AMQPMessage
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_ASSET_GET_BY_SERIAL,
-                                  payload=sn if sn else osshid,
-                                  source=c.AMQP_PROCESSOR_REST)
-            from lib.processor import BackendClientProcessor
-            _backendp = BackendClientProcessor(exchange='', routing_key=c.AMQP_RPC_BACKEND_QUEUE)
-            response = _backendp.call(message=message)
-            response = jsonpickle.decode(response)
-
-            if response.payload:
-                c.logger.info(Tools.create_log_msg(logmsg.STORAGE_PLG, sn if sn else osshid,
-                                                   'Successfully retrieved config id mapping for {0}<-->{1}'.format(
-                                                       sn, response.payload)))
-                sn = response.payload
-
-        if c.conf.SOURCE.DeviceConfSrcPlugins:
+        if c.conf.STORAGE.DeviceConfSrcPlugins:
 
             for key, storage in storage_plgs.iteritems():
 
-                if lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE_CFG:
+                if lookup_type == c.CONFIG_LOOKUP_TYPE_GET_DEVICE_CFG:
+
+                    # check ooba
+
+                    if c.conf.STORAGE.DeviceConfOoba:
+                        c.logger.info(Tools.create_log_msg(logmsg.STORAGE_PLG, sn if sn else osshid,
+                                                           'Checking config id mapping in asset database'))
+                        from lib.amqp.amqpmessage import AMQPMessage
+                        message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_ASSET_GET_BY_SERIAL,
+                                              payload=sn if sn else osshid,
+                                              source=c.AMQP_PROCESSOR_REST)
+                        from lib.processor import BackendClientProcessor
+                        _backendp = BackendClientProcessor(exchange='', routing_key=c.AMQP_RPC_BACKEND_QUEUE)
+                        response = _backendp.call(message=message)
+                        response = jsonpickle.decode(response)
+
+                        if response.payload:
+
+                            # Check if mapping found
+                            if response.payload[0]:
+
+                                c.logger.info(Tools.create_log_msg(logmsg.STORAGE_PLG, sn if sn else osshid,
+                                                                   'Successfully retrieved config id mapping for {0}<-->{1}'.format(
+                                                                       sn, response.payload)))
+                                sn = response.payload
+
+                            else:
+                                c.logger.info(Tools.create_log_msg(logmsg.STORAGE_PLG, sn if sn else osshid,
+                                                                   'Failed to retrieve config id mapping for {0}<-->{1}'.format(
+                                                                       sn, response.payload)))
+                                return response.payload[0], response.payload[1]
 
                     status, data = storage.get_device_config_data(serialnumber=sn, deviceOsshId=osshid, isRaw=isRaw)
 
@@ -641,7 +651,7 @@ class Tools:
                     else:
                         continue
 
-                elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GET_DEVICE_CFG_FILE:
+                elif lookup_type == c.CONFIG_LOOKUP_TYPE_GET_DEVICE_CFG_FILE:
 
                     status, filename = storage.get_device_config_data_file(serialnumber=sn, deviceOsshId=osshid)
                     c.logger.debug(logmsg.STORAGE_PLG, sn if sn else osshid,
@@ -652,7 +662,7 @@ class Tools:
                     else:
                         continue
 
-                elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GET_TEMPLATE:
+                elif lookup_type == c.CONFIG_LOOKUP_TYPE_GET_TEMPLATE:
 
                     if sn and templateName and groupName:
 
@@ -667,7 +677,7 @@ class Tools:
                         else:
                             continue
 
-                elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GET_TEMPLATE_FILE:
+                elif lookup_type == c.CONFIG_LOOKUP_TYPE_GET_TEMPLATE_FILE:
 
                     if sn and templateName:
 
@@ -681,7 +691,7 @@ class Tools:
                         else:
                             continue
 
-                elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_TEMPLATE_BOOTSTRAP:
+                elif lookup_type == c.CONFIG_LOOKUP_TYPE_TEMPLATE_BOOTSTRAP:
 
                     if osshid:
 
@@ -696,7 +706,7 @@ class Tools:
                         else:
                             continue
 
-                elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GET_GROUP:
+                elif lookup_type == c.CONFIG_LOOKUP_TYPE_GET_GROUP:
 
                     if sn and groupName:
 
@@ -709,7 +719,7 @@ class Tools:
                         else:
                             continue
 
-                elif lookup_type == c.CONFIG_SOURCE_LOOKUP_TYPE_GET_GROUP_FILE:
+                elif lookup_type == c.CONFIG_LOOKUP_TYPE_GET_GROUP_FILE:
 
                     if sn and groupName:
 
@@ -1023,7 +1033,7 @@ class Tools:
 
             if not plugin.startswith('.__') and not plugin.startswith('.storage'):
 
-                if plugin[1:] in c.conf.SOURCE.DeviceConfSrcPlugins:
+                if plugin[1:] in c.conf.STORAGE.DeviceConfSrcPlugins:
                     plugin_name = plugin[1:]
                     storage_plugins[plugin_name] = {importlib.import_module(plugin, package="lib.storage")}
 

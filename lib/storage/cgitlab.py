@@ -28,10 +28,10 @@ class Cgitlab(Storage):
 
     def authenticate_cookie(self):
 
-        URL = '{0}://{1}:{2}'.format(c.conf.SOURCE.Cgitlab.Protocol, c.conf.SOURCE.Cgitlab.Address,
-                                     c.conf.SOURCE.Cgitlab.Port)
-        SIGN_IN_URL = '{0}{1}'.format(URL, c.conf.SOURCE.Cgitlab.LoginUrl)
-        LOGIN_URL = '{0}{1}'.format(URL, c.conf.SOURCE.Cgitlab.LoginUrl)
+        URL = '{0}://{1}:{2}'.format(c.conf.STORAGE.Cgitlab.Protocol, c.conf.STORAGE.Cgitlab.Address,
+                                     c.conf.STORAGE.Cgitlab.Port)
+        SIGN_IN_URL = '{0}{1}'.format(URL, c.conf.STORAGE.Cgitlab.LoginUrl)
+        LOGIN_URL = '{0}{1}'.format(URL, c.conf.STORAGE.Cgitlab.LoginUrl)
 
         self.session = requests.Session()
         m = None
@@ -52,8 +52,8 @@ class Cgitlab(Storage):
             Tools.create_log_msg(self.name, None, 'Unable to find the authenticity token')
             return False, None
 
-        data = {'user[login]': c.conf.SOURCE.Cgitlab.User,
-                'user[password]': c.conf.SOURCE.Cgitlab.Password,
+        data = {'user[login]': c.conf.STORAGE.Cgitlab.User,
+                'user[password]': c.conf.STORAGE.Cgitlab.Password,
                 'authenticity_token': token}
 
         try:
@@ -72,14 +72,14 @@ class Cgitlab(Storage):
 
     def authenticate_oauth(self):
 
-        URL = '{0}://{1}:{2}'.format(c.conf.SOURCE.Cgitlab.Protocol, c.conf.SOURCE.Cgitlab.Address,
-                                     c.conf.SOURCE.Cgitlab.Port)
-        LOGIN_URL = '{0}{1}'.format(URL, c.conf.SOURCE.Cgitlab.LoginUrl)
+        URL = '{0}://{1}:{2}'.format(c.conf.STORAGE.Cgitlab.Protocol, c.conf.STORAGE.Cgitlab.Address,
+                                     c.conf.STORAGE.Cgitlab.Port)
+        LOGIN_URL = '{0}{1}'.format(URL, c.conf.STORAGE.Cgitlab.LoginUrl)
 
         payload = {
             "grant_type": "password",
-            "username": c.conf.SOURCE.Cgitlab.User,
-            "password": c.conf.SOURCE.Cgitlab.Password
+            "username": c.conf.STORAGE.Cgitlab.User,
+            "password": c.conf.STORAGE.Cgitlab.Password
         }
         headers = {
             'content-type': "application/json",
@@ -88,6 +88,7 @@ class Cgitlab(Storage):
 
         try:
 
+            self.logger.debug(Tools.create_log_msg(self.name, None, "POST {0}, {1}, {2}".format(LOGIN_URL, payload, headers)))
             response = requests.request("POST", LOGIN_URL, data=json.dumps(payload), headers=headers)
 
         except ConnectionError as ce:
@@ -96,6 +97,7 @@ class Cgitlab(Storage):
 
         if response.status_code == 200:
             resp = json.loads(response.content)
+            self.logger.debug(Tools.create_log_msg(self.name, None, resp))
 
             if 'access_token' in resp:
 
@@ -106,6 +108,9 @@ class Cgitlab(Storage):
                 self.logger.info(Tools.create_log_msg(self.name, None, logmsg.GIT_AUTH_ACCESS_TOKEN_NOK))
                 return False, logmsg.GIT_AUTH_NOK
         else:
+            self.logger.debu(Tools.create_log_msg(self.name, None, response.status_code))
+            self.logger.debug(Tools.create_log_msg(self.name, None, response.headers))
+            self.logger.debug(Tools.create_log_msg(self.name, None, response))
             self.logger.info(Tools.create_log_msg(self.name, None, logmsg.GIT_AUTH_NOK))
             return False, logmsg.GIT_AUTH_NOK
 
@@ -138,7 +143,7 @@ class Cgitlab(Storage):
                     template_file = grp_cfg.TASKS.Provision.Configuration.DeviceConfTemplateFile
 
                     try:
-                        project = self.gl.projects.get(c.conf.SOURCE.Cgitlab.DevCfgTemplate)
+                        project = self.gl.projects.get(c.conf.STORAGE.Cgitlab.DevCfgTemplate)
                         file_path = '{0}'.format(template_file)
 
                     except (GitlabConnectionError, GitlabError) as gle:
@@ -152,14 +157,19 @@ class Cgitlab(Storage):
                     if isRaw:
                         return True, f.decode()
                     else:
-                        template = Environment(loader=BaseLoader).from_string(f.decode)
-                        return True, template
+
+                        try:
+                            template = Environment(loader=BaseLoader).from_string(f.decode())
+                            return True, template
+
+                        except TypeError as te:
+                            return False, te.message
                 else:
                     return False, groupData
             else:
 
                 try:
-                    project = self.gl.projects.get(c.conf.SOURCE.Cgitlab.DevCfgTemplate)
+                    project = self.gl.projects.get(c.conf.STORAGE.Cgitlab.DevCfgTemplate)
                     file_path = '{0}'.format(templateName)
 
                 except (GitlabConnectionError, GitlabError) as gle:
@@ -173,8 +183,14 @@ class Cgitlab(Storage):
                 if isRaw:
                     return True, f.decode()
                 else:
-                    template = Environment(loader=BaseLoader).from_string(f.decode)
-                    return True, template
+
+                    try:
+
+                        template = Environment(loader=BaseLoader).from_string(f.decode())
+                        return True, template
+
+                    except TypeError as te:
+                        return False, te.message
         else:
             return auth_status, data
 
@@ -184,7 +200,7 @@ class Cgitlab(Storage):
 
         if status:
             try:
-                project = self.gl.projects.get(c.conf.SOURCE.Cgitlab.DevCfgTemplate)
+                project = self.gl.projects.get(c.conf.STORAGE.Cgitlab.DevCfgTemplate)
                 file_path = templateName + c.CONFIG_FILE_SUFFIX_TEMPLATE
 
                 file_body = {
@@ -211,7 +227,7 @@ class Cgitlab(Storage):
 
         if status:
             try:
-                project = self.gl.projects.get(c.conf.SOURCE.Cgitlab.DevCfgTemplate)
+                project = self.gl.projects.get(c.conf.STORAGE.Cgitlab.DevCfgTemplate)
                 file_path = '{0}{1}'.format(templateName, c.CONFIG_FILE_SUFFIX_TEMPLATE)
             except (GitlabConnectionError, GitlabError) as gle:
                 return False, 'Failed to get project with error: <0>'.format(gle.message)
@@ -231,7 +247,7 @@ class Cgitlab(Storage):
 
     def get_bootstrap_config_template(self, serialnumber=None, path=None, file=None):
         self.authenticate_oauth()
-        project = self.gl.projects.get(c.conf.SOURCE.Cgitlab.VnfBoostrapTemplate)
+        project = self.gl.projects.get(c.conf.STORAGE.Cgitlab.VnfBoostrapTemplate)
         oid = [d['id'] for d in project.repository_tree() if d['name'] == file][0]
         template = Environment(loader=BaseLoader).from_string(project.repository_raw_blob(oid))
         self.session.close()
@@ -257,7 +273,7 @@ class Cgitlab(Storage):
 
             try:
 
-                project = self.gl.projects.get(c.conf.SOURCE.Cgitlab.DevCfg)
+                project = self.gl.projects.get(c.conf.STORAGE.Cgitlab.DevCfg)
                 file_path = '{0}{1}'.format(serialnumber, c.CONFIG_FILE_SUFFIX_DEVICE)
 
             except (GitlabConnectionError, GitlabError) as gle:
@@ -306,7 +322,7 @@ class Cgitlab(Storage):
 
             try:
 
-                project = self.gl.projects.get(c.conf.SOURCE.Cgitlab.DevCfg)
+                project = self.gl.projects.get(c.conf.STORAGE.Cgitlab.DevCfg)
                 file_path = configSerial + c.CONFIG_FILE_SUFFIX_DEVICE
 
                 file_body = {
@@ -336,7 +352,7 @@ class Cgitlab(Storage):
 
             try:
 
-                project = self.gl.projects.get(c.conf.SOURCE.Cgitlab.DevCfg)
+                project = self.gl.projects.get(c.conf.STORAGE.Cgitlab.DevCfg)
                 file_path = '{0}{1}'.format(configSerial, c.CONFIG_FILE_SUFFIX_DEVICE)
 
             except (GitlabConnectionError, GitlabError) as gle:
@@ -371,7 +387,7 @@ class Cgitlab(Storage):
 
             try:
 
-                project = self.gl.projects.get(c.conf.SOURCE.Cgitlab.DevCfgGrp)
+                project = self.gl.projects.get(c.conf.STORAGE.Cgitlab.DevCfgGrp)
                 file_path = '{0}{1}'.format(groupName, c.CONFIG_FILE_SUFFIX_GROUP)
 
             except (GitlabConnectionError, GitlabError) as gle:
@@ -413,7 +429,7 @@ class Cgitlab(Storage):
 
             try:
 
-                project = self.gl.projects.get(c.conf.SOURCE.Cgitlab.DevCfgGrp)
+                project = self.gl.projects.get(c.conf.STORAGE.Cgitlab.DevCfgGrp)
                 file_path = '{0}{1}'.format(groupName, c.CONFIG_FILE_SUFFIX_GROUP)
 
             except (GitlabConnectionError, GitlabError) as gle:
@@ -443,7 +459,7 @@ class Cgitlab(Storage):
         if status:
 
             try:
-                project = self.gl.projects.get(c.conf.SOURCE.Cgitlab.DevCfgGrp)
+                project = self.gl.projects.get(c.conf.STORAGE.Cgitlab.DevCfgGrp)
                 file_path = '{0}{1}'.format(groupName, c.CONFIG_FILE_SUFFIX_GROUP)
 
             except (GitlabConnectionError, GitlabError) as gle:
