@@ -18,7 +18,7 @@ class Local(Storage):
     def __init__(self):
         super(Local, self).__init__()
 
-    def get_config_template_file(self, serialnumber=None, temlateName=None, groupName=None):
+    def get_config_template_file(self, serialnumber=None, templateName=None, groupName=None):
 
         status, data = self.get_group_data(serialnumber=serialnumber, groupName=groupName)
 

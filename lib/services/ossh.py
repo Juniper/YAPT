@@ -24,22 +24,55 @@ from lib.tools import Tools
 
 
 class Ossh(Service):
-    def __init__(self, source_plugin, plugin_cfg):
-        super(Ossh, self).__init__(source_plugin=source_plugin, plugin_cfg=plugin_cfg)
+    def __init__(self, normalizer, svc_cfg):
+        super(Ossh, self).__init__(normalizer=normalizer, svc_cfg=svc_cfg)
         self.logger.debug(Tools.create_log_msg(logmsg.OSSH_SERVICE, None,
                                                LogCommon.IS_SUBCLASS.format(logmsg.OSSH_SERVICE,
                                                                             issubclass(Ossh, Service))))
+        self.logger.info(Tools.create_log_msg(logmsg.OSSH_SERVICE, None, logmsg.OSSH_START))
+        self.ossh_svc_t = None
 
     def start_service(self):
-        ossh_svc_t = OSSHServiceThread(target=None, name=self.plugin_cfg['serviceName'],
-                                       args=('OSSH', self.source_plugin, self.status))
-        ossh_svc_t.start()
+
+        if self.status == c.SVC_STOPPED or self.status == c.SVC_INIT:
+
+            self.ossh_svc_t = OSSHServiceThread(target=None, name=self.svc_cfg['serviceName'],
+                                                args=('OSSH', self.normalizer, self.status))
+            self.ossh_svc_t.start()
+            self.status = c.SVC_STARTED
+            return self.status
+        else:
+            return self.status
 
     def stop_service(self):
-        pass
+
+        if self.status == c.SVC_STARTED:
+
+            self.ossh_svc_t.stop()
+            # self._sock.shutdown(socket.SHUT_RDWR)
+            self.ossh_svc_t.join()
+            self.status = c.SVC_STOPPED
+            self.logger.info(
+                Tools.create_log_msg(logmsg.OSSH_SERVICE, None,
+                                     logmsg.OSSH_STOPPED.format(c.conf.SERVICES.Ossh.ServiceBindAddress,
+                                                                c.conf.SERVICES.Ossh.ServiceListenPort)))
+            return self.status
+
+        else:
+            return self.status
 
     def restart_service(self):
-        pass
+
+        if self.status == c.SVC_STOPPED:
+
+            self.start_service()
+            return self.status
+        else:
+
+            self.stop_service()
+            self.ossh_svc_t.join()
+            self.start_service()
+            return self.status
 
 
 class OSSHServiceThread(threading.Thread):
@@ -47,7 +80,7 @@ class OSSHServiceThread(threading.Thread):
             OSSHServer class provides socket for SSH, reverse ssh connection and port forwarding
         """
 
-    def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, verbose=None):
+    def __init__(self, group=None, target=None, name=None, args=(), kwargs=None):
         """
         :param target:
         :param name: OSSHServer thread name
@@ -55,14 +88,14 @@ class OSSHServiceThread(threading.Thread):
         :return:
         """
 
-        super(OSSHServiceThread, self).__init__(group=group, target=target, name=name, verbose=verbose)
+        super(OSSHServiceThread, self).__init__(group=group, target=target, name=name, args=args, kwargs=kwargs)
         self._logger = c.logger
         self._logmodule = args[0]
         self._source_plugin = args[1]
         self.status = args[2]
+        self._stop_service = threading.Event()
         self._ssh_server_bind_address = c.conf.SERVICES.Ossh.ServiceBindAddress
         self._ssh_server_listen_port = c.conf.SERVICES.Ossh.ServiceListenPort
-        self._logger.info(Tools.create_log_msg(logmsg.OSSH_SERVICE, None, logmsg.OSSH_START))
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
@@ -70,17 +103,24 @@ class OSSHServiceThread(threading.Thread):
             self._sock.bind((self._ssh_server_bind_address, self._ssh_server_listen_port))
 
         except socket.error as se:
+
             self._logger.info(Tools.create_log_msg(logmsg.OSSH_SERVICE, self._ssh_server_bind_address,
-                                                   logmsg.OSSH_BIND_FAILED.format(se.message)))
+                                                   logmsg.OSSH_BIND_FAILED.format(se.strerror)))
             self._logger.info(
                 Tools.create_log_msg(logmsg.OSSH_SERVICE, self._ssh_server_bind_address, logmsg.OSSH_BIND_FAILED_1))
             sys.exit(1)
+
+    def stop(self):
+        self._stop_service.set()
+        self._sock.close()
 
     def run(self):
 
         try:
             self._sock.listen(5)
-            self._logger.info(Tools.create_log_msg(logmsg.OSSH_SERVICE, None, logmsg.OSSH_LISTEN))
+            self._logger.info(Tools.create_log_msg(logmsg.OSSH_SERVICE, None,
+                                                   logmsg.OSSH_LISTEN.format(self._ssh_server_bind_address,
+                                                                             self._ssh_server_listen_port)))
             self.status = c.SVC_STARTED
 
         except Exception as e:
@@ -88,7 +128,7 @@ class OSSHServiceThread(threading.Thread):
                 Tools.create_log_msg(logmsg.OSSH_SERVICE, None, logmsg.OSSH_LISTEN_FAILED.format(e)))
             sys.exit(1)
 
-        while True:
+        while self._stop_service.is_set():
 
             sock, sock_addr = self._sock.accept()
             sock.settimeout(60)
@@ -110,14 +150,14 @@ class OSSHServiceThread(threading.Thread):
                     thr = threading.Thread(target=self.first_attempt, args=(sock, sock_addr,))
                     thr.start()
 
-                elif sock_addr[0] in c.oss_seen_devices and c.oss_seen_devices[sock_addr[0]][
-                    'attempt'] == 1 and not c.oss_seen_devices[sock_addr[0]]['rebooted']:
+                elif sock_addr[0] in c.oss_seen_devices and c.oss_seen_devices[sock_addr[0]]['attempt'] == 1 and not \
+                        c.oss_seen_devices[sock_addr[0]]['rebooted']:
 
                     c.oss_seen_devices_lck.acquire()
 
                     try:
                         c.oss_seen_devices[sock_addr[0]]['attempt'] = c.oss_seen_devices[sock_addr[0]][
-                                                                              'attempt'] + 1
+                                                                          'attempt'] + 1
                         c.oss_seen_devices[sock_addr[0]]['socket'] = sock
                     finally:
                         c.oss_seen_devices_lck.release()
@@ -170,12 +210,12 @@ class OSSHServiceThread(threading.Thread):
         self._logger.info(Tools.create_log_msg(logmsg.OSSH_SERVICE, conn_addr[0], logmsg.OSSH_CONN_ATTEMPT.format(
             c.oss_seen_devices[conn_addr[0]]['attempt'], conn_addr)))
 
-        sample_device = self._source_plugin.run_source_plugin(
+        sample_device = self._source_plugin.run_normalizer(
             datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), device=conn_addr[0])
         sample_device.deviceConnection = conn.fileno()
         sample_device.deviceOsshId = deviceId
 
-        message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_DEVICE_ADD,
+        message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_DEVICE_ADD,
                               payload=sample_device,
                               source=c.AMQP_PROCESSOR_SVC)
         self._source_plugin.send_message(message=message)

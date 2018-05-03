@@ -4,13 +4,15 @@
 # Authors: cklewar@juniper.net
 #
 
+import lib.constants as c
+
 from lib.tasks.task import Task
 from lib.tools import Tools
 
 
 class VpnVerifyTask(Task):
     CHECK_SCHEMA = False
-    TASK_TYPE = Tools.TASK_TYPE_VERIFICATION
+    TASK_TYPE = c.TASK_TYPE_VERIFICATION
     TASK_VERSION = 1.0
 
     def __init__(self, sample_device=None, shared=None):

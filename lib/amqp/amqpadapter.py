@@ -17,10 +17,19 @@ from lib.tools import Tools
 
 
 class AMQPBlockingServerAdapter(threading.Thread):
-    def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, verbose=None):
+    def __init__(self, group=None, target=None, name=None, args=(), kwargs=None):
 
-        super(AMQPBlockingServerAdapter, self).__init__(group=group, target=target, name=name, kwargs=kwargs,
-                                                        verbose=verbose)
+        """
+
+        :param group:
+        :param target:
+        :type target: Processor
+        :param name:
+        :param args:
+        :param kwargs:
+        """
+
+        super(AMQPBlockingServerAdapter, self).__init__(group=group, target=target, name=name, args=args, kwargs=kwargs)
 
         self._exchange = args[0]
         self._type = args[1]
@@ -76,10 +85,18 @@ class AMQPBlockingServerAdapter(threading.Thread):
 
 
 class AMQPRpcServerAdapter(threading.Thread):
-    def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, verbose=None):
+    def __init__(self, group=None, target=None, name=None, args=(), kwargs=None):
+        """
 
-        super(AMQPRpcServerAdapter, self).__init__(group=group, target=target, name=name, kwargs=kwargs,
-                                                   verbose=verbose)
+        :param group:
+        :param target:
+        :type target: type: Processor
+        :param name:
+        :param args:
+        :param kwargs:
+        """
+
+        super(AMQPRpcServerAdapter, self).__init__(group=group, target=target, name=name, args=args, kwargs=kwargs)
         self._exchange = args[0]
         self._type = args[1]
         self._routing_key = args[2]

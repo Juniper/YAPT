@@ -11,10 +11,10 @@ from lib.processor import BackendClientProcessor
 
 class Service(object):
 
-    def __init__(self, source_plugin, plugin_cfg):
-        self.plugin_cfg = plugin_cfg
+    def __init__(self, normalizer, svc_cfg):
+        self.svc_cfg = svc_cfg
         self.logger = c.logger
-        self.source_plugin = source_plugin
+        self.normalizer = normalizer
         self.status = c.SVC_INIT
         self._backendp = BackendClientProcessor(exchange='', routing_key=c.AMQP_RPC_BACKEND_QUEUE)
 

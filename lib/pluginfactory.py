@@ -5,69 +5,59 @@
 #
 
 import importlib
-
 import yaml
-
 import constants as c
+
 from lib.logmsg import LogPlgFactory as logmsg
 from lib.tools import Tools
 
 
-class SourcePluginFactory(object):
-    def __init__(self, plugin_names):
+class ServicePluginFactory(object):
 
+    def __init__(self, plugin_names):
         self.logger = c.logger
         self.registry = dict()
+        #normalizer = [Tools.load_service_normalizer(service=service) for service in c.conf.SERVICES.Plugins]
+        importlib.import_module('lib.services')
 
-        try:
+        for service in c.conf.SERVICES.Plugins:
+            svc_cfg = ServicePluginFactory.get_svc_cfg(service=service)
 
-            with open("conf/plugins/mapping.yml", 'r') as mapping:
-                self.plugin_cfg = yaml.load(mapping)
-                self._plugin_cfg = None
+            for k in svc_cfg:
+                normalizer = Tools.load_service_normalizer(service=k.keys()[0])
+                self.init_plugin(service, k.values()[0], normalizer)
 
-                for plugin_name in plugin_names:
-                    self._plugin_cfg = self.plugin_cfg[plugin_name.upper()]
-                    self.logger.debug(
-                        Tools.create_log_msg(logmsg.SRCPLG, None, logmsg.SRCPLG_LOAD_CFG.format(self._plugin_cfg)))
-                    self.init_plugin(self._plugin_cfg)
+    @staticmethod
+    def get_svc_cfg(service=None):
+        svc = getattr(c.conf.SERVICES, service)
+        n = getattr(svc, 'Normalizer')
 
-        except IOError as err:
-            self.logger.debug(Tools.create_log_msg(logmsg.SRCPLG, None,
-                                                   logmsg.SRCPLG_FILE_ERROR.format(err.errno, err.strerror,
-                                                                                   err.filename)))
+        if isinstance(n, list):
 
-    def init_plugin(self, plugin_cfg):
-        self.logger.debug(
-            Tools.create_log_msg(logmsg.SRCPLG, None, logmsg.SRCPLG_SEARCH.format(plugin_cfg['pluginName'])))
-        source_plugins = Tools.load_source_plugins()
+            for item in n:
 
-        if plugin_cfg['pluginName'] in source_plugins:
-            self.logger.info(
-                Tools.create_log_msg(logmsg.SRCPLG, None, logmsg.SRCPLG_FOUND.format(plugin_cfg['pluginName'])))
-            # Load source plugin
-            source_plugin = source_plugins[plugin_cfg['pluginName']]
-            self.logger.debug(Tools.create_log_msg(logmsg.SRCPLG, None, logmsg.SRCPLG_LOAD_PLG.format(source_plugin)))
-            source_plugin = getattr(source_plugin.pop(), plugin_cfg['pluginName'].title())
-            self.logger.debug(Tools.create_log_msg(logmsg.SRCPLG, None, logmsg.SRCPLG_LOAD_PLG.format(source_plugin)))
-            source_plugin = source_plugin(plugin_cfg=plugin_cfg)
-            self.logger.debug(Tools.create_log_msg(logmsg.SRCPLG, None, logmsg.SRCPLG_LOAD_PLG.format(source_plugin)))
+                plugin = getattr(svc, item)
+                module = getattr(plugin, plugin.Module, None)
+                save = dict()
 
-            # Load according to source plugin cfg proper service
-            self.logger.debug(
-                Tools.create_log_msg(logmsg.SVCPLG, None, logmsg.SVCPLG_SEARCH.format(plugin_cfg['serviceName'])))
-            importlib.import_module('lib.services')
-            service = importlib.import_module('.' + plugin_cfg['serviceName'].lower(), package="lib.services")
-            self.logger.debug(Tools.create_log_msg(logmsg.SVCPLG, None, logmsg.SVCPLG_LOAD.format(service)))
-            service = getattr(service, plugin_cfg['serviceName'].title())
-            self.logger.debug(Tools.create_log_msg(logmsg.SVCPLG, None, logmsg.SVCPLG_LOAD.format(service)))
-            service = service(source_plugin, plugin_cfg)
-            self.registry[plugin_cfg['serviceName']] = service
-            self.logger.debug(Tools.create_log_msg(logmsg.SVCPLG, None, logmsg.SVCPLG_LOAD.format(service)))
-            service.start_service()
+                if module:
+                    save[item] = {'svcName': service, 'LogFile': plugin.LogFile, 'Module': getattr(plugin, plugin.Module, None)}
+                    yield save
 
-        else:
-            self.logger.info(
-                Tools.create_log_msg(logmsg.SVCPLG, None, logmsg.SVCPLG_NOT_FOUND.format(plugin_cfg['serviceName'])))
+                else:
+                    save[item] = {'svcName': service, 'LogFile': plugin.LogFile, 'Module': plugin}
+                    yield save
+
+        elif isinstance(n, str):
+            yield {service: svc}
+
+    def init_plugin(self, service_name, svc_cfg, normalizer):
+
+        service = importlib.import_module('.' + service_name.lower(), package="lib.services")
+        service = getattr(service, service_name)
+        service = service(normalizer(svc_cfg=svc_cfg), svc_cfg)
+        self.registry[service_name] = service
+        service.start_service()
 
 
 class BackendPluginFactory(object):
@@ -153,7 +143,6 @@ class EmitterPlgFact(object):
                                        'Loading emitter plugin sequence <{0}>'.format(c.conf.EMITTER.Plugins))
 
             for _plg_name, _log_plg in emitter_plgs.iteritems():
-
                 emitter_plugin = emitter_plgs[_plg_name]
                 emitter_plugin = getattr(emitter_plugin.pop(), _plg_name.title())
                 emitter_plugin = emitter_plugin()
@@ -176,18 +165,18 @@ class StoragePlgFact(object):
             active_storage_plgs = dict()
 
             self.logger.debug(Tools.create_log_msg(self.__class__.__name__, None,
-                                       'Loading storage plugin sequence <{0}>'.format(c.conf.STORAGE.DeviceConfSrcPlugins)))
+                                                   'Loading storage plugin sequence <{0}>'.format(
+                                                       c.conf.STORAGE.DeviceConfSrcPlugins)))
 
             for _plg_name, _storage_plg in storage_plgs.iteritems():
-
                 storage_plugin = storage_plgs[_plg_name]
                 storage_plugin = getattr(storage_plugin.pop(), _plg_name.title())
                 storage_plugin = storage_plugin()
                 active_storage_plgs[_plg_name.title()] = storage_plugin
 
             self.logger.debug(Tools.create_log_msg(self.__class__.__name__, None,
-                                                  'Successfully loaded storage plugin sequence <{0}>'.format(
-                                                      c.conf.STORAGE.DeviceConfSrcPlugins)))
+                                                   'Successfully loaded storage plugin sequence <{0}>'.format(
+                                                       c.conf.STORAGE.DeviceConfSrcPlugins)))
             return active_storage_plgs
 
         else:
@@ -198,7 +187,7 @@ class StoragePlgFact(object):
         if c.conf.STORAGE.DeviceConfSrcPlugins:
 
             self.logger.debug(Tools.create_log_msg(self.__class__.__name__, None,
-                                       'Loading storage plugin <{0}>'.format(plugin_name)))
+                                                   'Loading storage plugin <{0}>'.format(plugin_name)))
 
             storage = Tools.load_storage_plugin(name=plugin_name)
             self.logger.debug(logmsg.STORAGE_PLG, plugin_name,
@@ -208,7 +197,7 @@ class StoragePlgFact(object):
                               logmsg.STORAGE_PLG_LOADED.format(plugin_name))
             storage = storage()
             self.logger.debug(Tools.create_log_msg(self.__class__.__name__, None,
-                                                  'Successfully loaded storage plugin <{0}>'.format(plugin_name)))
+                                                   'Successfully loaded storage plugin <{0}>'.format(plugin_name)))
             return storage
 
         else:

@@ -20,6 +20,7 @@ class Task(object):
     CHECK_SCHEMA = None
     TASK_TYPE = None
     TASK_VERSION = None
+    TASK_DESCENT = None
 
     def __init__(self, sample_device=None, shared=None):
 
@@ -103,19 +104,24 @@ class Task(object):
 
             dev_conn = self.sample_device.deviceConnection
             self.sample_device.deviceConnection = hex(id(self.sample_device.deviceConnection))
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_DEVICE_UPDATE, payload=self.sample_device,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_DEVICE_UPDATE, payload=self.sample_device,
                                   source=c.AMQP_PROCESSOR_TASK)
             self._backendp.call(message=message)
             self.sample_device.deviceConnection = dev_conn
 
     def __validate_task_config(self, grp_cfg=None):
 
+        if getattr(self, 'TASK_DESCENT', None):
+            task_name = self.TASK_DESCENT
+        else:
+            task_name = self.task_name
+
         if self.check_schema:
 
-            if os.path.exists('conf/schema/task/' + self.task_name.lower() + '.yml') and os.path.isfile(
-                    'conf/schema/task/' + self.task_name.lower() + '.yml'):
+            if os.path.exists('conf/schema/task/' + task_name.lower() + '.yml') and os.path.isfile(
+                    'conf/schema/task/' + task_name.lower() + '.yml'):
 
-                with open('conf/schema/task/' + self.task_name.lower() + '.yml', 'r') as stream:
+                with open('conf/schema/task/' + task_name.lower() + '.yml', 'r') as stream:
                     schema = yaml.safe_load(stream)
                     v = Validator()
                     v.allow_unknown = True
@@ -139,15 +145,20 @@ class Task(object):
                                                                                           new_task_state),
                        level=c.LOGGER_LEVEL_DEBUG)
 
+        if getattr(self, 'TASK_DESCENT', None):
+            task_name = self.TASK_DESCENT
+        else:
+            task_name = self.task_name
+
         if new_task_state == c.TASK_STATE_DONE:
 
-            if self.task_name == self.grp_cfg.TASKS.Sequence[-1:][0]:
+            if task_name == self.grp_cfg.TASKS.Sequence[-1:][0]:
 
                 self.task_state = new_task_state
                 self.sample_device.deviceStatus = c.DEVICE_STATUS_DONE
                 self.task_progress = self.shared[c.TASK_SHARED_PROGRESS]
                 self._update_backend()
-                self.sample_device.deviceTasks.taskState[self.task_name] = {'taskState': new_task_state,
+                self.sample_device.deviceTasks.taskState[task_name] = {'taskState': new_task_state,
                                                                             'taskStateMsg': task_state_message}
             else:
 
@@ -155,26 +166,26 @@ class Task(object):
                 self.sample_device.deviceStatus = c.DEVICE_STATUS_NEXT_TASK
                 self.task_progress = self.shared[c.TASK_SHARED_PROGRESS]
                 self._update_backend()
-                self.sample_device.deviceTasks.taskState[self.task_name] = {'taskState': new_task_state,
+                self.sample_device.deviceTasks.taskState[task_name] = {'taskState': new_task_state,
                                                                             'taskStateMsg': task_state_message}
 
         elif new_task_state == c.TASK_STATE_FAILED:
             self.task_state = new_task_state
             self.sample_device.deviceStatus = c.DEVICE_STATUS_FAILED
-            self.sample_device.deviceTasks.taskState[self.task_name] = {'taskState': new_task_state,
+            self.sample_device.deviceTasks.taskState[task_name] = {'taskState': new_task_state,
                                                                         'taskStateMsg': task_state_message}
 
         elif new_task_state == c.TASK_STATE_REBOOT:
             self.task_state = new_task_state
             self.sample_device.deviceStatus = c.DEVICE_STATUS_REBOOTED
-            self.sample_device.deviceTasks.taskState[self.task_name] = {'taskState': new_task_state,
+            self.sample_device.deviceTasks.taskState[task_name] = {'taskState': new_task_state,
                                                                         'taskStateMsg': task_state_message}
 
         elif new_task_state == c.TASK_STATE_PROGRESS:
             self.task_state = new_task_state
             self.sample_device.deviceStatus = c.DEVICE_STATUS_PROGRESS
             self._update_backend()
-            self.sample_device.deviceTasks.taskState[self.task_name] = {'taskState': new_task_state,
+            self.sample_device.deviceTasks.taskState[task_name] = {'taskState': new_task_state,
                                                                         'taskStateMsg': task_state_message}
 
         else:

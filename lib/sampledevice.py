@@ -380,9 +380,9 @@ class SampleDevice(object):
 
     def device_to_json(self, action=None):
         deviceTasksStates = [i for i in self.deviceTasks.taskState.items()]
+
         deviceTasksStates = sorted(deviceTasksStates,
                                    key=lambda t: self.deviceTaskSeq.index(t[0]))
-
         data = {
             "deviceName": self.deviceName, "softwareVersion": self.softwareVersion,
             "deviceIP": self.deviceIP, "deviceSerial": self.deviceSerial,
@@ -516,7 +516,7 @@ def action(self, instance, task_name):
 
     if isinstance(instance, TaskState):
 
-        message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_DEVICE_UPDATE_TASK_STATE,
+        message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_DEVICE_UPDATE_TASK_STATE,
                               payload={'deviceSerial': getattr(instance, 'deviceSerial', 'none'),
                                        'isCallback': getattr(instance, 'is_callback', 'none'), 'taskName': task_name,
                                        'taskState': instance.taskState[task_name]},

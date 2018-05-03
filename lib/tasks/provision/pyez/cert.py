@@ -40,11 +40,9 @@ class CertTask(Task):
 
         cancel_chan = ChannelCancellation()
         e = threading.Event()
-        _configurator = Configuration()
-        datavars = _configurator.get_config(sample_device=self.sample_device,
-                                            lookup_type=c.CONFIG_LOOKUP_TYPE_GET_DEVICE_CFG)
-
-        if datavars:
+        status, data = Tools.get_config(lookup_type=c.CONFIG_LOOKUP_TYPE_GET_DEVICE_CFG,
+                                        sample_device=self.sample_device)
+        if status:
 
             if self.grp_cfg.TASKS.Provision.Cert.PortForwarding:
 
@@ -61,26 +59,26 @@ class CertTask(Task):
 
                     if status:
 
-                        thr = threading.Thread(target=self.do_cert_requests, args=(datavars, e, cancel_chan,))
+                        thr = threading.Thread(target=self.do_cert_requests, args=(data, e, cancel_chan,))
                         thr.start()
 
-                        sshpfwd = SSHPortForward(sample_device=self.sample_device, grp_cfg=self.grp_cfg, event=e,
-                                                 cancel_chan=cancel_chan)
-                        sshpfwd.init_port_fwd()
+                        ssh_pfwd = SSHPortForward(sample_device=self.sample_device, grp_cfg=self.grp_cfg, event=e,
+                                                  cancel_chan=cancel_chan)
+                        ssh_pfwd.init_port_fwd()
 
                     else:
                         return False, 'Error in device connection'
 
                 else:
 
-                    thr = threading.Thread(target=self.do_cert_requests, args=(datavars, e, cancel_chan,))
+                    thr = threading.Thread(target=self.do_cert_requests, args=(data, e, cancel_chan,))
                     thr.start()
-                    sshpfwd = SSHPortForward(sample_device=self.sample_device, grp_cfg=self.grp_cfg, event=e,
-                                   cancel_chan=cancel_chan)
-                    sshpfwd.init_port_fwd()
+                    ssh_pfwd = SSHPortForward(sample_device=self.sample_device, grp_cfg=self.grp_cfg, event=e,
+                                              cancel_chan=cancel_chan)
+                    ssh_pfwd.init_port_fwd()
 
             else:
-                self.do_cert_requests(datavars=datavars, event=None)
+                self.do_cert_requests(datavars=data, event=None)
 
         else:
             self.logger.info(Tools.create_log_msg(self.task_name, self.sample_device.deviceSerial,

@@ -37,10 +37,14 @@ class InitTask(Task):
                                self.grp_cfg.TASKS.Provision.Init.Dependencies))
 
             if self.grp_cfg.TASKS.Provision.Init.Dependencies:
+                module = Tools.get_task_module_from_group(grp_cfg=self.grp_cfg, task_name='Configuration')
 
-                for dep in self.grp_cfg.TASKS.Provision.Init.Dependencies:
-                    task_dep = getattr(self, 'dep_init_{0}'.format(dep.lower()))
-                    task_dep()
+                if module == 'Internal':
+
+                    for dep in self.grp_cfg.TASKS.Provision.Init.Dependencies:
+                        if dep in self.grp_cfg.TASKS.Sequence:
+                            task_dep = getattr(self, 'dep_init_{0}'.format(dep.lower()))
+                            task_dep()
 
             self.update_task_state(new_task_state=c.TASK_STATE_DONE, task_state_message=c.TASK_STATE_MSG_DONE)
             Tools.emit_log(task_name=self.task_name,

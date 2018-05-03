@@ -31,6 +31,8 @@ Use is subject to license terms.
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
             </button>
             <a class="navbar-brand" href="#">Yet Another Provisioning Tool</a>
         </div>
@@ -46,9 +48,16 @@ Use is subject to license terms.
                         <li><a class="mainNav" href="#config-templates">Templates</a></li>
                         <li><a class="mainNav" href="#config-images">Images</a></li>
                         <li><a class="mainNav" href="#config-sites">Sites</a></li>
-                        <li><a class="mainNav" href="#config-services">Services</a></li>
                     </ul>
                 </li>
+                <li class="dropdown">
+                    <a class="dropdown-toggle" data-toggle="dropdown" href="#">Settings
+                        <span class="caret"></span></a>
+                    <ul class="dropdown-menu">
+                        <li><a class="mainNav" href="#config-passwords">Passwords</a></li>
+                        <li><a class="mainNav" href="#config-services">Services</a></li>
+                        <li><a class="mainNav" href="#config-validation">Validation</a></li>
+                    </ul>
                 <li><a class="mainNav" href="#log-overview">Log</a></li>
                 <li><a class="mainNav" href="#about">About</a></li>
             </ul>
@@ -102,7 +111,7 @@ Use is subject to license terms.
                         <button id="siteAddBtn" type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#modalSiteAddNew">
                           <span class="glyphicon glyphicon-plus"></span> Add
                         </button>
-                         <button id="siteDelBtn" type="button" class="btn btn-default btn-sm">
+                        <button id="siteDelBtn" type="button" class="btn btn-default btn-sm">
                           <span class="glyphicon glyphicon-minus"></span> Del
                         </button>
                     </p>
@@ -307,6 +316,66 @@ Use is subject to license terms.
 <!--/.container-->
 
 <div class="container-fluid">
+    <div class="content" id="config-passwords" hidden>
+        <div class="col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-heading"><h3>Passwords</h3></div>
+                <div class="panel-body">
+                    <table id="tablePasswords" class="table table-striped table-responsive">
+                        <thead>
+                        <tr>
+                            <th class="th1">#</th>
+                            <th class="th2">Name</th>
+                            <th class="th3">Description</th>
+                            <th class="th4">Status</th>
+                            <th class="th4">Options</th>
+                        </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!--/.container-->
+
+<div class="container-fluid">
+    <div class="content" id="config-validation" hidden>
+        <div class="col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-heading"><h3>Asset Validation</h3></div>
+                <div class="panel-body">
+                    <p>
+                        <button id="valAddBtn" type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#modalValidationAddNew">
+                          <span class="glyphicon glyphicon-plus"></span> Add
+                        </button>
+                         <button id="valDelBtn" type="button" class="btn btn-default btn-sm">
+                          <span class="glyphicon glyphicon-minus"></span> Del
+                        </button>
+                    </p>
+                    <table id="tableValidation" class="table table-striped table-responsive">
+                        <thead>
+                        <tr>
+                            <th class="th1">#</th>
+                            <th class="th2">Username</th>
+                            <th class="th3">Password</th>
+                            <th class="th4">Retries</th>
+                        </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <div class="col-md-12 text-center">
+                        <ul class="pagination pagination-sm pager" id="validationTablePager"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!--/.container-->
+
+<div class="container-fluid">
     <div class="content" id="log-overview" hidden>
         <br>
             <pre class="pre-logviewer-scrollable">
@@ -349,6 +418,7 @@ Use is subject to license terms.
 <script src="ui/js/image.js"></script>
 <script src="ui/js/storage.js"></script>
 <script src="ui/js/service.js"></script>
+<script src="ui/js/validation.js"></script>
 <script src="ui/js/yapt.js"></script>
 
 <!-- YAPT specific variables -->

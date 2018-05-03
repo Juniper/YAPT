@@ -4,13 +4,15 @@
 # Authors: cklewar@juniper.net
 #
 
+import lib.constants as c
+
 from lib.tasks.task import Task
 from lib.tools import Tools
 
 
 class PingVerifyTask(Task):
     CHECK_SCHEMA = False
-    TASK_TYPE = Tools.TASK_TYPE_VERIFICATION
+    TASK_TYPE = c.TASK_TYPE_VERIFICATION
     TASK_VERSION = 1.0
 
     def __init__(self, sample_device=None, shared=None):
@@ -26,7 +28,7 @@ class PingVerifyTask(Task):
 
         if self.sample_device.connected:
 
-            result = self.sample_device.deviceConnection.rpc.ping(host=Tools.conf.VERIFICATION.Ping.Destination,
+            result = self.sample_device.deviceConnection.rpc.ping(host=c.conf.VERIFICATION.Ping.Destination,
                                                                   count=self.grp_cfg.VERIFICATION.Ping.Count)
             pktloss = result.findtext('.//packet-loss').lstrip('\n').strip('\n')
 

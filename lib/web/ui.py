@@ -18,9 +18,9 @@ from lib.web.adapter.amqp2ws import Amqp2ws
 
 
 class UiProcessor(AMQPBlockingServerAdapter):
-    def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, verbose=None):
+    def __init__(self, group=None, target=None, name=None, args=(), kwargs=None):
 
-        super(UiProcessor, self).__init__(group=group, target=target, name=name, args=args, kwargs=None, verbose=None)
+        super(UiProcessor, self).__init__(group=group, target=target, name=name, args=args, kwargs=kwargs)
         self._logger.debug(Tools.create_log_msg(self.__class__.__name__, None,
                                                 LogCommon.IS_SUBCLASS.format(self.__class__.__name__,
                                                                              issubclass(UiProcessor,
@@ -39,21 +39,21 @@ class UiProcessor(AMQPBlockingServerAdapter):
             body_decoded = jsonpickle.decode(body)
 
             if isinstance(body_decoded,
-                          AMQPMessage) and c.AMQP_MESSAGE_TYPE_DEVICE_ADD == body_decoded.message_type:
+                          AMQPMessage) and c.AMQP_MSG_TYPE_DEVICE_ADD == body_decoded.message_type:
 
                 Tools.amqp_receive_to_logger(routing_key=method.routing_key, body_decoded=body_decoded)
                 message = body_decoded.payload.device_to_json(action=c.UI_ACTION_ADD_DEVICE)
                 self.conn_hdlr(message=message)
 
             elif isinstance(body_decoded,
-                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_DEVICE_UPDATE == body_decoded.message_type:
+                            AMQPMessage) and c.AMQP_MSG_TYPE_DEVICE_UPDATE == body_decoded.message_type:
 
                 Tools.amqp_receive_to_logger(routing_key=method.routing_key, body_decoded=body_decoded)
                 message = body_decoded.payload.device_to_json(action=c.UI_ACTION_UPDATE_DEVICE)
                 self.conn_hdlr(message=message)
 
             elif isinstance(body_decoded,
-                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_DEVICE_UPDATE_TASK_STATE == body_decoded.message_type:
+                            AMQPMessage) and c.AMQP_MSG_TYPE_DEVICE_UPDATE_TASK_STATE == body_decoded.message_type:
 
                 Tools.amqp_receive_to_logger(routing_key=method.routing_key, body_decoded=body_decoded)
 
@@ -66,14 +66,14 @@ class UiProcessor(AMQPBlockingServerAdapter):
                 self.conn_hdlr(message=message)
 
             elif isinstance(body_decoded,
-                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_UI_UPDATE_AND_RESET == body_decoded.message_type:
+                            AMQPMessage) and c.AMQP_MSG_TYPE_UI_UPDATE_AND_RESET == body_decoded.message_type:
 
                 Tools.amqp_receive_to_logger(routing_key=method.routing_key, body_decoded=body_decoded)
                 message = body_decoded.payload.device_to_json(action=c.UI_ACTION_UPDATE_DEVICE_AND_RESET_TASK)
                 self.conn_hdlr(message=message)
 
             elif isinstance(body_decoded,
-                            AMQPMessage) and c.AMQP_MESSAGE_TYPE_UI_UPDATE_LOG_VIEWER == body_decoded.message_type:
+                            AMQPMessage) and c.AMQP_MSG_TYPE_UI_UPDATE_LOG_VIEWER == body_decoded.message_type:
 
                 Tools.amqp_receive_to_logger(routing_key=method.routing_key, body_decoded=body_decoded)
                 self.conn_hdlr(message=body_decoded.payload)

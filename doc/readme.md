@@ -391,7 +391,7 @@ YAPT main config file `conf/yapt/yapt.yml` consists of following sections:
     * If YAPT runs in Standalone / Vagrant installation this is used to scale parallel task processing
     * In a containerized environment we would use load balancing mechanisms provided by the container system  
 
-### Section: SOURCE ###
+### Section: STORAGE ###
 Enable different sources for:
 
 - Device data
@@ -415,7 +415,7 @@ This is the default module. All configuration information will be kept in local 
     DeviceConfDataDir: conf/devices/data/           #device specific template data config directory
 ```
   
-##### GITlab #####
+##### GitLab #####
 This will obtain configuration information from a Gitlab system. Current implementation only supports Gitlab system.
 
 - To use this plugin we have to prepare following repositories in Gitlab:
@@ -434,7 +434,7 @@ Device template filename will be read from group configuration task global optio
 Git source plugin will connect to `Address`, `Port` and `Protocol` with credentials `User` and `Password`.
 
 ```yaml
-  Git:
+  Cgitlab:
     Address: 10.86.9.14
     Port: 9080
     Protocol: http
@@ -611,6 +611,8 @@ To activate / deactivate emitter plugin remove or add them to `Plugins` sequence
 EMITTER:
   Plugins: [local, ticket]
   MainLogFile: logs/info.log
+  Local:
+    LogLevel: 20   # LogLevel info=20 // debug=10
 ```
 
 ### Example Main Config ###
@@ -645,15 +647,15 @@ YAPT:
 ########################################################################################################################
 #Config Source Section
 ########################################################################################################################
-SOURCE:
+STORAGE:
   DeviceConfOoba: false                         #Enable OOBA DB check
   DeviceConfSrcPlugins: [local]                 #Configuration source plugin order
 
-  File:
+  Local:
     DeviceGrpFilesDir: conf/groups/                 #Map device to a provisioning group
     DeviceConfDataDir: conf/devices/data/           #device specific template data config directory
 
-  Git:
+  Cgitlab:
     Address: 10.86.9.14
     Port: 9080
     Protocol: http
@@ -752,6 +754,8 @@ AMQP:
 EMITTER:
   Plugins: [local, ticket]
   MainLogFile: logs/info.log
+  Local:
+    LogLevel: 20   # LogLevel info=20 // debug=10
 ```
 
 ## Group Config ##

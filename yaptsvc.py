@@ -35,8 +35,8 @@ class YaptSvc(object):
                                                 c.AMQP_PROCESSOR_TASK,))
             taskprocessor.start()
 
-        serviceprocessor = ServiceProcessor(target=ServiceProcessor, name=c.AMQP_PROCESSOR_SERVICE,
+        serviceprocessor = ServiceProcessor(target=ServiceProcessor, name=c.AMQP_PROCESSOR_SVC,
                                             args=(c.conf.AMQP.Exchange, c.conf.AMQP.Type,
-                                                  c.AMQP_PROCESSOR_SERVICE,
-                                                  c.AMQP_PROCESSOR_SERVICE,))
+                                                  c.AMQP_PROCESSOR_SVC,
+                                                  c.AMQP_PROCESSOR_SVC,))
         serviceprocessor.start()

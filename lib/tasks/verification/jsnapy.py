@@ -4,6 +4,8 @@
 # Authors: cklewar@juniper.net
 #
 
+import lib.constants as c
+
 #from jnpr.jsnapy import SnapAdmin
 from lib.logmsg import LogCommon
 from lib.tasks.task import Task
@@ -12,12 +14,11 @@ from lib.tools import Tools
 
 class JsnapyTask(Task):
     CHECK_SCHEMA = False
-    TASK_TYPE = Tools.TASK_TYPE_VERIFICATION
+    TASK_TYPE = c.TASK_TYPE_VERIFICATION
     TASK_VERSION = 1.0
 
     def __init__(self, sample_device=None, shared=None):
         super(JsnapyTask, self).__init__(sample_device=sample_device, shared=shared)
-        self.task_type = Tools.TASK_TYPE_VERIFICATION
         self.logger.debug(Tools.create_log_msg(self.task_name, self.sample_device.deviceSerial,
                                                LogCommon.IS_SUBCLASS.format(self.task_name,
                                                                             issubclass(JsnapyTask, Task))))

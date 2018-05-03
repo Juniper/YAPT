@@ -119,13 +119,14 @@ class Cgitlab(Storage):
         if serialnumber is not None:
 
             status, data = self.get_config_template_data(serialnumber=serialnumber, templateName=templateName, isRaw=True)
+            path = 'tmp/'
 
             if status:
-                with open('tmp/' + templateName, 'w') as fp:
+                with open(path + templateName, 'w') as fp:
                     fp.write(data)
-                return True, templateName
+                return True, path + templateName
             else:
-                return False, data
+                return False, path + templateName
 
     def get_config_template_data(self, serialnumber=None, templateName=None, groupName=None, isRaw=None):
 
@@ -144,13 +145,13 @@ class Cgitlab(Storage):
 
                     try:
                         project = self.gl.projects.get(c.conf.STORAGE.Cgitlab.DevCfgTemplate)
-                        file_path = '{0}'.format(template_file)
+                        path = '{0}'.format(template_file)
 
                     except (GitlabConnectionError, GitlabError) as gle:
                         return False, 'Failed to get project with error: <0>'.format(gle.message)
 
                     try:
-                        f = project.files.get(file_path=file_path, ref='master')
+                        f = project.files.get(file_path=path, ref='master')
                     except GitlabError as ge:
                         return False, 'Failed to get template config with error: <{0}>'.format(ge.message)
 
@@ -170,13 +171,13 @@ class Cgitlab(Storage):
 
                 try:
                     project = self.gl.projects.get(c.conf.STORAGE.Cgitlab.DevCfgTemplate)
-                    file_path = '{0}'.format(templateName)
+                    path = '{0}'.format(templateName)
 
                 except (GitlabConnectionError, GitlabError) as gle:
                     return False, 'Failed to get project with error: <0>'.format(gle.message)
 
                 try:
-                    f = project.files.get(file_path=file_path, ref='master')
+                    f = project.files.get(file_path=path, ref='master')
                 except GitlabError as ge:
                     return False, 'Failed to get template config with error: <{0}>'.format(ge.message)
 
@@ -257,13 +258,15 @@ class Cgitlab(Storage):
 
         if serialnumber is not None:
             status, data = self.get_device_config_data(serialnumber=serialnumber, deviceOsshId=deviceOsshId, isRaw=True)
+            path = 'tmp/'
+            file_name = serialnumber + c.CONFIG_FILE_SUFFIX_DEVICE
 
             if status:
-                with open('tmp/' + serialnumber + c.CONFIG_FILE_SUFFIX_DEVICE, 'w') as fp:
+                with open(path + file_name, 'w') as fp:
                     fp.write(data)
                 return True, serialnumber + c.CONFIG_FILE_SUFFIX_DEVICE
             else:
-                return False, data
+                return False, path + file_name
 
     def get_device_config_data(self, serialnumber=None, deviceOsshId=None, isRaw=None):
 

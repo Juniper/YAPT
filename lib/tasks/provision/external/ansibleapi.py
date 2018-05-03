@@ -29,6 +29,7 @@ class AnsibleapiTask(Task):
     CHECK_SCHEMA = True
     TASK_TYPE = c.TASK_TYPE_PROVISION
     TASK_VERSION = 1.0
+    TASK_DESCENT = 'Configuration'
 
     def __init__(self, sample_device=None, shared=None):
         super(AnsibleapiTask, self).__init__(sample_device=sample_device, shared=shared)
@@ -86,14 +87,15 @@ class AnsibleapiTask(Task):
                     'hosts': self.sample_device.deviceIP,
                     'junos_user': c.conf.YAPT.DeviceUsr,
                     'junos_password': Tools.get_password(c.YAPT_PASSWORD_TYPE_DEVICE),
-                    'template_src': os.getcwd() + '/tmp/' + template_file,
+                    'template_src': template_file,
                     'template_dst': os.getcwd() + '/history/' + self.sample_device.deviceSerial + '-' + datetime.datetime.now().strftime(
                         '%Y-%m-%d-%H%M') + '.conf',
-                    'device_vars': os.getcwd() + '/tmp/' + dev_data_file,
+                    'device_vars': dev_data_file,
                     'heading': heading
                 })
 
-                self.logger.debug(Tools.create_log_msg(self.task_name, self.sample_device.deviceSerial, rendered_inventory))
+                self.logger.debug(
+                    Tools.create_log_msg(self.task_name, self.sample_device.deviceSerial, rendered_inventory))
 
                 # Create a temporary file and write the template string to it
                 hosts = NamedTemporaryFile(delete=False)
@@ -113,17 +115,6 @@ class AnsibleapiTask(Task):
                                   private_key_file=None, ssh_common_args=None, ssh_extra_args=None,
                                   sftp_extra_args=None, scp_extra_args=None, become=False, become_method=None,
                                   become_user=None, verbosity=None, check=False, diff=False)
-                '''
-                variable_manager.extra_vars = {
-                    'junos_user': Tools.conf.YAPT.DeviceUsr,
-                    'junos_password': Tools.get_password(Tools.YAPT_PASSWORD_TYPE_DEVICE),
-                    'template_src': template_src,
-                    'template_dst': os.getcwd() + '/history/' + self.sample_device.deviceSerial + '-' + datetime.datetime.now().strftime(
-                        '%Y-%m-%d-%H%M') + '.conf',
-                    'device_vars': datavars,
-                    'heading': heading
-                }
-                '''
 
                 passwords = dict(vault_pass=Tools.get_password(c.YAPT_PASSWORD_TYPE_DEVICE))
                 play = Play.load(data=ds[0], variable_manager=variable_manager, loader=loader)
@@ -155,8 +146,6 @@ class AnsibleapiTask(Task):
                     else:
                         self.update_task_state(new_task_state=c.TASK_STATE_PROGRESS,
                                                task_state_message=logmsg.PLAYBOOK_FINISHED_SUCCESS)
-                        Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
-                                       message=logmsg.PLAYBOOK_FINISHED_SUCCESS)
                         self.sample_device.deviceConnection.facts_refresh()
                         self.sample_device.deviceConnection.facts_refresh(keys='hostname')
                         self.sample_device.deviceName = self.sample_device.deviceConnection.facts['hostname']

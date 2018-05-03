@@ -9,7 +9,7 @@
 TASKS:
   #Enable tasks and set processing order within sequence
   #Sequence: Init, Filecp, Software, Ipam, Configuration, Cert, Discovery, Policy, Assign, Rule, Publish, Cleanup
-  Sequence: [Init, Filecp, Software, Ansibleapi, Cleanup]
+  Sequence: [Ticket, Init, Ipam, Internal, Cleanup]
 
   Provision:
 
@@ -20,6 +20,7 @@ TASKS:
       AssignTemplate: conf/space/151/tempaltes/assignDevice.j2
 
     Configuration:
+      Module: Internal
       Dependencies: []
       DeviceConfTemplateDir: conf/devices/template/   #device specific template config directory
       DeviceConfTemplateFile: srx_no_ipam_no_ossh.j2  #device config template name
@@ -43,6 +44,9 @@ TASKS:
       EnrollmentUrl: ejbca/publicweb/apply/scep/advpn/pkiclient.exe #
       RevocationUrl: ejbca/publicweb/status/ocsp                    #
 
+    Cleanup:
+      test123: 10.1.1.1
+
     Discovery:
       Mode: Discovery                                 #Set discovery mode to either Discovery or Configlet
       UsePing: false                                  #If Mode 'Discovery' use ping
@@ -55,12 +59,20 @@ TASKS:
       FileRemoteDir: /var/db/scripts/op               #Event/Commit/OP Script or any other directory path on device
 
     Ipam:
-      Module: nipap
-      Address: 10.15.115.6
-      Port: '1337'
+      Module: Nipap
       Prefixes: [10.200.0.0/24, 10.13.113.0/24]
-      User: nipap
-      Password: nipap
+
+      Nipap:
+        Address: 10.15.115.6
+        Port: '1337'
+        User: nipap
+        Password: nipap
+
+      Netbox:
+        Address: 10.15.115.6
+        Port: '1337'
+        User: nipap
+        Password: nipap
 
     Policy:
       PolicyTemplate: conf/space/templates/151/fwpolicy.j2
@@ -91,19 +103,21 @@ TASKS:
         SRX345: 15.1X49-D70
 
     Ticket:
-      Module: rt                                                  #Module currently only request_tracker ticketing system
+      Module: Rt                                                  #Module currently only request_tracker ticketing system
       Mode: detail                                                #Mode could be "summary" to give a summarization at the end or "detail" to get update after every task
-      Address: 10.86.9.14                                         #Ticket System IP address
-      Port: 8000                                                  #Ticket System Port
-      Protocol: https                                             #HTTP / HTTPS
-      User: juniper                                               #Ticket system user
-      Password: juniper123                                        #Ticket system passsword
-      Eauth: pam                                                  #EDI authentication module
-      Functions: [request_tracker.create_ticket, request_tracker.update_ticket]   #call edi runner functions
-      NextEvent: None                                             #
-      TemplateDir: lib/emitter/templates/                             #Template directory
-      TicketCreateTemplate: ticket_create_detail_mode.j2          #Template file used for tickte creation
-      TicketUpdateTemplate: ticket_update_detail_mode.j2          #Template file used for ticker update
+
+      Rt:
+        Address: 10.86.9.14                                         #Ticket System IP address
+        Port: 8000                                                  #Ticket System Port
+        Protocol: https                                             #HTTP / HTTPS
+        User: juniper                                               #Ticket system user
+        Password: juniper123                                        #Ticket system passsword
+        Eauth: pam                                                  #EDI authentication module
+        Functions: [request_tracker.create_ticket, request_tracker.update_ticket]   #call edi runner functions
+        NextEvent: None                                             #
+        TemplateDir: lib/emitter/templates/                         #Template directory
+        TicketCreateTemplate: ticket_create_detail_mode.j2          #Template file used for tickte creation
+        TicketUpdateTemplate: ticket_update_detail_mode.j2          #Template file used for ticker update
 
 ########################################################################################################################
 #Verification Task Section

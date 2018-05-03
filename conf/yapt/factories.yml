@@ -1,0 +1,5 @@
+---
+factories:
+  task:
+    class: lib.factories.TaskFactory
+    provider_class: dependency_injector.providers.Factory

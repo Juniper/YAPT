@@ -4,10 +4,11 @@
 # Authors: cklewar@juniper.net
 #
 
-import multiprocessing
 import lib.constants as c
 
+from multiprocessing import Process
 from lib.pluginfactory import EmitterPlgFact
+from lib.factories import FactoryContainer
 from lib.backend.backend import Backend
 from lib.pluginfactory import BackendPluginFactory
 from lib.processor import TaskProcessor
@@ -24,6 +25,15 @@ class Yapt(object):
         Tools.create_config_view(c.CONFIG_TYPE_MAIN)
         EmitterPlgFact()
 
+        uiprocessor = UiProcessor(target=UiProcessor, name=c.AMQP_PROCESSOR_UI, args=(
+            c.conf.AMQP.Exchange, c.conf.AMQP.Type, c.AMQP_PROCESSOR_UI, c.AMQP_PROCESSOR_UI,))
+        uiprocessor.start()
+
+        p = Process(target=UiInit, args=())
+        p.start()
+
+        c.fc = FactoryContainer().get_factory_container()
+
         BackendPluginFactory(plugin_name=c.conf.BACKEND.Module, target=Backend,
                              name=c.AMQP_PROCESSOR_BACKEND)
 
@@ -37,14 +47,6 @@ class Yapt(object):
             spf = SpacePluginFactory(c.conf.JUNOSSPACE.Version)
             c.SRC = spf.init_plugin()
 
-        serviceprocessor = ServiceProcessor(target=ServiceProcessor, name=c.AMQP_PROCESSOR_SERVICE,
-                                      args=(c.conf.AMQP.Exchange, c.conf.AMQP.Type, c.AMQP_PROCESSOR_SERVICE,
-                                            c.AMQP_PROCESSOR_SERVICE,))
+        serviceprocessor = ServiceProcessor(target=ServiceProcessor, name=c.AMQP_PROCESSOR_SVC,
+                                            args=(c.conf.AMQP.Exchange, c.conf.AMQP.Type, c.AMQP_RPC_SERVICE_QUEUE,))
         serviceprocessor.start()
-
-        uiprocessor = UiProcessor(target=UiProcessor, name=c.AMQP_PROCESSOR_UI, args=(
-            c.conf.AMQP.Exchange, c.conf.AMQP.Type, c.AMQP_PROCESSOR_UI, c.AMQP_PROCESSOR_UI,))
-        uiprocessor.start()
-
-        p = multiprocessing.Process(target=UiInit, args=())
-        p.start()

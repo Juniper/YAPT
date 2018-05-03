@@ -18,6 +18,7 @@ from cherrypy._cpserver import Server
 from ruamel.yaml.util import load_yaml_guess_indent
 from lib.amqp.amqpmessage import AMQPMessage
 from lib.processor import BackendClientProcessor
+from lib.processor import ServiceClientProcessor
 from ws4py.client.threadedclient import WebSocketClient
 
 """
@@ -134,6 +135,8 @@ def yaml_tool():
 class RestBase(object):
     def __init__(self, args=None):
         self._backendp = args
+        # self._svcp =
+        # Todo: Initialize storage plugins at an earlier stage
         self.storageFact = StoragePlgFact()
 
 
@@ -151,7 +154,7 @@ class Device(RestBase):
 
                 payload = {'configSerial': name, 'configDescr': descr,
                            'configConfigSource': storage}
-                message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_DEVICE_CFG_ADD, payload=payload,
+                message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_DEVICE_CFG_ADD, payload=payload,
                                       source=c.AMQP_PROCESSOR_REST)
                 response = self._backendp.call(message=message)
                 response = jsonpickle.decode(response)
@@ -165,7 +168,7 @@ class Device(RestBase):
                         return json.dumps((response.payload[0], escape(response.payload[1])))
 
                     else:
-                        message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_DEVICE_CFG_DEL, payload=name,
+                        message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_DEVICE_CFG_DEL, payload=name,
                                               source=c.AMQP_PROCESSOR_REST)
                         response = self._backendp.call(message=message)
                         response = jsonpickle.decode(response)
@@ -183,7 +186,7 @@ class Device(RestBase):
 
             if name and storage:
 
-                message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_DEVICE_CFG_DEL, payload=name,
+                message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_DEVICE_CFG_DEL, payload=name,
                                       source=c.AMQP_PROCESSOR_REST)
                 response = self._backendp.call(message=message)
                 response = jsonpickle.decode(response)
@@ -208,7 +211,7 @@ class Device(RestBase):
 
         if action == 'all':
 
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_DEVICE_GET_ALL, payload=name,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_DEVICE_GET_ALL, payload=name,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
@@ -222,7 +225,7 @@ class Device(RestBase):
 
         elif action == 'cfgall':
 
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_DEVICE_GET_CFG_ALL, payload=name,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_DEVICE_GET_CFG_ALL, payload=name,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
@@ -231,7 +234,7 @@ class Device(RestBase):
 
         elif action == 'config':
 
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_DEVICE_GET_CFG_BY_SERIAL, payload=name,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_DEVICE_GET_CFG_BY_SERIAL, payload=name,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
@@ -263,7 +266,7 @@ class Template(RestBase):
                 new_template = cherrypy.request.body.read()
                 payload = {'templateName': name, 'templateConfig': new_template, 'templateDescr': descr,
                            'templateDevGrp': group, 'templateConfigSource': storage}
-                message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_TEMPLATE_ADD, payload=payload,
+                message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_TEMPLATE_ADD, payload=payload,
                                       source=c.AMQP_PROCESSOR_REST)
                 response = self._backendp.call(message=message)
                 response = jsonpickle.decode(response)
@@ -280,7 +283,7 @@ class Template(RestBase):
 
         elif action == 'del':
 
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_TEMPLATE_GET_BY_NAME, payload=name,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_TEMPLATE_GET_BY_NAME, payload=name,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
@@ -290,7 +293,7 @@ class Template(RestBase):
                 groupName = response.payload[1]['templateDevGrp']
                 storage = response.payload[1]['templateConfigSource']
 
-                message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_TEMPLATE_DEL, payload=name,
+                message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_TEMPLATE_DEL, payload=name,
                                       source=c.AMQP_PROCESSOR_REST)
                 response = self._backendp.call(message=message)
                 response = jsonpickle.decode(response)
@@ -316,7 +319,7 @@ class Template(RestBase):
 
         if action == 'all':
 
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_TEMPLATE_GET_ALL, payload=action,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_TEMPLATE_GET_ALL, payload=action,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
@@ -325,7 +328,7 @@ class Template(RestBase):
 
         elif action == 'config':
 
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_TEMPLATE_GET_BY_NAME, payload=name,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_TEMPLATE_GET_BY_NAME, payload=name,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
@@ -362,7 +365,7 @@ class Group(RestBase):
 
                 payload = {'groupName': name, 'groupConfig': new_group, 'groupDescr': descr,
                            'groupConfigSource': storage}
-                message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_GROUP_ADD, payload=payload,
+                message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_GROUP_ADD, payload=payload,
                                       source=c.AMQP_PROCESSOR_REST)
                 response = self._backendp.call(message=message)
                 response = jsonpickle.decode(response)
@@ -376,7 +379,7 @@ class Group(RestBase):
                         return json.dumps((response.payload[0], escape(response.payload[1])))
 
                     else:
-                        message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_GROUP_DEL, payload=name,
+                        message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_GROUP_DEL, payload=name,
                                               source=c.AMQP_PROCESSOR_REST)
                         response = self._backendp.call(message=message)
                         response = jsonpickle.decode(response)
@@ -392,7 +395,7 @@ class Group(RestBase):
 
         elif action == 'del':
 
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_GROUP_GET_BY_NAME, payload=name,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_GROUP_GET_BY_NAME, payload=name,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
@@ -403,7 +406,7 @@ class Group(RestBase):
 
                 if response.payload[0]:
 
-                    message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_GROUP_DEL, payload=name,
+                    message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_GROUP_DEL, payload=name,
                                           source=c.AMQP_PROCESSOR_REST)
                     response = self._backendp.call(message=message)
                     response = jsonpickle.decode(response)
@@ -431,7 +434,7 @@ class Group(RestBase):
 
         if action == 'all':
 
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_GROUP_GET_ALL, payload=action,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_GROUP_GET_ALL, payload=action,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
@@ -440,7 +443,7 @@ class Group(RestBase):
 
         elif action == 'config':
 
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_GROUP_GET_BY_NAME, payload=name,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_GROUP_GET_BY_NAME, payload=name,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
@@ -470,7 +473,7 @@ class Image(RestBase):
         elif action == 'del':
 
             payload = {'imageName': name}
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_IMAGE_DEL, payload=payload,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_IMAGE_DEL, payload=payload,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
@@ -491,7 +494,7 @@ class Image(RestBase):
 
         if action == 'all':
 
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_IMAGE_GET_ALL, payload=action,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_IMAGE_GET_ALL, payload=action,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
@@ -500,7 +503,7 @@ class Image(RestBase):
 
         else:
 
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_IMAGE_GET_BY_NAME, payload=name,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_IMAGE_GET_BY_NAME, payload=name,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
@@ -518,7 +521,7 @@ class Site(RestBase):
         if action == 'add':
 
             input_json = cherrypy.request.json
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_SITE_ADD, payload=input_json,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_SITE_ADD, payload=input_json,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
@@ -527,7 +530,7 @@ class Site(RestBase):
 
         elif action == 'del':
 
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_SITE_DEL, payload=name,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_SITE_DEL, payload=name,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
@@ -541,7 +544,7 @@ class Site(RestBase):
 
         if siteId == 'all':
 
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_SITE_GET_ALL, payload=siteId,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_SITE_GET_ALL, payload=siteId,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
@@ -550,7 +553,7 @@ class Site(RestBase):
 
         else:
 
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_SITE_GET_BY_ID, payload=siteId,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_SITE_GET_BY_ID, payload=siteId,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
@@ -568,7 +571,7 @@ class Asset(RestBase):
         if action == 'add':
 
             input_json = cherrypy.request.json
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_ASSET_ADD, payload=input_json,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_ASSET_ADD, payload=input_json,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
@@ -578,7 +581,7 @@ class Asset(RestBase):
         elif action == 'map':
 
             input_json = cherrypy.request.json
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_ASSET_UPDATE, payload=input_json,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_ASSET_UPDATE, payload=input_json,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
@@ -593,7 +596,7 @@ class Asset(RestBase):
 
         if action == 'getBySiteId':
 
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_ASSET_GET_BY_SITE, payload=serial,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_ASSET_GET_BY_SITE, payload=serial,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
@@ -603,7 +606,7 @@ class Asset(RestBase):
 
         elif action == 'getByAssetSerial':
 
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_ASSET_GET_BY_SERIAL, payload=serial,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_ASSET_GET_BY_SERIAL, payload=serial,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
@@ -623,20 +626,33 @@ class Service(RestBase):
     def POST(self, action=None, name=None):
 
         if action == 'start':
-            print 'start service ' + name
-            return json.dumps((True, 'start service ' + name))
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_SVC_START, payload=name,
+                                  source=c.AMQP_PROCESSOR_REST)
+            response = self._svcp.call(message=message)
+            response = jsonpickle.decode(response)
+            return json.dumps(response.payload)
+
         elif action == 'stop':
-            print 'stop service ' + name
-            return json.dumps((True, 'stop service ' + name))
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_SVC_STOP, payload=name,
+                                  source=c.AMQP_PROCESSOR_REST)
+
+            response = self._svcp.call(message=message)
+            response = jsonpickle.decode(response)
+            return json.dumps(response.payload)
+
         elif action == 'restart':
-            print 'restart service ' + name
-            return json.dumps((True, 'restart service ' + name))
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_SVC_RESTART, payload=name,
+                                  source=c.AMQP_PROCESSOR_REST)
+
+            response = self._svcp.call(message=message)
+            response = jsonpickle.decode(response)
+            return json.dumps(response.payload)
 
     @cherrypy.tools.json_out()
     def GET(self, action=None, name=None):
 
         if action == 'all':
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_SERVICE_GET_ALL, payload=action,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_SVC_GET_ALL, payload=action,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
@@ -653,7 +669,24 @@ class Service(RestBase):
                     code = code['SERVICES'][name]
                     output = StringIO.StringIO()
                     ruamel.yaml.dump(code, output, Dumper=ruamel.yaml.RoundTripDumper)
-                    return True, output.getvalue()
+                    return json.dumps((True, output.getvalue()))
+
+            except EnvironmentError as ee:  # parent of IOError, OSError *and* WindowsError where available
+                return False, ee.message
+
+        elif action == 'json':
+
+            try:
+
+                with open(os.getcwd() + '/conf/yapt/yapt.yml', 'r') as stream:
+
+                    code = ruamel.yaml.load(stream, ruamel.yaml.RoundTripLoader)
+                    code = code['SERVICES'][name]
+                    #print json.dumps(code)
+                    #output = StringIO.StringIO()
+                    #ruamel.yaml.dump(code, output, Dumper=ruamel.yaml.RoundTripDumper)
+
+                    return json.dumps((True, json.dumps(code)))
 
             except EnvironmentError as ee:  # parent of IOError, OSError *and* WindowsError where available
                 return False, ee.message
@@ -673,7 +706,7 @@ class Service(RestBase):
 
         else:
 
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_SERVICE_GET_BY_NAME, payload=name,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_SVC_GET_BY_NAME, payload=name,
                                   source=c.AMQP_PROCESSOR_REST)
             response = self._backendp.call(message=message)
             response = jsonpickle.decode(response)
@@ -703,7 +736,7 @@ class Upload(RestBase):
 
                 payload = {'groupName': name, 'groupConfig': None, 'groupDescr': descr,
                            'groupConfigSource': storage}
-                message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_GROUP_ADD, payload=payload,
+                message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_GROUP_ADD, payload=payload,
                                       source=c.AMQP_PROCESSOR_REST)
                 response = self._backendp.call(message=message)
                 response = jsonpickle.decode(response)
@@ -729,7 +762,7 @@ class Upload(RestBase):
                         return json.dumps((status, escape(response.payload[1])))
                     else:
 
-                        message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_GROUP_DEL, payload=name,
+                        message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_GROUP_DEL, payload=name,
                                               source=c.AMQP_PROCESSOR_REST)
                         response = self._backendp.call(message=message)
                         response = jsonpickle.decode(response)
@@ -749,7 +782,7 @@ class Upload(RestBase):
 
                 payload = {'templateName': name, 'templateConfig': None, 'templateDescr': descr,
                            'templateDevGrp': group, 'templateConfigSource': storage}
-                message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_TEMPLATE_ADD, payload=payload,
+                message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_TEMPLATE_ADD, payload=payload,
                                       source=c.AMQP_PROCESSOR_REST)
                 response = self._backendp.call(message=message)
                 response = jsonpickle.decode(response)
@@ -776,7 +809,7 @@ class Upload(RestBase):
                         return json.dumps((response.payload[0], escape(response.payload[1])))
 
                     else:
-                        message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_TEMPLATE_DEL, payload=name,
+                        message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_TEMPLATE_DEL, payload=name,
                                               source=c.AMQP_PROCESSOR_REST)
                         response = self._backendp.call(message=message)
                         response = jsonpickle.decode(response)
@@ -795,7 +828,7 @@ class Upload(RestBase):
 
                 payload = {'configSerial': name, 'configDescr': descr,
                            'configConfigSource': storage}
-                message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_DEVICE_CFG_ADD, payload=payload,
+                message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_DEVICE_CFG_ADD, payload=payload,
                                       source=c.AMQP_PROCESSOR_REST)
                 response = self._backendp.call(message=message)
                 response = jsonpickle.decode(response)
@@ -821,7 +854,7 @@ class Upload(RestBase):
                         return json.dumps((response.payload[0], escape(response.payload[1])))
 
                     else:
-                        message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_DEVICE_CFG_DEL, payload=name,
+                        message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_DEVICE_CFG_DEL, payload=name,
                                               source=c.AMQP_PROCESSOR_REST)
                         response = self._backendp.call(message=message)
                         response = jsonpickle.decode(response)
@@ -840,7 +873,7 @@ class Upload(RestBase):
             if name:
 
                 payload = {'imageName': name, 'imageDescr': descr}
-                message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_IMAGE_ADD, payload=payload,
+                message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_IMAGE_ADD, payload=payload,
                                       source=c.AMQP_PROCESSOR_REST)
                 response = self._backendp.call(message=message)
                 response = jsonpickle.decode(response)
@@ -869,14 +902,46 @@ class Upload(RestBase):
             return json.dumps((False, escape('Unknown upload type')))
 
 
-class Authenticate(RestBase):
+class Validation(RestBase):
     exposed = True
 
-    def POST(self, sn=None):
-        with auth_file_lock:
-            with open(c.conf.SERVICES.Phs.DeviceAuthFile, 'a') as auth_file:
-                auth_file.write(sn + '\n')
-                return json.dumps((True, escape('Successfully added device <{0}> to trust store').format(sn)))
+    @cherrypy.tools.json_in()
+    @cherrypy.tools.json_out()
+    def POST(self, action=None):
+
+        input_json = cherrypy.request.json
+
+        if action == 'add':
+
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_VAL_VAL_ADD,
+                                  payload={'username': input_json['username'], 'password': input_json['password']},
+                                  source=c.AMQP_PROCESSOR_REST)
+
+            resp = self._backendp.call(message=message)
+            resp = jsonpickle.decode(resp)
+
+            return json.dumps((resp.payload[0], escape(resp.payload[1])))
+
+        elif action == 'del':
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_VAL_VAL_DEL,
+                                  payload={'username': input_json['username']},
+                                  source=c.AMQP_PROCESSOR_REST)
+
+            resp = self._backendp.call(message=message)
+            resp = jsonpickle.decode(resp)
+
+            return json.dumps((resp.payload[0], escape(resp.payload[1])))
+
+    @cherrypy.tools.json_out()
+    def GET(self, action=None, name=None):
+
+        if action == 'all':
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_VAL_GET_ALL, payload=action,
+                                  source=c.AMQP_PROCESSOR_REST)
+            response = self._backendp.call(message=message)
+            response = jsonpickle.decode(response)
+
+            return response.payload[0], response.payload[1]
 
 
 class Logs(RestBase):
@@ -884,20 +949,10 @@ class Logs(RestBase):
 
     def GET(self):
 
-
-
         url = 'ws://{0}:{1}/yapt/ws?clientname={2}'.format(c.conf.YAPT.WebUiAddress,
                                                            str(c.conf.YAPT.WebUiPort), c.conf.YAPT.WebUiPlugin)
         wsc = WebSocketClient(url=url)
         wsc.connect()
-
-        #with open('./logs/info.log', 'r') as stream:
-        #    log_data = stream.read()
-
-        #if log_data:
-        #    wsc.send(payload=json.dumps({'action': c.UI_ACTION_INIT_LOG_VIEWER, 'data': log_data}))
-
-        # bufsize = 8192
         fname = './logs/info.log'
         fsize = os.stat(fname).st_size
         iter = 0
@@ -915,8 +970,9 @@ class Logs(RestBase):
                 data.extend(f.readlines())
 
                 if len(data) >= lines or f.tell() == 0:
-                    #print(''.join(data[-lines:]))
-                    wsc.send(payload=json.dumps({'action': c.UI_ACTION_INIT_LOG_VIEWER, 'data': ''.join(data[-lines:])}))
+                    # print(''.join(data[-lines:]))
+                    wsc.send(
+                        payload=json.dumps({'action': c.UI_ACTION_INIT_LOG_VIEWER, 'data': ''.join(data[-lines:])}))
                     break
         wsc.close()
         pass
@@ -928,7 +984,7 @@ class YaptRestApi(object):
     """
 
     url_map = {'device': Device, 'template': Template, 'group': Group, 'image': Image, 'service': Service,
-               'configsrc': Configsrc, 'upload': Upload, 'authenticate': Authenticate, 'site': Site, 'asset': Asset,
+               'configsrc': Configsrc, 'upload': Upload, 'validation': Validation, 'site': Site, 'asset': Asset,
                'logs': Logs}
 
     def _setattr_url_map(self, args=None):
@@ -937,7 +993,12 @@ class YaptRestApi(object):
         """
 
         for url, cls in six.iteritems(self.url_map):
+
             setattr(self, url, cls(args=args))
+
+            if url == 'service':
+                _svcp = ServiceClientProcessor(exchange='', routing_key=c.AMQP_RPC_SERVICE_QUEUE)
+                setattr(cls, '_svcp', _svcp)
 
     def __init__(self):
         _backendp = BackendClientProcessor(exchange='', routing_key=c.AMQP_RPC_BACKEND_QUEUE)
@@ -951,4 +1012,3 @@ class YaptRestApi(object):
         yapt_rest_server.socket_port = _port
         yapt_rest_server.subscribe()
         cherrypy.tools.cors_tool = cherrypy.Tool('before_request_body', cors_tool, name='cors_tool', priority=50)
-

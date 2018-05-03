@@ -5,7 +5,7 @@
 #
 
 import json
-import os.path
+import os
 import random
 import threading
 
@@ -39,7 +39,7 @@ class UiInit(object):
 
         USERS = {'jon': 'secret'}
 
-        cherrypy.config.update('{0}/{1}'.format(os.getcwd(), 'conf/yapt/ui.conf'))
+        cherrypy.config.update('{0}/{1}'.format(os.getcwd(), c.SVC_UI_CONF))
 
         if c.conf.YAPT.StartWebUi:
 
@@ -52,7 +52,7 @@ class UiInit(object):
                     c.conf.YAPT.WebUiAddress, str(
                         str(c.conf.YAPT.WebUiPort)))
 
-            web = cherrypy.tree.mount(Web(), '/yapt', '{0}/{1}'.format(os.getcwd(), 'conf/yapt/ui.conf'))
+            web = cherrypy.tree.mount(Web(), '/yapt', '{0}/{1}'.format(os.getcwd(), c.SVC_UI_CONF))
 
             config = {
                 '/ui': {
@@ -65,9 +65,8 @@ class UiInit(object):
             }
             web.merge(config=config)
 
-        cherrypy.tree.mount(YaptRestApi(), '/api', config='{0}/{1}'.format(os.getcwd(), 'conf/yapt/api.conf'))
-
-        ooba = cherrypy.tree.mount(YaptOoba(), '/ooba', config='{0}/{1}'.format(os.getcwd(), 'conf/yapt/ooba.conf'))
+        cherrypy.tree.mount(YaptRestApi(), '/api', config='{0}/{1}'.format(os.getcwd(), c.SVC_REST_CONF))
+        ooba = cherrypy.tree.mount(YaptOoba(), '/ooba', config='{0}/{1}'.format(os.getcwd(), c.SVC_OOBA_CONF))
 
         config = {
             '/': {

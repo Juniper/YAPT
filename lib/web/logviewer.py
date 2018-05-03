@@ -28,8 +28,8 @@ class LogViewer():
 
 class TailfSvc(threading.Thread):
 
-    def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, verbose=None):
-        super(TailfSvc, self).__init__(group=group, target=target, name=name, verbose=verbose)
+    def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, ):
+        super(TailfSvc, self).__init__(group=group, target=target, name=name, args=args, kwargs=kwargs)
         self.logger = c.logger
         self.log_file = args[0]
         self.logger.info(Tools.create_log_msg('LOGVIEWER', None, 'Successfully started Logviewer service'))
@@ -42,7 +42,7 @@ class TailfSvc(threading.Thread):
 
         for line in self.tail(fd):
             payload = json.dumps({'data': line.strip(), 'action': c.UI_ACTION_UPDATE_LOG_VIEWER})
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_UI_UPDATE_LOG_VIEWER,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_UI_UPDATE_LOG_VIEWER,
                                   payload=payload, source=c.AMQP_PROCESSOR_SVC)
             self.clp.send_message(message=message)
 

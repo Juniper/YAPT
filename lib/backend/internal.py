@@ -29,7 +29,7 @@ class Internal(Backend):
         self.groups = dict()
         self.groups_lock = threading.Lock()
 
-    def add_device(self, new_device):
+    def add_device(self, new_device=None):
 
         if len(self.sample_devices) == 0:
 
@@ -55,7 +55,7 @@ class Internal(Backend):
 
                 self.sample_devices_lock.release()
 
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_DEVICE_ADD,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_DEVICE_ADD,
                                   payload=self.sample_devices[new_device.deviceSerial]['data'],
                                   source=c.AMQP_PROCESSOR_BACKEND)
             self.amqpCl.send_message(message=message)
@@ -86,7 +86,7 @@ class Internal(Backend):
 
                         self.sample_devices[new_device.deviceSerial]['data'].deviceTasks.is_callback = True
 
-                        message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_UI_UPDATE_AND_RESET,
+                        message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_UI_UPDATE_AND_RESET,
                                               payload=backend_device, source=c.AMQP_PROCESSOR_BACKEND)
                         self.amqpCl.send_message(message=message)
 
@@ -122,14 +122,14 @@ class Internal(Backend):
 
                     self.sample_devices_lock.release()
 
-                message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_DEVICE_ADD,
+                message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_DEVICE_ADD,
                                       payload=self.sample_devices[new_device.deviceSerial]['data'],
                                       source=c.AMQP_PROCESSOR_BACKEND)
                 self.amqpCl.send_message(message=message)
 
                 return self.sample_devices[new_device.deviceSerial]['data']
 
-    def update_device(self, sample_device):
+    def update_device(self, sample_device=None):
 
         self.sample_devices_lock.acquire()
 
@@ -141,7 +141,7 @@ class Internal(Backend):
 
             self.sample_devices_lock.release()
 
-        message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_DEVICE_UPDATE,
+        message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_DEVICE_UPDATE,
                               payload=self.sample_devices[sample_device.deviceSerial]['data'],
                               source=c.AMQP_PROCESSOR_BACKEND)
 
@@ -149,7 +149,7 @@ class Internal(Backend):
 
         return self.sample_devices[sample_device.deviceSerial]['data']
 
-    def update_device_task_state(self, device_serial, is_callback, task_name, task_state):
+    def update_device_task_state(self, device_serial=None, is_callback=None, task_name=None, task_state=None):
 
         self.sample_devices_lock.acquire()
 
@@ -162,7 +162,7 @@ class Internal(Backend):
                 backend_device.deviceTasks.taskState[task_name] = {'taskState': task_state['taskState'],
                                                                    'taskStateMsg': task_state['taskStateMsg']}
                 backend_device.deviceTasks.is_callback = True
-                message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_DEVICE_UPDATE_TASK_STATE,
+                message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_DEVICE_UPDATE_TASK_STATE,
                                       payload=[device_serial, task_name, task_state],
                                       source=c.AMQP_PROCESSOR_BACKEND)
 
@@ -178,7 +178,7 @@ class Internal(Backend):
             self._logger.info(Tools.create_log_msg(self.__class__.__name__, device_serial,
                                                    logmsg.INTBACKEND_KEY_NOK.format(err.message)))
 
-    def get_device(self, serial_number):
+    def get_device(self, serial_number=None):
         return self.sample_devices[serial_number]['data']
 
     def get_devices(self):
@@ -209,7 +209,6 @@ class Internal(Backend):
 
         self.sites_lock.acquire()
 
-
         try:
 
             if assetConfigId in self.sites[assetSiteId]['assets']:
@@ -218,13 +217,14 @@ class Internal(Backend):
                 return True, 'Successfully mapped asset serial <{0}> to asset config id <{1}>'.format(assetSerial,
                                                                                                       assetConfigId)
             else:
-                return False, 'Failed to map asset serial <{0}> to config id <{1}>. Config id does not exists'.format(assetSerial, assetConfigId)
+                return False, 'Failed to map asset serial <{0}> to config id <{1}>. Config id does not exists'.format(
+                    assetSerial, assetConfigId)
 
         finally:
 
             self.sites_lock.release()
 
-    def add_group(self, groupName=None, groupConfig=None, groupDescr=None):
+    def add_group(self, groupName=None, groupConfig=None, groupDescr=None, groupConfigSource=None):
 
         self.groups_lock.acquire()
 
@@ -240,7 +240,7 @@ class Internal(Backend):
 
             self.groups_lock.release()
 
-    def add_asset_to_site(self, assetSiteId, assetSerial, assetConfigId, assetDescr):
+    def add_asset_to_site(self, assetSiteId=None, assetSerial=None, assetConfigId=None, assetDescr=None):
 
         self.sites_lock.acquire()
 

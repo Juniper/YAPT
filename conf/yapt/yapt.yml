@@ -3,7 +3,6 @@
 # YAPT Global Section
 ########################################################################################################################
 YAPT:
-  SourcePlugins: [phs, ossh, tftp]                #Source plugin list
   PwdFile: conf/yapt/masterkey.yml                #Stores masterkey
   DevicePwdIsRsa: false                           #use ssh rsa authentication
   DeviceUsr: root                                 #initial device provisioning user
@@ -25,15 +24,15 @@ YAPT:
   WorkerThreads: 2                                #Amount of task queue worker threads to be started
 
 ########################################################################################################################
-#Config Source Section
+#Storage Section
 ########################################################################################################################
 STORAGE:
   DeviceConfOoba: false                         #Enable OOBA DB check
-  DeviceConfSrcPlugins: [cgitlab]               #Configuration source plugin order
+  DeviceConfSrcPlugins: [Cgitlab]               #Configuration source plugin order
 
   Local:
     DeviceGrpFilesDir: conf/groups/                 #Map device to a provisioning group
-    DeviceConfDataDir: conf/devices/data/           #device specific template data config directory
+    DeviceConfDataDir: conf/devices/data/           #device specific data config directory
 
   Cgitlab:
     Address: 10.16.116.142
@@ -49,7 +48,7 @@ STORAGE:
 
 
 ########################################################################################################################
-#Backend Section (Configure Backend settings)
+#Backend Section
 ########################################################################################################################
 BACKEND:
   Module: sql                                 #Backend Type (internal / sql)
@@ -57,27 +56,36 @@ BACKEND:
   Sqlite:
     DbName: yapt.db                            #SQLite DB Name
     DbPath: lib/backend/db/                    #Path to db file
-    AutoCreateDb: true                         #If DB not exists create it automatically
+    AutoCreateDb: true                         #If DB does not exists create it automatically
 
 ########################################################################################################################
-#Source Plugins Section
+#Source / Service Plugins Section
 ########################################################################################################################
 SERVICES:
+  Plugins: [File, Ossh, Phs, Webhook]                                             #Activate available services
 
-  Tftp:
-    Name: dnsmasq                                           #dnsmasq TFTP Server or hpa TFTP Server
-    LogFile: logs/testlogs/tftpd.log                        #Path to the log file being observed (TFTP/DHCP/etc)
-    #dnsmasq TFTP Pattern (Ubuntu/Centos)
-    Pattern: .*?\sdnsmasq-tftp\[\d.*\]:\ssent\s/var/lib/tftpboot/init.conf\sto\s((?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3}))
-    #Pattern: '.*?\sdnsmasq-tftp\[\d.*\]:\sTFTP\ssent\s/var/lib/tftpboot/init.conf\sto\s((?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3}))'
-    #HPA TFTP Pattern
-    #Pattern: '(\d+/\d+/\d+@\d+:\d+:\d+).*?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$)'
+  File:
+    Normalizer: [Tftp, Dhcp]
 
-  Dhcp:
-    Name: isc                                               #dnsmasq DHCP Server or ISC DHCP Server
-    LogFile: logs/testlogs/dhcpd.leases                     #Path to the log file being processed
+    Tftp:
+      Module: Dnsmasq                                         #dnsmasq TFTP Server or hpa TFTP Server
+      LogFile: logs/testlogs/tftpd.log                        #Path to the log file being observed (TFTP/DHCP/etc)
+
+      #dnsmasq TFTP Pattern (Ubuntu/Centos)
+      Dnsmasq:
+        Pattern: .*?\sdnsmasq-tftp\[\d.*\]:\ssent\s/var/lib/tftpboot/init.conf\sto\s((?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3}))
+        #Pattern: '.*?\sdnsmasq-tftp\[\d.*\]:\sTFTP\ssent\s/var/lib/tftpboot/init.conf\sto\s((?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3}))'
+
+      #HPA TFTP Pattern
+      Hpa:
+        Pattern: '(\d+/\d+/\d+@\d+:\d+:\d+).*?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$)'
+
+    Dhcp:
+      Module: isc                                             #dnsmasq DHCP Server or ISC DHCP Server
+      LogFile: logs/testlogs/dhcpd.leases                     #Path to the log file being processed
 
   Ossh:
+    Normalizer: Ossh
     ServiceBindAddress: 172.16.146.1                        #SSH Server bind address
     ServiceListenPort: 7804                                 #SSH Server listen port
                                                             #DMI Shared Secret
@@ -87,6 +95,7 @@ SERVICES:
     SigHubCmd: kill -HUP `cat /var/run/inetd.pid`           #Sig HUP inetd to re-read it's configuration
 
   Phs:
+    Normalizer: Phs
     ServiceBindAddress: 172.16.146.1                        #HTTP Server bind address
     ServiceListenPort: 6583                                 #HTTP Server listen port
     InitConfPath: conf/services/phs/                        #Inital bootstrap config file directory
@@ -94,6 +103,12 @@ SERVICES:
     SSLCertificate: conf/yapt/ssl/cert.pem                  #SSL Certificate
     SSLPrivateKey: conf/yapt/ssl/privkey.pem                #SSL Private Key
     DeviceAuthFile: conf/services/phs/dev_auth              #device authentication by serial number
+
+  Webhook:
+    Normalizer: Webhook
+    Modules: [Gitlab]                                       #Load repository module. Could be Gitlab or Github
+    ServiceBindAddress: 192.168.2.20                        #HTTP Server bind address
+    ServiceListenPort: 6584                                 #HTTP Server listen port
 
 ########################################################################################################################
 #Junos Space Section

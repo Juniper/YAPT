@@ -13,7 +13,7 @@ class LogTaskProcessor(object):
     TASKP_SEQ_EMPTY = 'Task sequence empty'
     TASKP_CLOSE_DEV_CONN = 'Closing device connection <{0}>'
     TASKP_STOP_VERFIY_FAILURE = 'Do not start verification for device <{0}> since task failure'
-    TASKP_TASK_ERROR = 'Task before Task <{0}> has errors. Please check log'
+    TASKP_TASK_ERROR = 'Task <{0}> failed. Please check log...'
     TASKP_DEVICE_STATUS_ERR = 'Error with device status <{0}>'
     TASKP_DEFECT_MSG = 'Received defect message'
     TASKP_GROUP_CFG_NOK = 'Error in getting device group config <{0}>'
@@ -179,11 +179,12 @@ class Logfile(object):
     FILESVC_WATCHED_DIR = 'watched_dir = {0}'
     FILESVC_PATTERN = 'patterns = {0}'
     FILESVC_MODIFIED = 'File {0} was modified. Watching for new devices...'
+    FILESVC_STOPPED = 'Stopped FILE service for <{0}>'
 
 
 class Logossh(object):
     OSSH_SERVICE = 'OSSHSERVICE'
-    OSSH_LISTEN = 'Listening for new connections...'
+    OSSH_LISTEN = 'Listening for new connections on <{0}:{1}>'
     OSSH_START = 'Starting OSSH service...'
     OSSH_BIND_FAILED = 'Bind failed <{0}> '
     OSSH_BIND_FAILED_1 = 'Seems to be another YAPT instance is already running or interface not available to bind to'
@@ -198,11 +199,12 @@ class Logossh(object):
     OSSH_ERROR_VERIFY = 'Error in device verification. Closing connection'
     OSSH_HMAC_EMPTY = 'Received empty HMAC. Closing connection'
     OSSH_BAD_DMI = 'Received bad DMI request. Closing connection'
+    OSSH_STOPPED = 'Stopped OSSH service on <{0}:{1}>'
 
 
 class Logphs(object):
     PHS_SERVICE = 'PHSSERVICE'
-    PHS_LISTEN = 'Listening for new connections...'
+    PHS_LISTEN = 'Listening for new connections on <{0}:{1}>'
     PHS_START = 'Starting Phone Home Server...'
     PHS_STAGE1_SUCCESS = 'The stage1 configuration is successfully committed on device <{0}>'
     PHS_STAGE1_FAILED = 'The stage1 configuration failed to commit on device: <{0}>'
@@ -218,6 +220,20 @@ class Logphs(object):
     PHS_SSL_ENABLED = 'SSL Enabled'
     PHS_SSL_NO_CERT = 'No certificate file found'
     PHS_SSL_NO_KEY = 'No private key file found'
+    PHS_STOPPED = 'Stopped PHS service on <{0}:{1}>'
+
+class Logwebhook(object):
+    WEBHOOK_SERVICE = 'WEBHOOKSERVICE'
+    WEBHOOK_LISTEN = 'Listening for new connections on <{0}:{1}>'
+    WEBHOOK_START = 'Starting webhook service...'
+    WEBHOOK_STOPPED = 'Stopped webhook service on <{0}:{1}>'
+    WEBHOOK_RECEIVED = 'Received new request for device <{0}>'
+
+class Loggitlab(object):
+    GITLAB_SERVICE = 'GITLABSERVICE'
+    GITLAB_LISTEN = 'Listening for new connections on <{0}:{1}>'
+    GITLAB_START = 'Starting Gitlab web hook...'
+    GITLAB_STOPPED = 'Stopped gitlab service on <{0}:{1}>'
 
 
 class LogPlgFactory(object):
@@ -339,11 +355,12 @@ class LogTools(object):
     YAPT_CONF_LOAD_ERR = 'Loading YAPT config file with error <{0}:{1}>'
     YAPT_CONF_LOAD_GRP_ERR = 'Loading group file <{0}> failed with error <{1}>'
     STORAGE_PLG = 'STORAGE'
-    STORAGE_PLG_LOAD = 'Loading config source plugins <{0}>'
-    STORAGE_PLG_FOUND = 'Found enabled config source plugin <{0}>'
-    STORAGE_PLG_LOADED = 'Loaded enabled config source plugin <{0}>'
-    STORAGE_PLG_EXEC = 'Executed enabled config source plugin <{0}>'
-    STORAGE_PLG_NOK = 'Failed loading source plugin <{0}>'
+    STORAGE_PLG_LOAD = 'Loading storage plugins <{0}>'
+    STORAGE_PLG_FOUND = 'Found enabled storage plugin <{0}>'
+    STORAGE_PLG_LOADED = 'Loaded enabled storage plugin <{0}>'
+    STORAGE_PLG_EXEC = 'Executed enabled storage plugin <{0}>'
+    STORAGE_PLG_NOK = 'Failed loading storage plugin <{0}>'
+    STORAGE_TEMPLATE_NOK = 'Failed loading template <{0}> with error <{1}>'
 
 
 class LogTaskTools(object):

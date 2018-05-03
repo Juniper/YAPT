@@ -15,6 +15,7 @@ from peewee import FloatField
 from peewee import ForeignKeyField
 from peewee import IntegerField
 from peewee import IntegrityError
+from peewee import OperationalError
 from peewee import Model
 from peewee import SqliteDatabase
 from peewee import TextField
@@ -35,8 +36,8 @@ database = SqliteDatabase(c.conf.BACKEND.Sqlite.DbPath + c.conf.BACKEND.Sqlite.D
 
 class Sql(Backend):
 
-    def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, verbose=None):
-        super(Sql, self).__init__(group, target, name, args, kwargs, verbose)
+    def __init__(self, group=None, target=None, name=None, args=(), kwargs=None):
+        super(Sql, self).__init__(group=group, target=target, name=name, args=args, kwargs=kwargs)
         self._logger.debug(
             Tools.create_log_msg(self.__class__.__name__, None,
                                  LogCommon.IS_SUBCLASS.format(self.__class__.__name__, issubclass(Sql, Backend))))
@@ -52,14 +53,14 @@ class Sql(Backend):
     @classmethod
     def create_tables(cls, dbname=None, fields=None, refName=None):
         dynTable = taskFactory(dbName=dbname, fields=fields, refName=refName)
-        tables = [Device, dynTable, Site, Asset, Group, Template, Image, Service, DeviceConfig]
+        tables = [Device, dynTable, Site, Asset, Group, Template, Image, Service, DeviceConfig, Validation]
         database.connect()
         database.create_tables(tables, safe=True)
         database.close()
 
         return dynTable
 
-    def add_device(self, new_device):
+    def add_device(self, new_device=None):
 
         device, created = Device.get_or_create(
             deviceSerial=new_device.deviceSerial,
@@ -80,7 +81,7 @@ class Sql(Backend):
             database.close()
             new_device.deviceStatus = c.DEVICE_STATUS_NEW
 
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_DEVICE_ADD,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_DEVICE_ADD,
                                   payload=new_device, source=c.AMQP_PROCESSOR_BACKEND)
             self.amqpCl.send_message(message=message)
 
@@ -115,7 +116,7 @@ class Sql(Backend):
             new_device.deviceTasks.is_callback = True
             database.close()
 
-            message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_UI_UPDATE_AND_RESET, payload=new_device,
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_UI_UPDATE_AND_RESET, payload=new_device,
                                   source=c.AMQP_PROCESSOR_BACKEND)
             self.amqpCl.send_message(message=message)
 
@@ -150,7 +151,8 @@ class Sql(Backend):
         try:
             devcfg = DeviceConfig.get(DeviceConfig.configSerial == configSerial)
 
-            return True, {'configId': devcfg.configId, 'configSerial': devcfg.configSerial, 'configDescr': devcfg.configDescr,
+            return True, {'configId': devcfg.configId, 'configSerial': devcfg.configSerial,
+                          'configDescr': devcfg.configDescr,
                           'configConfigSource': devcfg.configConfigSource}
 
         except DoesNotExist as dne:
@@ -173,7 +175,7 @@ class Sql(Backend):
         except DoesNotExist as dne:
             return False, dne.message
 
-    def update_device(self, sample_device):
+    def update_device(self, sample_device=None):
 
         query = Device.update(deviceName=sample_device.deviceName, deviceModel=sample_device.deviceModel,
                               deviceSerial=sample_device.deviceSerial, softwareVersion=sample_device.softwareVersion,
@@ -206,32 +208,51 @@ class Sql(Backend):
 
         database.close()
 
-        message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_DEVICE_UPDATE,
+        message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_DEVICE_UPDATE,
                               payload=sample_device, source=c.AMQP_PROCESSOR_BACKEND)
 
         self.amqpCl.send_message(message=message)
 
         return sample_device
 
-    def update_device_task_state(self, device_serial, is_callback, task_name, task_state):
+    def update_device_task_state(self, device_serial=None, is_callback=None, task_name=None, task_state=None):
 
         key = {task_name: task_state['taskStateMsg']}
-        query = self.DeviceTasks.update(**key). \
-            where(self.DeviceTasks.owner == device_serial)
-        query.execute()
-        database.close()
-        message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_DEVICE_UPDATE_TASK_STATE,
-                              payload=[device_serial, task_name, task_state],
-                              source=c.AMQP_PROCESSOR_BACKEND)
-
-        self.amqpCl.send_message(message=message)
-
-    def get_device(self, serial_number):
 
         try:
-            return Device.get(Device.deviceSerial == serial_number)
-        except DoesNotExist:
-            return False
+            query = self.DeviceTasks.update(**key). \
+                where(self.DeviceTasks.owner == device_serial)
+
+        except KeyError as ke:
+            self._logger.info(Tools.create_log_msg(logmsg.SQLBACKEND, None, 'Key <{0}> not found'.format(ke.message)))
+            return False, 'Key <{0}> not found'.format(ke.message)
+
+        try:
+
+            rows = query.execute()
+            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_DEVICE_UPDATE_TASK_STATE,
+                                  payload=[device_serial, task_name, task_state],
+                                  source=c.AMQP_PROCESSOR_BACKEND)
+            self.amqpCl.send_message(message=message)
+            database.close()
+            return True, rows
+
+        except OperationalError as oe:
+            self._logger.info(Tools.create_log_msg(logmsg.SQLBACKEND, None, oe.message))
+            database.close()
+            return False, oe.message
+
+    def get_device(self, serial_number=None):
+
+        try:
+            device = Device.get(Device.deviceSerial == serial_number)
+            sample_device = SampleDevice(deviceIP=device.deviceIP, deviceStatus=c.DEVICE_STATUS_EXISTS,
+                                         deviceSourcePlugin=None, deviceTimeStamp=None)
+            sample_device.deviceSerial = serial_number
+            return True, sample_device
+        except DoesNotExist as dne:
+            self._logger.info(Tools.create_log_msg(logmsg.SQLBACKEND, None, dne.message))
+            return False, dne.message
 
     def get_devices(self):
 
@@ -383,7 +404,7 @@ class Sql(Backend):
         query.execute()
         database.close()
 
-        return True
+        return True, "Successfully mapped asset serial {0} to asset config id {1}".format(assetSerial, assetConfigId)
 
     def add_group(self, groupName=None, groupConfig=None, groupDescr=None, groupConfigSource=None):
 
@@ -480,7 +501,8 @@ class Sql(Backend):
 
             for template in query:
                 templateData = {'templateId': template.templateId, 'templateName': template.templateName,
-                                'templateDescr': template.templateDescr, 'templateConfigSource': template.templateConfigSource }
+                                'templateDescr': template.templateDescr,
+                                'templateConfigSource': template.templateConfigSource}
                 templates.append(templateData)
 
             return True, templates
@@ -547,11 +569,60 @@ class Sql(Backend):
             query = prefetch(Service.select())
 
             for service in query:
-                serviceData = {'serviceId': service.serviceId, 'serviceName': service.serviceName, 'serviceDescr': service.serviceDescr,
+                serviceData = {'serviceId': service.serviceId, 'serviceName': service.serviceName,
+                               'serviceDescr': service.serviceDescr,
                                'serviceStatus': service.serviceStatus}
                 services.append(serviceData)
 
             return True, services
+
+        except DoesNotExist as dne:
+            return False, dne.message
+
+    def validate_phc(self, username=None, password=None):
+
+        try:
+            user = Validation.get(Validation.userName == username)
+            return True, {"id": user.id, "username": user.userName, "password": user.userPwd, "retries": user.retries}
+
+        except DoesNotExist as dne:
+            return False, dne.message
+
+    def get_validation_all(self):
+
+        validations = list()
+
+        try:
+            query = prefetch(Validation.select())
+
+            for user in query:
+                validationData = {'id': user.id, 'username': user.userName, 'password': user.userPwd,
+                                  'retries': user.retries}
+                validations.append(validationData)
+
+            return True, validations
+
+        except DoesNotExist as dne:
+            return False, dne.message
+
+    def add_asset_to_validation_db(self, username=None, password=None):
+
+        try:
+            Validation.create(userName=username, userPwd=password)
+            database.close()
+            return True, "Successfully added new asset validation entry <{0}>".format(username)
+
+        except IntegrityError as ie:
+            self._logger.info('YAPTBACKEND-[%s]: %s', username, ie.message)
+            return False, "Failed to add new validation entry for <{0}> with error <{1}>".format(username, ie.message)
+
+    def del_asset_from_validation_db(self, username=None):
+
+        try:
+
+            user = Validation.get(Validation.userName == username)
+            user.delete_instance()
+            return True, "Successfully deleted asset validation entry <{0}>".format(username)
 
         except DoesNotExist as dne:
             return False, dne.message
@@ -646,6 +717,13 @@ class Service(BaseModel):
     serviceName = CharField(unique=True, null=False)
     serviceDescr = CharField(default='New service')
     serviceStatus = CharField(default='stopped')
+
+
+class Validation(BaseModel):
+    id = IntegerField(unique=True, primary_key=True)
+    userName = CharField(unique=True)
+    userPwd = CharField(null=False)
+    retries = IntegerField(default=0)
 
 
 def taskFactory(dbName=None, fields=None, refName=None):

@@ -342,10 +342,37 @@ class Tools:
             c.logger.info('Not a device instance')
 
     @classmethod
+    def get_task_module_from_group(cls, grp_cfg=None, task_name=None):
+
+        task = getattr(grp_cfg.TASKS.Provision, task_name, None)
+
+        if getattr(task, 'Module', None):
+            return getattr(task, 'Module', None)
+
+        else:
+            return task_name
+
+    @classmethod
+    def get_task_descent_from_cls(cls, module_name=None, path=None):
+
+        _module = importlib.import_module(module_name, package=path.replace("/", "."))
+        cls_name = '{0}Task'.format(module_name.rsplit('.', 1)[1].title())
+        task_name = module_name.rsplit('.', 1)[1].title()
+
+        _task = getattr(_module, cls_name, None)
+        task_descent = getattr(_task, 'TASK_DESCENT', None)
+
+        if task_descent:
+            return task_descent
+
+        else:
+            return task_name
+
+    @classmethod
     def get_task_plugins(cls):
         """
-        Get all available provisioning task adapter in according plugin directory
-        :return: list of available task adapter
+        Get all available provisioning task plugins in according plugin directory and determine task descent
+        :return: list of available task plugins
         """
 
         plugins = list()
@@ -353,176 +380,39 @@ class Tools:
         if c.conf.DEVICEDRIVER.Driver == c.YAPT_DEVICE_DRIVER_PYEZ:
 
             task_re = re.compile('.py$', re.IGNORECASE)
-            pluginfiles = filter(task_re.search, os.listdir(os.path.join(os.path.dirname(__file__),
-                                                                         'tasks/provision/' + c.YAPT_DEVICE_DRIVER_PYEZ + '/')))
-            _module = lambda fp: '.' + os.path.splitext(fp)[0]
-            tasks = map(_module, pluginfiles)
 
-            for task in tasks:
+            for p in c.TASK_PLG_PYEZ_DIRS:
 
-                if not task.startswith('.__') and not task.startswith('.task'):
-                    plugins.append(task[1:].title())
+                importlib.import_module(p.replace("/", "."))
+                plugin_files = filter(task_re.search, os.listdir('{0}{1}'.format(p, '/')))
+                _module = lambda fp: '.' + os.path.splitext(fp)[0]
+                tasks = map(_module, plugin_files)
 
-            task_re = re.compile('.py$', re.IGNORECASE)
-            pluginfiles = filter(task_re.search,
-                                 os.listdir(os.path.join(os.path.dirname(__file__), 'tasks/provision/external/')))
-            _module = lambda fp: '.' + os.path.splitext(fp)[0]
-            tasks = map(_module, pluginfiles)
+                for task in tasks:
 
-            for task in tasks:
+                    if not task.startswith('.__') and not task.startswith('.task'):
+                        task_name = Tools.get_task_descent_from_cls(module_name=task, path=p)
+                        plugins.append(task_name)
 
-                if not task.startswith('.__') and not task.startswith('.task'):
-                    plugins.append(task[1:].title())
-
-            task_re = re.compile('.py$', re.IGNORECASE)
-            pluginfiles = filter(task_re.search,
-                                 os.listdir(os.path.join(os.path.dirname(__file__), 'tasks/verification/')))
-            _module = lambda fp: '.' + os.path.splitext(fp)[0]
-            tasks = map(_module, pluginfiles)
-
-            for task in tasks:
-
-                if not task.startswith('.__') and not task.startswith('.task'):
-                    plugins.append(task[1:].title())
-
-            return plugins
+            return set(plugins)
 
         elif c.conf.DEVICEDRIVER.Driver == c.YAPT_DEVICE_DRIVER_NAPALM:
 
             task_re = re.compile('.py$', re.IGNORECASE)
-            pluginfiles = filter(task_re.search, os.listdir(os.path.join(os.path.dirname(__file__),
-                                                                         'tasks/provision/' + c.YAPT_DEVICE_DRIVER_PYEZ + '/')))
-            _module = lambda fp: '.' + os.path.splitext(fp)[0]
-            tasks = map(_module, pluginfiles)
 
-            for task in tasks:
+            for p in c.TASK_PLG_NAPALM_DIRS:
 
-                if not task.startswith('.__') and not task.startswith('.task'):
-                    plugins.append(task[1:].title())
+                importlib.import_module(p.replace("/", "."))
+                plugin_files = filter(task_re.search, os.listdir('{0}{1}'.format(p, '/')))
+                _module = lambda fp: '.' + os.path.splitext(fp)[0]
+                tasks = map(_module, plugin_files)
 
-            task_re = re.compile('.py$', re.IGNORECASE)
-            pluginfiles = filter(task_re.search,
-                                 os.listdir(os.path.join(os.path.dirname(__file__), 'tasks/provision/external/')))
-            _module = lambda fp: '.' + os.path.splitext(fp)[0]
-            tasks = map(_module, pluginfiles)
+                for task in tasks:
+                    if not task.startswith('.__') and not task.startswith('.task'):
+                        task_name = Tools.get_task_descent_from_cls(module_name=task, path=p)
+                        plugins.append(task_name)
 
-            for task in tasks:
-
-                if not task.startswith('.__') and not task.startswith('.task'):
-                    plugins.append(task[1:].title())
-
-            task_re = re.compile('.py$', re.IGNORECASE)
-            pluginfiles = filter(task_re.search,
-                                 os.listdir(os.path.join(os.path.dirname(__file__), 'tasks/verification/')))
-            _module = lambda fp: '.' + os.path.splitext(fp)[0]
-            tasks = map(_module, pluginfiles)
-
-            for task in tasks:
-
-                if not task.startswith('.__') and not task.startswith('.task'):
-                    plugins.append(task[1:].title())
-
-            return plugins
-
-    @classmethod
-    def get_provisioning_task_plugins(cls):
-        """
-        Get all available provisioning task adapter in according plugin directory
-        :return: list of available task adapter
-        """
-
-        plugins = list()
-
-        if c.conf.DEVICEDRIVER.Driver == c.YAPT_DEVICE_DRIVER_PYEZ:
-
-            task_re = re.compile('.py$', re.IGNORECASE)
-            pluginfiles = filter(task_re.search, os.listdir(os.path.join(os.path.dirname(__file__),
-                                                                         'tasks/provision/' + c.YAPT_DEVICE_DRIVER_PYEZ + '/')))
-            _module = lambda fp: '.' + os.path.splitext(fp)[0]
-            tasks = map(_module, pluginfiles)
-
-            for task in tasks:
-
-                if not task.startswith('.__') and not task.startswith('.task'):
-                    plugins.append(task[1:].title())
-
-            task_re = re.compile('.py$', re.IGNORECASE)
-            pluginfiles = filter(task_re.search, os.listdir(os.path.join(os.path.dirname(__file__), 'tasks/external/')))
-            _module = lambda fp: '.' + os.path.splitext(fp)[0]
-            tasks = map(_module, pluginfiles)
-
-            for task in tasks:
-
-                if not task.startswith('.__') and not task.startswith('.task'):
-                    plugins.append(task[1:].title())
-
-            pluginfiles = filter(task_re.search,
-                                 os.listdir(os.path.join(os.path.dirname(__file__), 'tasks/verification/')))
-            _module = lambda fp: '.' + os.path.splitext(fp)[0]
-            tasks = map(_module, pluginfiles)
-
-            for task in tasks:
-
-                if not task.startswith('.__') and not task.startswith('.task'):
-                    plugins.append(task[1:].title())
-
-            return plugins
-
-        elif c.conf.DEVICEDRIVER.Driver == c.YAPT_DEVICE_DRIVER_NAPALM:
-
-            task_re = re.compile('.py$', re.IGNORECASE)
-            pluginfiles = filter(task_re.search, os.listdir(os.path.join(os.path.dirname(__file__),
-                                                                         'tasks/provision/' + c.YAPT_DEVICE_DRIVER_PYEZ + '/')))
-            _module = lambda fp: '.' + os.path.splitext(fp)[0]
-            tasks = map(_module, pluginfiles)
-
-            for task in tasks:
-
-                if not task.startswith('.__') and not task.startswith('.task'):
-                    plugins.append(task[1:].title())
-
-            task_re = re.compile('.py$', re.IGNORECASE)
-            pluginfiles = filter(task_re.search, os.listdir(os.path.join(os.path.dirname(__file__), 'tasks/external/')))
-            _module = lambda fp: '.' + os.path.splitext(fp)[0]
-            tasks = map(_module, pluginfiles)
-
-            for task in tasks:
-
-                if not task.startswith('.__') and not task.startswith('.task'):
-                    plugins.append(task[1:].title())
-
-            pluginfiles = filter(task_re.search,
-                                 os.listdir(os.path.join(os.path.dirname(__file__), 'tasks/verification/')))
-            _module = lambda fp: '.' + os.path.splitext(fp)[0]
-            tasks = map(_module, pluginfiles)
-
-            for task in tasks:
-
-                if not task.startswith('.__') and not task.startswith('.task'):
-                    plugins.append(task[1:].title())
-
-            return plugins
-
-    @classmethod
-    def get_verification_task_plugins(cls):
-        """
-                Get all available verification task plugins in according plugin directory
-                :return: list of available verification task adapter
-                """
-
-        plugins = list()
-
-        task_re = re.compile('.py$', re.IGNORECASE)
-        pluginfiles = filter(task_re.search, os.listdir(os.path.join(os.path.dirname(__file__), 'tasks/verification/')))
-        _module = lambda fp: '.' + os.path.splitext(fp)[0]
-        tasks = map(_module, pluginfiles)
-
-        for task in tasks:
-
-            if not task.startswith('.__') and not task.startswith('.task'):
-                plugins.append(task[1:].title())
-
-        return plugins
+            return set(plugins)
 
     @classmethod
     def get_class_from_frame(cls, fr):
@@ -606,7 +496,7 @@ class Tools:
             return False, 'Parameters not matching'
 
         c.logger.debug(Tools.create_log_msg(logmsg.STORAGE_PLG, sn if sn else osshid,
-                       logmsg.STORAGE_PLG_LOAD.format(c.conf.STORAGE.DeviceConfSrcPlugins)))
+                                            logmsg.STORAGE_PLG_LOAD.format(c.conf.STORAGE.DeviceConfSrcPlugins)))
 
         if c.conf.STORAGE.DeviceConfSrcPlugins:
 
@@ -615,12 +505,11 @@ class Tools:
                 if lookup_type == c.CONFIG_LOOKUP_TYPE_GET_DEVICE_CFG:
 
                     # check ooba
-
                     if c.conf.STORAGE.DeviceConfOoba:
                         c.logger.info(Tools.create_log_msg(logmsg.STORAGE_PLG, sn if sn else osshid,
                                                            'Checking config id mapping in asset database'))
                         from lib.amqp.amqpmessage import AMQPMessage
-                        message = AMQPMessage(message_type=c.AMQP_MESSAGE_TYPE_REST_ASSET_GET_BY_SERIAL,
+                        message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_ASSET_GET_BY_SERIAL,
                                               payload=sn if sn else osshid,
                                               source=c.AMQP_PROCESSOR_REST)
                         from lib.processor import BackendClientProcessor
@@ -654,8 +543,8 @@ class Tools:
                 elif lookup_type == c.CONFIG_LOOKUP_TYPE_GET_DEVICE_CFG_FILE:
 
                     status, filename = storage.get_device_config_data_file(serialnumber=sn, deviceOsshId=osshid)
-                    c.logger.debug(logmsg.STORAGE_PLG, sn if sn else osshid,
-                                   logmsg.STORAGE_PLG_EXEC.format(storage))
+                    c.logger.debug(Tools.create_log_msg(logmsg.STORAGE_PLG, sn if sn else osshid,
+                                                        logmsg.STORAGE_PLG_EXEC.format(storage)))
 
                     if status:
                         return status, filename
@@ -669,12 +558,14 @@ class Tools:
                         isFile, template = storage.get_config_template_data(serialnumber=sn,
                                                                             templateName=templateName,
                                                                             groupName=groupName, isRaw=isRaw)
-                        c.logger.debug(logmsg.STORAGE_PLG, sn if sn else osshid,
-                                       logmsg.STORAGE_PLG_EXEC.format(storage))
+                        c.logger.debug(Tools.create_log_msg(logmsg.STORAGE_PLG, sn if sn else osshid,
+                                                            logmsg.STORAGE_PLG_EXEC.format(storage)))
 
                         if isFile:
                             return isFile, template
                         else:
+                            c.logger.info(Tools.create_log_msg(logmsg.STORAGE_PLG, sn if sn else osshid,
+                                                               logmsg.STORAGE_TEMPLATE_NOK(templateName, templateName)))
                             continue
 
                 elif lookup_type == c.CONFIG_LOOKUP_TYPE_GET_TEMPLATE_FILE:
@@ -682,7 +573,8 @@ class Tools:
                     if sn and templateName:
 
                         isFile, template = storage.get_config_template_file(serialnumber=sn,
-                                                                            templateName=templateName)
+                                                                            templateName=templateName,
+                                                                            groupName=groupName)
                         c.logger.debug(logmsg.STORAGE_PLG, sn if sn else osshid,
                                        logmsg.STORAGE_PLG_EXEC.format(storage))
 
@@ -712,7 +604,7 @@ class Tools:
 
                         status, groupvars = storage.get_group_data(serialnumber=sn, groupName=groupName, isRaw=isRaw)
                         c.logger.debug(Tools.create_log_msg(logmsg.STORAGE_PLG, sn if sn else osshid,
-                                       logmsg.STORAGE_PLG_EXEC.format(storage)))
+                                                            logmsg.STORAGE_PLG_EXEC.format(storage)))
 
                         if status:
                             return True, groupvars
@@ -736,6 +628,27 @@ class Tools:
 
         else:
             c.logger.info(logmsg.STORAGE_PLG, sn if sn else osshid, 'Config Source plugin sequence empty')
+            return
+
+    @classmethod
+    def load_factory(cls, fact_name=None):
+        """Import class by its fully qualified name.
+        """
+
+        p, m = fact_name.rsplit('.', 1)
+
+        try:
+            module = importlib.import_module(p)
+
+        except ImportError as ie:
+            Tools.create_log_msg('IMPORTCLS', None, ie.message)
+            return
+
+        if module:
+
+            my_class = getattr(module, m, None)
+            return my_class
+        else:
             return
 
     @classmethod
@@ -843,10 +756,34 @@ class Tools:
             c.logger.info('Unknown device driver type')
 
     @classmethod
-    def load_provision_task_plugin(cls, task):
+    def load_provision_task_plugin(cls, task_name):
 
-        importlib.import_module('lib.tasks.provision.' + c.YAPT_DEVICE_DRIVER_PYEZ)
-        return importlib.import_module(task, package="lib.tasks.provision." + c.YAPT_DEVICE_DRIVER_PYEZ)
+        if c.conf.DEVICEDRIVER.Driver == c.YAPT_DEVICE_DRIVER_PYEZ:
+            task_re = re.compile('.py$', re.IGNORECASE)
+            plugin_files = None
+
+            for p in c.TASK_PLG_PYEZ_DIRS:
+
+                try:
+                    plugin_files = filter(task_re.search, os.listdir('{0}{1}'.format(p, '/')))
+
+                except OSError as ose:
+                    c.logger.info(Tools.create_log_msg('TASKPLUGINLDR', None, ose))
+
+                _module = lambda fp: '.' + os.path.splitext(fp)[0]
+                tasks = map(_module, plugin_files)
+                importlib.import_module(p.replace('/', '.'))
+
+                for task in tasks:
+
+                    if not task.startswith('.__') or task.startswith('task'):
+
+                        if task[1:].title() == task_name:
+                            m = importlib.import_module(task, package=p.replace('/', '.'))
+                            return getattr(m, '{0}Task'.format(task_name), None)
+
+        else:
+            importlib.import_module('lib.tasks.provision.' + c.YAPT_DEVICE_DRIVER_NAPALM)
 
     @classmethod
     def load_provision_task_plugins(cls, sequence):
@@ -860,11 +797,11 @@ class Tools:
 
             task_plugins = dict()
             task_re = re.compile('.py$', re.IGNORECASE)
-            pluginfiles = filter(task_re.search, os.listdir(os.path.join(os.path.dirname(__file__),
-                                                                         'tasks/provision/' + c.YAPT_DEVICE_DRIVER_PYEZ + '/')))
+            plugin_files = filter(task_re.search, os.listdir(os.path.join(os.path.dirname(__file__),
+                                                                          'tasks/provision/' + c.YAPT_DEVICE_DRIVER_PYEZ + '/')))
             # Todo: Replace lambda?
             _module = lambda fp: '.' + os.path.splitext(fp)[0]
-            tasks = map(_module, pluginfiles)
+            tasks = map(_module, plugin_files)
             importlib.import_module('lib.tasks.provision.' + c.YAPT_DEVICE_DRIVER_PYEZ)
 
             for task in tasks:
@@ -877,11 +814,11 @@ class Tools:
                             importlib.import_module(task,
                                                     package="lib.tasks.provision." + c.YAPT_DEVICE_DRIVER_PYEZ)}
 
-            pluginfiles = filter(task_re.search,
-                                 os.listdir(os.path.join(os.path.dirname(__file__), 'tasks/provision/external/')))
+            plugin_files = filter(task_re.search,
+                                  os.listdir(os.path.join(os.path.dirname(__file__), 'tasks/provision/external/')))
             # Todo: Replace lambda?
             _module = lambda fp: '.' + os.path.splitext(fp)[0]
-            tasks = map(_module, pluginfiles)
+            tasks = map(_module, plugin_files)
             importlib.import_module('lib.tasks.provision.external')
 
             for task in tasks:
@@ -899,12 +836,12 @@ class Tools:
 
             task_plugins = dict()
             task_re = re.compile('.py$', re.IGNORECASE)
-            pluginfiles = filter(task_re.search,
-                                 os.listdir(os.path.join(os.path.dirname(__file__),
-                                                         'tasks/provision/' + c.YAPT_DEVICE_DRIVER_NAPALM + '/')))
+            plugin_files = filter(task_re.search,
+                                  os.listdir(os.path.join(os.path.dirname(__file__),
+                                                          'tasks/provision/' + c.YAPT_DEVICE_DRIVER_NAPALM + '/')))
             # Todo: Replace lambda?
             _module = lambda fp: '.' + os.path.splitext(fp)[0]
-            tasks = map(_module, pluginfiles)
+            tasks = map(_module, plugin_files)
             importlib.import_module('lib.tasks.provision.' + c.YAPT_DEVICE_DRIVER_NAPALM)
 
             for task in tasks:
@@ -917,11 +854,11 @@ class Tools:
                             importlib.import_module(task,
                                                     package="lib.tasks.provision." + c.YAPT_DEVICE_DRIVER_NAPALM)}
 
-            pluginfiles = filter(task_re.search,
-                                 os.listdir(os.path.join(os.path.dirname(__file__), 'tasks/provision/external/')))
+            plugin_files = filter(task_re.search,
+                                  os.listdir(os.path.join(os.path.dirname(__file__), 'tasks/provision/external/')))
             # Todo: Replace lambda?
             _module = lambda fp: '.' + os.path.splitext(fp)[0]
-            tasks = map(_module, pluginfiles)
+            tasks = map(_module, plugin_files)
             importlib.import_module('lib.tasks.provision.external')
 
             for task in tasks:
@@ -965,23 +902,28 @@ class Tools:
         return verification_plugins
 
     @classmethod
-    def load_source_plugins(cls):
+    def load_service_normalizer(cls, service):
 
-        log_re = re.compile('.py$', re.IGNORECASE)
-        pluginfiles = filter(log_re.search, os.listdir(os.path.join(os.path.dirname(__file__), 'plugins')))
+        svc_re = re.compile('.py$', re.IGNORECASE)
+        plugin_files = None
+
+        try:
+            plugin_files = filter(svc_re.search, os.listdir('{0}'.format('lib/services/normalizer')))
+
+        except OSError as ose:
+            c.logger.info(Tools.create_log_msg('NORMALIZERLDR', None, ose))
+
         _module = lambda fp: '.' + os.path.splitext(fp)[0]
-        plugins = map(_module, pluginfiles)
-        importlib.import_module('lib.plugins')
-        source_plugins = dict()
+        normalizer = map(_module, plugin_files)
+        importlib.import_module('lib.services.normalizer')
 
-        for plugin in plugins:
+        for n in normalizer:
 
-            if not plugin.startswith('.__') and not plugin.startswith('.sourceplugin'):
-                if plugin[1:] in c.conf.YAPT.SourcePlugins:
-                    plugin_name = plugin[1:]
-                    source_plugins[plugin_name] = {importlib.import_module(plugin, package="lib.plugins")}
+            if not n.startswith('.__') or n.startswith('task'):
 
-        return source_plugins
+                if n[1:].title() == service:
+                    m = importlib.import_module(n, package='lib.services.normalizer')
+                    return getattr(m, '{0}'.format(service), None)
 
     @classmethod
     def load_backend_plugins(cls):
@@ -1031,9 +973,9 @@ class Tools:
 
         for plugin in plugins:
 
-            if not plugin.startswith('.__') and not plugin.startswith('.storage'):
+            if not plugin.startswith('.__') and not plugin.startswith('.base'):
 
-                if plugin[1:] in c.conf.STORAGE.DeviceConfSrcPlugins:
+                if plugin[1:].title() in c.conf.STORAGE.DeviceConfSrcPlugins:
                     plugin_name = plugin[1:]
                     storage_plugins[plugin_name] = {importlib.import_module(plugin, package="lib.storage")}
 
@@ -1088,7 +1030,8 @@ class Tools:
         c.logger.debug(Tools.create_log_msg(caller_name, 'Received', "Routing-Key: {0}".format(routing_key)))
         c.logger.debug(Tools.create_log_msg(caller_name, 'Received', "Message: {0}".format(type(body_decoded))))
         c.logger.debug(Tools.create_log_msg(caller_name, 'Received', "Message from: {0}".format(body_decoded.source)))
-        c.logger.debug(Tools.create_log_msg(caller_name, 'Received', "Message type: {0}".format(body_decoded.message_type)))
+        c.logger.debug(
+            Tools.create_log_msg(caller_name, 'Received', "Message type: {0}".format(body_decoded.message_type)))
         c.logger.debug(Tools.create_log_msg(caller_name, 'Received', '#' * 60))
 
     @classmethod
@@ -1100,7 +1043,7 @@ class Tools:
         c.logger.debug(Tools.create_log_msg(caller_name, 'Send', "Something is wrong with message to be send"))
         c.logger.debug(Tools.create_log_msg(caller_name, 'Send', "Routing-Key: {0}".format(routing_key)))
         c.logger.debug(Tools.create_log_msg(caller_name, 'Send', "Message: {0}".format(type(body_decoded))))
-        c.logger.debug(Tools.create_log_msg(caller_name, 'Send', "Type: {0}".format(body_decoded.message_type)))
+        c.logger.debug(Tools.create_log_msg(caller_name, 'Send', "Message Type: {0}".format(body_decoded.message_type)))
         c.logger.debug(Tools.create_log_msg(caller_name, 'Send', "Message Source: {0}".format(body_decoded.source)))
         c.logger.debug(Tools.create_log_msg(caller_name, 'Send', '#' * 60))
 
@@ -1110,13 +1053,14 @@ class Tools:
         frame = inspect.stack()[1][0]
         caller_name = Tools.get_class_from_frame(frame)
 
-        c.logger.debug("[{0:12}] {1}", format(caller_name, 60 * '#'))
-        c.logger.debug("[{0:12}] Something is wrong with received message", caller_name)
-        c.logger.debug("[{0:12}] Received Routing-Key: {1}", caller_name, routing_key)
-        c.logger.debug("[{0:12}] Received Message: {1}", caller_name, type(body_decoded))
-        c.logger.debug("[{0:12}] Received Message Type: {1}", caller_name, body_decoded.message_type)
-        c.logger.debug("[{0:12}] Received Message Source: {1}", caller_name, body_decoded.source)
-        c.logger.debug("[{0:12}] {1}", format(caller_name, 60 * '#'))
+        c.logger.debug(Tools.create_log_msg(caller_name, 'Receive', '#' * 60))
+        c.logger.debug(Tools.create_log_msg(caller_name, 'Receive', "Something is wrong with received message"))
+        c.logger.debug(Tools.create_log_msg(caller_name, 'Receive', "Received Routing-Key: {0}".format(routing_key)))
+        c.logger.debug(Tools.create_log_msg(caller_name, 'Receive', "Message: {0}".format(type(body_decoded))))
+        c.logger.debug(
+            Tools.create_log_msg(caller_name, 'Receive', "Message Type: {0}".format(body_decoded.message_type)))
+        c.logger.debug(Tools.create_log_msg(caller_name, 'Receive', "Message Source: {0}".format(body_decoded.source)))
+        c.logger.debug(Tools.create_log_msg(caller_name, "Receive", '#' * 60))
 
     @classmethod
     def emit_log(cls, task_name=None, task_state=None, sample_device=None, grp_cfg=None, shared=None, message=None,
