@@ -1,5 +1,13 @@
 # About #
-YAPT (Yet Another Provisioning Tool) is for provisioning SRX / EX / NFX device. It's main goal is to deliver Zero Touch Provisioning.
+YAPT (Yet Another Provisioning Tool) is for provisioning
+
+- SRX / vSRX
+- MX / vMX
+- NFX
+- EX
+- QFX
+
+devices. It's main goal is to deliver Zero Touch Provisioning.
 
 YAPT runs with **Python 2 (2.7+)**.
 
