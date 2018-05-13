@@ -1,8 +1,9 @@
-# Copyright (c) 1999-2017, Juniper Networks Inc.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
 # All rights reserved.
+# Use is subject to license terms.
 #
-# Authors: cklewar@juniper.net
-#
+# Author: cklewar
 
 try:
     import xml.etree.cElementTree as ET
@@ -45,7 +46,6 @@ class RuleTask(Task):
         if policy_data == c.SRC_RESPONSE_FAILURE:
 
             self.sample_device.deviceTasks.taskState[self.task_name] = c.SRC_RESPONSE_FAILURE
-            self.shared[c.TASK_SHARED_STATE] = c.TASK_STATE_RESULT_FAILURE
 
         else:
 

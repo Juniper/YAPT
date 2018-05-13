@@ -1,8 +1,9 @@
-# Copyright (c) 1999-2017, Juniper Networks Inc.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
 # All rights reserved.
+# Use is subject to license terms.
 #
-# Authors: cklewar@juniper.net
-#
+# Author: cklewar
 
 import weakref
 
@@ -300,19 +301,19 @@ class SampleDevice(object):
         self.__deviceTemplateFile = value
 
     # ------------------------------------------------------------------------
-    # property: deviceSourcePlugin
+    # property: deviceServicePlugin
     # ------------------------------------------------------------------------
 
     @property
-    def deviceSourcePlugin(self):
+    def deviceServicePlugin(self):
         """
-        :returns: attached device source plugin
+        :returns: attached device service plugin
         """
-        return self.__deviceSourcePlugin
+        return self.__deviceServicePlugin
 
-    @deviceSourcePlugin.setter
-    def deviceSourcePlugin(self, value):
-        self.__deviceSourcePlugin = value
+    @deviceServicePlugin.setter
+    def deviceServicePlugin(self, value):
+        self.__deviceServicePlugin = value
 
     # ------------------------------------------------------------------------
     # property: deviceTaskSeq
@@ -344,7 +345,7 @@ class SampleDevice(object):
     def deviceOsshId(self, value):
         self.__deviceOsshId = value
 
-    def __init__(self, deviceIP, deviceTimeStamp, deviceStatus, deviceSourcePlugin):
+    def __init__(self, deviceIP, deviceTimeStamp, deviceStatus, deviceServicePlugin):
         """
         :param deviceIP: device IP address
         :param deviceTimeStamp: creation timestamp
@@ -370,7 +371,7 @@ class SampleDevice(object):
         self.__deviceTemplate = None
         self.__deviceTemplateFile = None
         self.__deviceOsshId = None
-        self.__deviceSourcePlugin = deviceSourcePlugin
+        self.__deviceServicePlugin = deviceServicePlugin
         self.__deviceTaskSeq = None
         self.__deviceTasks = TaskState()
         self.__device_task_seq = dict()
@@ -391,7 +392,7 @@ class SampleDevice(object):
             "deviceTasksStates": deviceTasksStates,
             "deviceConfiguration": self.deviceConfiguration,
             "deviceStatus": self.deviceStatus,
-            "deviceSourcePlugin": self.deviceSourcePlugin,
+            "deviceServicePlugin": self.deviceServicePlugin,
             "taskProgress": self.deviceTaskProgress,
             "deviceGroup": self.deviceGroup,
             "deviceTaskSequence": self.deviceTaskSeq,

@@ -1,6 +1,9 @@
-# Copyright (c) 1999-2017, Juniper Networks Inc.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
 # All rights reserved.
+# Use is subject to license terms.
 #
+# Author: cklewar
 
 import logging
 import threading
@@ -21,6 +24,7 @@ UI_ACTION_UPDATE_LOG_VIEWER = 'updateLogViewer'
 UI_ACTION_INIT_LOG_VIEWER = 'initLogViewer'
 
 # Constants reflect device's status
+DEVICE_STATUS_INIT = 'device_status_init'
 DEVICE_STATUS_NEW = 'device_status_new'
 DEVICE_STATUS_EXISTS = 'device_status_exists'
 DEVICE_STATUS_CHANGED = 'device_status_changed'
@@ -126,7 +130,7 @@ TASK_STATE_INIT = 'task_state_init'
 TASK_STATE_DONE = 'task_state_done'
 TASK_STATE_FAILED = 'task_state_failed'
 TASK_STATE_WAIT = 'task_state_wait'
-TASK_STATE_REBOOT = 'task_state_reboot'
+TASK_STATE_REBOOTING = 'task_state_rebooting'
 TASK_STATE_PROGRESS = 'task_state_progress'
 
 # Task state common messages
@@ -193,14 +197,13 @@ SPACE_DISCOVERY_NOAM = 'Already Managed'
 SPACE_DISCOVERY_NOS = 'Skipped'
 
 # Source Plugin related stuff
-SOURCEPLUGIN_OSSH = 'ossh'
-SOURCEPLUGIN_PHS = 'phs'
-SOURCEPLUGIN_TFTP = 'tftp'
-SOURCEPLUGIN_DHCP = 'dhcp'
-SOURCEPLUGIN_WEBHOOK = 'webhook'
+SERVICEPLUGIN_OSSH = 'ossh'
+SERVICEPLUGIN_PHS = 'phs'
+SERVICEPLUGIN_TFTP = 'tftp'
+SERVICEPLUGIN_DHCP = 'dhcp'
+SERVICEPLUGIN_WEBHOOK = 'webhook'
 
 # Config types
-
 CONFIG_TYPE_MAIN = 'MAIN'
 CONFIG_TYPE_GROUP = 'GROUP'
 
@@ -229,6 +232,10 @@ lrr_lock = threading.Lock()
 # Factory Containers
 
 fc = None
+
+# Task queue
+
+taskq = None
 
 # OSSH service maintains a list of already seen devices. After second connection attempt no new connection will be
 # accpted by OSS service for particular IP. oss_seen_devices keeps track of device IPs. At the end of task processing, cleanup

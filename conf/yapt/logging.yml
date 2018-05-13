@@ -63,6 +63,15 @@
 			"maxBytes": 10485760,
 			"backupCount": 10,
 			"encoding": "utf8"
+		},
+		"paramiko_info": {
+			"level": "INFO",
+			"class": "logging.handlers.RotatingFileHandler",
+			"formatter": "void",
+			"filename": "logs/paramiko.log",
+			"maxBytes": 10485760,
+			"backupCount": 10,
+			"encoding": "utf8"
 		}
 	},
 	"loggers": {
@@ -87,6 +96,11 @@
 		},
 		"cherrypy.error": {
 			"handlers": ["cherrypy_error"],
+			"level": "INFO",
+			"propagate": false
+		},
+		"paramiko.transport": {
+			"handlers": ["paramiko_info"],
 			"level": "INFO",
 			"propagate": false
 		}

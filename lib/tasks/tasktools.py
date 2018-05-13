@@ -1,8 +1,9 @@
-# Copyright (c) 1999-2017, Juniper Networks Inc.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
 # All rights reserved.
+# Use is subject to license terms.
 #
-# Authors: cklewar@juniper.net
-#
+# Author: cklewar
 
 import datetime
 import os
@@ -126,7 +127,7 @@ class Configuration:
         now = datetime.datetime.now().strftime('%Y-%m-%d-%H%M')
         grp_cfg = Tools.create_config_view(config_type=c.CONFIG_TYPE_GROUP, stream=sample_device.deviceGroupData)
 
-        if c.SOURCEPLUGIN_OSSH in sample_device.deviceSourcePlugin:
+        if c.SERVICEPLUGIN_OSSH in sample_device.deviceServicePlugin:
             sample_device.deviceConfigData['device']['ossh_secret'] = sample_device.deviceConfigData['device'][
                 'ossh_secret']
             sample_device.deviceConfigData['device']['ossh_ip'] = c.conf.SERVICES.Ossh.ServiceBindAddress

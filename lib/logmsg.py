@@ -1,3 +1,10 @@
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
+# All rights reserved.
+# Use is subject to license terms.
+#
+# Author: cklewar
+
 class LogTaskProcessor(object):
     TASKP = 'TASKPROCESSOR'
     TASKP_LOAD_TASK_SEQ = 'Loading task plugin sequence <{0}>'
@@ -6,7 +13,7 @@ class LogTaskProcessor(object):
     TASKP_LOADED_PLG_ENABLED = 'Loaded enabled task plugin <{0}>'
     TASKP_EXECUTED_PLG_ENABLED = 'Executed enabled task plugin <{0}>'
     TASKP_NOT_FOUND_PLG_ENABLED = 'Task plugin <{0}> not found'
-    TASKP_STOP_DEV_REBOOT = 'Stop proccessing tasks since device <{0}> rebooting'
+    TASKP_STOP_DEV_REBOOT = 'Stop processing tasks since device <{0}> rebooting'
     TASKP_STOP_NO_DEVGRP = 'Can\'t find <{0} in device conf file'
     TASKP_STOP_NO_DEVGRP_CFG = 'No device group config found with reason: <{0}>'
     TASKP_STOP_NO_DEV_CFG = 'No device config found with reason: <{0}>'
@@ -36,10 +43,10 @@ class LogSoftwareTask(object):
     SW_UPDATE_NEEDED = 'We need to update. Device version <{0}> / Target version <{1}>'
     SW_INSTALL_VERS = 'Installing software version <{0}>'
     SW_CLEANUP_STORAGE = 'Cleaning up storage'
-    SW_COPY_IMG = 'Copy image...'
+    SW_COPY_IMG = 'Copy image <{0}>'
     SW_COPY_IMG_NOK = 'File copy failed with error <{0}>'
-    SW_INSTALLED_VERS = 'Installed Version is: <{0}>'
-    SW_TARGET_VERS = 'Target Version is: <{0}>'
+    SW_INSTALLED_VERS = 'Installed version is: <{0}>'
+    SW_TARGET_VERS = 'Target version is: <{0}>'
     SW_INSTALL_OK = 'Software installation succeeded for device <{0}>'
     SW_INSTALL_NOK = 'Software installation failed with error <{0}>'
     SW_CONN_NOK = 'Connection error for device <{0}>'

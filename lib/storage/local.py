@@ -1,6 +1,9 @@
-# Copyright (c) 1999-2017, Juniper Networks Inc.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
 # All rights reserved.
+# Use is subject to license terms.
 #
+# Author: cklewar
 
 import os
 
@@ -130,7 +133,7 @@ class Local(Storage):
                                                                           err.strerror, err.filename))
             return False, None
 
-    def get_device_config_data_file(self, serialnumber=None, deviceOsshId=None):
+    def get_device_config_data_file(self, serialnumber=None):
 
         dev_conf_path = c.conf.STORAGE.Local.DeviceConfDataDir
 
@@ -147,53 +150,16 @@ class Local(Storage):
                 self.logger.info(Tools.create_log_msg(self.name, serialnumber,
                                                       logmsg.LOCAL_DEV_CFG_FILE_NOK.format(dev_conf_path + filename)))
 
-                if deviceOsshId is not None:
-
-                    filename = deviceOsshId + c.CONFIG_FILE_SUFFIX_DEVICE
-
-                    if os.path.exists(dev_conf_path + filename) and os.path.isfile(dev_conf_path + filename):
-                        self.logger.info(
-                            Tools.create_log_msg(self.name, deviceOsshId,
-                                                 logmsg.LOCAL_DEV_CFG_FILE_OK.format(filename)))
-
-                        return True, dev_conf_path + filename
-
-                    else:
-                        self.logger.info(
-                            Tools.create_log_msg(self.name, deviceOsshId, logmsg.LOCAL_DEV_CFG_FILE_NOK.format(
-                                dev_conf_path + filename)))
-                        return False, None
-                else:
-                    self.logger.info(
-                        Tools.create_log_msg(self.name, deviceOsshId, logmsg.LOCAL_DEV_CFG_FILE_OK.format(filename)))
-                    return False, None
-
-        elif deviceOsshId is not None:
-
-            filename = deviceOsshId + c.CONFIG_FILE_SUFFIX_DEVICE
-
-            if os.path.exists(dev_conf_path + filename) and os.path.isfile(dev_conf_path + filename):
-                self.logger.info(
-                    Tools.create_log_msg(self.name, serialnumber, logmsg.LOCAL_DEV_CFG_FILE_OK.format(filename)))
-
-                return True, dev_conf_path + filename
-
-            else:
-                self.logger.info(
-                    Tools.create_log_msg(self.name, deviceOsshId, logmsg.LOCAL_DEV_CFG_FILE_NOK.format(filename)))
                 return False, None
         else:
-            self.logger.info(
-                Tools.create_log_msg(self.name, serialnumber if serialnumber else deviceOsshId,
-                                     logmsg.LOCAL_DEV_CFG_FILE_NOK.format(
-                                         serialnumber if serialnumber else deviceOsshId)))
+            self.logger.info(Tools.create_log_msg(self.name, serialnumber, 'Error no serial number'))
             return False, None
 
-    def get_device_config_data(self, serialnumber=None, deviceOsshId=None, isRaw=None):
+    def get_device_config_data(self, serialnumber=None, isRaw=None):
 
         dev_conf_path = c.conf.STORAGE.Local.DeviceConfDataDir
 
-        if serialnumber is not None:
+        if serialnumber:
 
             filename = serialnumber + c.CONFIG_FILE_SUFFIX_DEVICE
 
@@ -256,82 +222,7 @@ class Local(Storage):
                                                                                              serialnumber if serialnumber else deviceOsshId,
                                                                                              dev_conf_path + filename)
             else:
-
-                if deviceOsshId is not None:
-
-                    filename = deviceOsshId + c.CONFIG_FILE_SUFFIX_DEVICE
-
-                    if os.path.exists(dev_conf_path + filename) and os.path.isfile(dev_conf_path + filename):
-
-                        try:
-                            with open(c.conf.STORAGE.Local.DeviceConfDataDir + filename, 'r') as fp:
-
-                                try:
-
-                                    datavars = yaml.safe_load(fp)
-                                    self.logger.info(Tools.create_log_msg(self.name, deviceOsshId,
-                                                                          logmsg.LOCAL_DEV_CFG_FILE_OK.format(
-                                                                              filename)))
-
-                                    return True, datavars
-
-                                except yaml.YAMLError as exc:
-                                    self.logger.info(
-                                        '{0}-[{1}]: Error in loading config file <{2}> --> {3}'.format(self.name,
-                                                                                                       deviceOsshId,
-                                                                                                       dev_conf_path + filename,
-                                                                                                       exc))
-                                    return False, None
-
-                        except IOError:
-                            self.logger.info(
-                                '{0}-[{1}]: Error in opening config file <{2}>'.format(self.name, deviceOsshId,
-                                                                                       dev_conf_path + filename))
-                            return False, None
-
-                    else:
-                        self.logger.info(Tools.create_log_msg(self.name, deviceOsshId,
-                                                              logmsg.LOCAL_DEV_CFG_FILE_NOK.format(
-                                                                  dev_conf_path + filename)))
-                        return False, None
-
-                else:
-                    self.logger.info(Tools.create_log_msg(self.name, serialnumber,
-                                                          logmsg.LOCAL_DEV_CFG_FILE_NOK.format(
-                                                              dev_conf_path + filename)))
-                    return False, None
-
-        elif deviceOsshId is not None:
-
-            filename = deviceOsshId + c.CONFIG_FILE_SUFFIX_DEVICE
-
-            if os.path.exists(dev_conf_path + filename) and os.path.isfile(dev_conf_path + filename):
-
-                try:
-                    with open(c.conf.STORAGE.Local.DeviceConfDataDir + filename, 'r') as fp:
-
-                        try:
-
-                            datavars = yaml.safe_load(fp)
-                            self.logger.info(Tools.create_log_msg(self.name, serialnumber,
-                                                                  logmsg.LOCAL_DEV_CFG_FILE_OK.format(filename)))
-                            return True, datavars
-
-                        except yaml.YAMLError as exc:
-                            self.logger.info(
-                                '{0}-[{1}]: Error in loading config file <{2}> --> {3}'.format(self.name,
-                                                                                               deviceOsshId,
-                                                                                               dev_conf_path + filename,
-                                                                                               exc))
-                            return False, None
-
-                except IOError:
-                    self.logger.info('{0}-[{1}]: Error in reading config file <{2}>'.format(self.name, deviceOsshId,
-                                                                                            dev_conf_path + filename))
-                    return False, None
-
-            else:
-                self.logger.info(Tools.create_log_msg(self.name, deviceOsshId,
+                self.logger.info(Tools.create_log_msg(self.name, serialnumber,
                                                       logmsg.LOCAL_DEV_CFG_FILE_NOK.format(
                                                           dev_conf_path + filename)))
                 return False, None
@@ -433,12 +324,14 @@ class Local(Storage):
 
                     except yaml.YAMLError as exc:
                         c.logger.info(
-                            Tools.create_log_msg(self.name, serialnumber, logmsg.LOCAL_GRP_CFG_FILE_NOK(filename, exc.message)))
+                            Tools.create_log_msg(self.name, serialnumber,
+                                                 logmsg.LOCAL_GRP_CFG_FILE_NOK(filename, exc.message)))
                         return False, Tools.create_log_msg(self.name, serialnumber,
                                                            logmsg.LOCAL_GRP_CFG_FILE_NOK.format(filename, exc.message))
 
             except IOError as ioe:
-                c.logger.info(Tools.create_log_msg(self.name, serialnumber, logmsg.LOCAL_GRP_CFG_FILE_MISS.format(filename)))
+                c.logger.info(
+                    Tools.create_log_msg(self.name, serialnumber, logmsg.LOCAL_GRP_CFG_FILE_MISS.format(filename)))
                 return False, ioe
 
     def add_group_data(self, groupName=None, groupData=None):

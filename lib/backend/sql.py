@@ -1,8 +1,9 @@
-# Copyright (c) 1999-2017, Juniper Networks Inc.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
 # All rights reserved.
+# Use is subject to license terms.
 #
-# Authors: cklewar@juniper.net
-#
+# Author: cklewar
 
 import datetime
 
@@ -71,14 +72,24 @@ class Sql(Backend):
                       'deviceConfiguration': new_device.deviceConfiguration,
                       'deviceConnection': new_device.deviceConnection,
                       'deviceGroup': new_device.deviceGroup,
-                      'deviceSourcePlugin': new_device.deviceSourcePlugin,
-                      'deviceTaskSeq': new_device.deviceTaskSeq, })
+                      'deviceServicePlugin': new_device.deviceServicePlugin,
+                      'deviceTaskSeq': new_device.deviceTaskSeq})
 
         if created:
 
             dpts = self.DeviceTasks.create(owner=new_device.deviceSerial)
             dpts.save()
             database.close()
+
+            for item in new_device.deviceTaskSeq:
+
+                new_device.deviceTasks.taskState[item] = {'taskState': c.TASK_STATE_INIT,
+                                                          'taskStateMsg': c.TASK_STATE_MSG_INIT}
+                key = {item: c.TASK_STATE_MSG_WAIT}
+                query = self.DeviceTasks.update(**key). \
+                    where(self.DeviceTasks.owner == new_device.deviceSerial)
+                query.execute()
+
             new_device.deviceStatus = c.DEVICE_STATUS_NEW
 
             message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_DEVICE_ADD,
@@ -88,7 +99,15 @@ class Sql(Backend):
             return new_device
 
         else:
-            new_device.deviceStatus = c.DEVICE_STATUS_EXISTS
+
+            if device.deviceIsRebooted:
+                new_device.deviceStatus = c.DEVICE_STATUS_REBOOTED
+                new_device.deviceTaskProgress = device.deviceTaskProgress
+
+            else:
+                new_device.deviceStatus = c.DEVICE_STATUS_EXISTS
+                new_device.deviceTaskProgress = 0.0
+
             device.deviceName = new_device.deviceName
             device.deviceIP = new_device.deviceIP
             device.deviceStatus = new_device.deviceStatus
@@ -97,21 +116,18 @@ class Sql(Backend):
             device.deviceConfiguration = new_device.deviceConfiguration
             device.deviceConnection = new_device.deviceConnection
             device.deviceGroup = new_device.deviceGroup
-            device.deviceSourcePlugin = new_device.deviceSourcePlugin
+            device.deviceServicePlugin = new_device.deviceServicePlugin
             device.deviceTaskSeq = new_device.deviceTaskSeq
-            device.deviceTaskProgress = 0.0
+            new_device.deviceIsRebooted = device.deviceIsRebooted
             device.save()
 
+            task = self.DeviceTasks.get(device.deviceSerial == self.DeviceTasks.owner)
             new_device.deviceTasks.deviceSerial = new_device.deviceSerial
             new_device.deviceTasks.is_callback = False
 
             for item in device.deviceTaskSeq:
-                new_device.deviceTasks.taskState[item] = {'taskState': c.TASK_STATE_WAIT,
-                                                          'taskStateMsg': c.TASK_STATE_MSG_WAIT}
-                key = {item: c.TASK_STATE_MSG_WAIT}
-                query = self.DeviceTasks.update(**key). \
-                    where(self.DeviceTasks.owner == new_device.deviceSerial)
-                query.execute()
+
+                new_device.deviceTasks.taskState[item] = task._data[item]
 
             new_device.deviceTasks.is_callback = True
             database.close()
@@ -186,7 +202,7 @@ class Sql(Backend):
                               deviceIsRebooted=sample_device.deviceIsRebooted,
                               deviceConnection=sample_device.deviceConnection,
                               deviceGroup=sample_device.deviceGroup,
-                              deviceSourcePlugin=sample_device.deviceSourcePlugin,
+                              deviceServicePlugin=sample_device.deviceServicePlugin,
                               deviceTaskSeq=sample_device.deviceTaskSeq).where(
             Device.deviceSerial == sample_device.deviceSerial)
 
@@ -203,7 +219,7 @@ class Sql(Backend):
         sample_device.deviceConfiguration = device.deviceConfiguration
         sample_device.deviceConnection = device.deviceConnection
         sample_device.deviceGroup = device.deviceGroup
-        sample_device.deviceSourcePlugin = device.deviceSourcePlugin
+        sample_device.deviceServicePlugin = device.deviceServicePlugin
         sample_device.deviceTaskSeq = device.deviceTaskSeq
 
         database.close()
@@ -246,10 +262,12 @@ class Sql(Backend):
 
         try:
             device = Device.get(Device.deviceSerial == serial_number)
-            sample_device = SampleDevice(deviceIP=device.deviceIP, deviceStatus=c.DEVICE_STATUS_EXISTS,
-                                         deviceSourcePlugin=None, deviceTimeStamp=None)
+            sample_device = SampleDevice(deviceIP=device.deviceIP, deviceStatus=device.deviceStatus,
+                                         deviceServicePlugin=device.deviceServicePlugin,
+                                         deviceTimeStamp=device.deviceTimeStamp)
             sample_device.deviceSerial = serial_number
             return True, sample_device
+
         except DoesNotExist as dne:
             self._logger.info(Tools.create_log_msg(logmsg.SQLBACKEND, None, dne.message))
             return False, dne.message
@@ -262,7 +280,7 @@ class Sql(Backend):
 
             sample_device = SampleDevice(deviceIP=device.deviceIP, deviceStatus=device.deviceStatus,
                                          deviceTimeStamp=device.deviceTimeStamp.strftime("%Y-%m-%d %H:%M:%S"),
-                                         deviceSourcePlugin=device.deviceSourcePlugin)
+                                         deviceServicePlugin=device.deviceServicePlugin)
             sample_device.deviceSerial = device.deviceSerial
             sample_device.deviceName = device.deviceName
             sample_device.deviceModel = device.deviceModel
@@ -663,7 +681,7 @@ class Device(BaseModel):
     deviceStatus = CharField(default='')
     deviceTaskProgress = FloatField(default=0.0)
     deviceGroup = CharField(default='')
-    deviceSourcePlugin = CharField(default='')
+    deviceServicePlugin = CharField(default='')
     deviceTaskSeq = DeviceTaskSeqField(default='')
     deviceTasks = dict()
 

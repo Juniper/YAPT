@@ -1,6 +1,9 @@
-# Copyright (c) 1999-2017, Juniper Networks Inc.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
 # All rights reserved.
+# Use is subject to license terms.
 #
+# Author: cklewar
 
 import abc
 import yaml
@@ -37,11 +40,11 @@ class Storage(object):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def get_device_config_data_file(self, serialnumber, deviceOsshId):
+    def get_device_config_data_file(self, serialnumber):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def get_device_config_data(self, serialnumber, deviceOsshId, isRaw):
+    def get_device_config_data(self, serialnumber, isRaw):
         raise NotImplementedError()
 
     @abc.abstractmethod

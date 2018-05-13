@@ -1,5 +1,7 @@
-# Copyright (c) 1999-2017, Juniper Networks Inc.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
 # All rights reserved.
+# Use is subject to license terms.
 #
 # Author: cklewar
 
@@ -257,7 +259,7 @@ class Cgitlab(Storage):
     def get_device_config_data_file(self, serialnumber=None, deviceOsshId=None):
 
         if serialnumber is not None:
-            status, data = self.get_device_config_data(serialnumber=serialnumber, deviceOsshId=deviceOsshId, isRaw=True)
+            status, data = self.get_device_config_data(serialnumber=serialnumber, isRaw=True)
             path = 'tmp/'
             file_name = serialnumber + c.CONFIG_FILE_SUFFIX_DEVICE
 
@@ -268,7 +270,7 @@ class Cgitlab(Storage):
             else:
                 return False, path + file_name
 
-    def get_device_config_data(self, serialnumber=None, deviceOsshId=None, isRaw=None):
+    def get_device_config_data(self, serialnumber=None, isRaw=None):
 
         status, data = self.authenticate_oauth()
 
@@ -306,12 +308,12 @@ class Cgitlab(Storage):
                 except yaml.YAMLError as exc:
                     self.logger.info(
                         '{0}-[{1}]: Error in loading config file <{2}> --> {3}'.format(self.name,
-                                                                                       serialnumber if serialnumber else deviceOsshId,
+                                                                                       serialnumber,
                                                                                        serialnumber + c.CONFIG_FILE_SUFFIX_DEVICE,
                                                                                        exc))
                     return False, self.logger.info(
                         '{0}-[{1}]: Error in loading config file <{2}> --> {3}'.format(self.name,
-                                                                                       serialnumber if serialnumber else deviceOsshId,
+                                                                                       serialnumber,
                                                                                        serialnumber + c.CONFIG_FILE_SUFFIX_DEVICE,
                                                                                        exc))
         else:

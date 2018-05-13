@@ -406,7 +406,7 @@ DeviceConfOoba: false                         #Enable OOBA DB check
 DeviceConfSrcPlugins: [local]                 #Configuration source plugin order
 ```
 
-##### Local #####
+#### Local ####
 This is the default module. All configuration information will be kept in local filesystem.
 
 ```yaml
@@ -415,7 +415,7 @@ This is the default module. All configuration information will be kept in local 
     DeviceConfDataDir: conf/devices/data/           #device specific template data config directory
 ```
   
-##### GitLab #####
+#### GitLab ####
 This will obtain configuration information from a Gitlab system. Current implementation only supports Gitlab system.
 
 - To use this plugin we have to prepare following repositories in Gitlab:
@@ -474,9 +474,16 @@ Best example for this is the file based service. File based service observes a f
 The file contents of a tftp log and a dhcp log is different but they are still files being observed by the same file service. 
 The source plugin is responsible for "normalizing" the file data read and extracting needed information from it using a pattern.
 
-#### TFTP Service ####
-TFTP service observes given file `LogFile` for changes. It matches new file entries to given pattern `Pattern`.
+#### FILE Service ####
+File service observes given file `LogFile` for changes. It matches new file entries to given pattern `Pattern`.
 
+```yaml
+SERVICES:
+  Plugins: [File, Ossh, Phs, Webhook]                                             #Activate available services
+
+  File:
+    Normalizer: [Tftp, Dhcp]
+```
 
 ```yaml
 Tftp:
@@ -504,6 +511,7 @@ device outbound ssh service has to be reconfigured. The ossh source plugin norma
 
 ```yaml
 Ossh:
+    Normalizer: Ossh
     ServiceBindAddress: 172.16.146.1                        #SSH Server bind address
     ServiceListenPort: 7804                                 #SSH Server listen port
                                                             #DMI Shared Secret
@@ -522,7 +530,7 @@ Authentication is done by checking received device serial number. Current implem
 
 ```yaml
 Phs:
-    Containerized: false                                    #Is PHS running in container env
+    Normalizer: Phs
     ServiceBindAddress: 172.16.146.1                        #HTTP Server bind address
     ServiceListenPort: 8082                                 #HTTP Server listen port
     InitConfPath: conf/services/phs/                        #Inital bootstrap config file directory
@@ -530,6 +538,20 @@ Phs:
     SSLCertificate: conf/yapt/ssl/cert.pem                  #SSL Certificate
     SSLPrivateKey: conf/yapt/ssl/privkey.pem                #SSL Private Key
     DeviceAuthFile: conf/services/phs/dev_auth              #device authentication by serial number
+```
+
+#### WEBHOOK Service ####
+Webhook service is waiting for incoming http/https request from a repository like Gitlab or Github.
+A webhook has to be configured in repository system pointing to `ServiceBindAddress` and `ServiceListenPort`.
+Typical use case is YAPT reacting on repository push events. If user changes device configuration data file in repo push event is sent to Webhook service.
+Setting parameter `Modules` to activate webhook service for Gitlab and / or Github.
+
+```yaml
+Webhook:
+    Normalizer: Webhook
+    Modules: [Gitlab]                                       #Load repository module. Could be Gitlab or Github
+    ServiceBindAddress: 192.168.2.20                        #HTTP Server bind address
+    ServiceListenPort: 6584                                 #HTTP Server listen port
 ```
 
 ### Section: JUNOSSPACE ###
@@ -615,88 +637,96 @@ EMITTER:
     LogLevel: 20   # LogLevel info=20 // debug=10
 ```
 
-### Example Main Config ###
-
-```yaml
-
+<details><summary>Example main configuration file:</summary>
+<pre><code>
 ---
 ########################################################################################################################
 # YAPT Global Section
 ########################################################################################################################
 YAPT:
-  SourcePlugins: [phs, ossh, tftp]                #Source plugin list
   PwdFile: conf/yapt/masterkey.yml                #Stores masterkey
   DevicePwdIsRsa: false                           #use ssh rsa authentication
   DeviceUsr: root                                 #initial device provisioning user
                                                   #initial device provisioning user password
   DevicePwd: gAAAAABaOtwzqu79QGrPMPK1d31hNJ4DMrMruecorE5TTBo00dzanBMK6Ld4Lvtd37ksgP7SPbkqn8ZDmzlnKUWm2WA-yz2UkQ==
-  Backend: sql                                    #Backend Type (internal / sql)
   ConnectionProbeTimeout: 90                      #initial connection probe timeout
   LogFileDirectory: logs                          #directory to keep the logs
   StartWebUi: true                                #start web interface listening on port <WebUiPort>
   WebUiAddress: 172.16.146.1                      #Webserver IP Address (Used for WebSocket Client)
-  WebUiPort: 8080                                 #Webserver Listener Port
+  WebUiPort: 6580                                 #Webserver Listener Port
   WebUiIndex: index.html                          #UI index file to load
-  WebUiNat: false                                 #Enable YAPT WebUI being behind NAT
-  WebUiNatIp: 10.86.9.14                          #NAT IP
+  WebUiProxy: false                               #Enable YAPT WebUI being behind NAT / Proxy device
+  WebUiProxyIp: 10.86.9.14                        #WebUI Proxy IP
+  WebUiProxyPort: 6580                            #WebUI Proxy Port
   WebUiPlugin: amqp2ws                            #WebUI Plugin (right now only amqp2ws)
-  RestApiPort: 9090                               #YAPT Rest Api Listener Port
-  OobaUiPort: 9091                                #YAPT Internal OOBA web interface port
+  RestApiPort: 6581                               #YAPT Rest Api Listener Port
+  OobaUiPort: 6582                                #YAPT internal OOBA web interface port
+  OobaUiProxyPort: 6582                           #OOBA Proxy port
   WorkerThreads: 2                                #Amount of task queue worker threads to be started
 
 ########################################################################################################################
-#Config Source Section
+#Storage Section
 ########################################################################################################################
 STORAGE:
   DeviceConfOoba: false                         #Enable OOBA DB check
-  DeviceConfSrcPlugins: [local]                 #Configuration source plugin order
+  DeviceConfSrcPlugins: [Cgitlab]               #Configuration source plugin order
 
   Local:
     DeviceGrpFilesDir: conf/groups/                 #Map device to a provisioning group
-    DeviceConfDataDir: conf/devices/data/           #device specific template data config directory
+    DeviceConfDataDir: conf/devices/data/           #device specific data config directory
 
   Cgitlab:
-    Address: 10.86.9.14
+    Address: 10.16.116.142
     Port: 9080
     Protocol: http
-    LoginUrl: /users/sign_in
+    LoginUrl: /oauth/token
     User: root
     Password: password
     DevCfg: demo_ops/yapt_dev_conf
     DevCfgTemplate: demo_ops/yapt_dev_conf_template
-    DevGrpCfg: demo_ops/yapt_dev_grp_conf
-    VnfBoostrapTemplate: demo_ops/yapt_vnf_boostrap_template
+    DevCfgGrp: demo_ops/yapt_dev_grp_conf
+    VnfBoostrapTemplate: demo_ops/yapt_vnf_bootstrap_template
 
 
 ########################################################################################################################
-#Backend Section (Configure Backend settings)
+#Backend Section
 ########################################################################################################################
 BACKEND:
+  Module: sql                                 #Backend Type (internal / sql)
 
   Sqlite:
-    DbName: yapt.db                                             #SQLite DB Name
-    DbPath: lib/backend/db/                                     #Path to db file
-    AutoCreateDb: true                                          #If DB not exists create it automatically
+    DbName: yapt.db                            #SQLite DB Name
+    DbPath: lib/backend/db/                    #Path to db file
+    AutoCreateDb: true                         #If DB does not exists create it automatically
 
 ########################################################################################################################
-#Source Plugins Section
+#Source / Service Plugins Section
 ########################################################################################################################
 SERVICES:
+  Plugins: [File, Ossh, Phs, Webhook]                                             #Activate available services
 
-  Tftp:
-    Name: dnsmasq                                           #dnsmasq TFTP Server or hpa TFTP Server
-    LogFile: logs/testlogs/tftpd.log                        #Path to the log file being process (TFTP/DHCP/etc)
-    #dnsmasq TFTP Pattern (Ubuntu/Centos)
-    Pattern: .*?\sdnsmasq-tftp\[\d.*\]:\ssent\s/var/lib/tftpboot/init.conf\sto\s((?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3}))
-    #Pattern: '.*?\sdnsmasq-tftp\[\d.*\]:\sTFTP\ssent\s/var/lib/tftpboot/init.conf\sto\s((?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3}))'
-    #HPA TFTP Pattern
-    #Pattern: '(\d+/\d+/\d+@\d+:\d+:\d+).*?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$)'
+  File:
+    Normalizer: [Tftp, Dhcp]
 
-  Dhcp:
-    Name: isc                                               #dnsmasq DHCP Server or ISC DHCP Server
-    LogFile: logs/testlogs/dhcpd.leases                     #Path to the log file being processed
+    Tftp:
+      Module: Dnsmasq                                         #dnsmasq TFTP Server or hpa TFTP Server
+      LogFile: logs/testlogs/tftpd.log                        #Path to the log file being observed (TFTP/DHCP/etc)
+
+      #dnsmasq TFTP Pattern (Ubuntu/Centos)
+      Dnsmasq:
+        Pattern: .*?\sdnsmasq-tftp\[\d.*\]:\ssent\s/var/lib/tftpboot/init.conf\sto\s((?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3}))
+        #Pattern: '.*?\sdnsmasq-tftp\[\d.*\]:\sTFTP\ssent\s/var/lib/tftpboot/init.conf\sto\s((?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3}))'
+
+      #HPA TFTP Pattern
+      Hpa:
+        Pattern: '(\d+/\d+/\d+@\d+:\d+:\d+).*?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$)'
+
+    Dhcp:
+      Module: isc                                             #dnsmasq DHCP Server or ISC DHCP Server
+      LogFile: logs/testlogs/dhcpd.leases                     #Path to the log file being processed
 
   Ossh:
+    Normalizer: Ossh
     ServiceBindAddress: 172.16.146.1                        #SSH Server bind address
     ServiceListenPort: 7804                                 #SSH Server listen port
                                                             #DMI Shared Secret
@@ -706,14 +736,20 @@ SERVICES:
     SigHubCmd: kill -HUP `cat /var/run/inetd.pid`           #Sig HUP inetd to re-read it's configuration
 
   Phs:
-    Containerized: false                                    #Is PHS running in container env
+    Normalizer: Phs
     ServiceBindAddress: 172.16.146.1                        #HTTP Server bind address
-    ServiceListenPort: 8082                                 #HTTP Server listen port
-    InitConfPath: conf/services/phs/                        #Inital bootstrap config file
+    ServiceListenPort: 6583                                 #HTTP Server listen port
+    InitConfPath: conf/services/phs/                        #Inital bootstrap config file directory
     EnableSSL: false                                        #HTTP or HTTPS used by PHC connection
     SSLCertificate: conf/yapt/ssl/cert.pem                  #SSL Certificate
     SSLPrivateKey: conf/yapt/ssl/privkey.pem                #SSL Private Key
     DeviceAuthFile: conf/services/phs/dev_auth              #device authentication by serial number
+
+  Webhook:
+    Normalizer: Webhook
+    Modules: [Gitlab]                                       #Load repository module. Could be Gitlab or Github
+    ServiceBindAddress: 192.168.2.20                        #HTTP Server bind address
+    ServiceListenPort: 6584                                 #HTTP Server listen port
 
 ########################################################################################################################
 #Junos Space Section
@@ -756,7 +792,8 @@ EMITTER:
   MainLogFile: logs/info.log
   Local:
     LogLevel: 20   # LogLevel info=20 // debug=10
-```
+</code></pre>
+</details>
 
 ## Group Config ##
 
@@ -764,11 +801,8 @@ YAPT supports building groups to apply specific tasks to devices.  Add new / edi
 Devices will be assigned to a group by setting group name in device data file in __conf/devices/data__ directory.
 Group definition has to be set to group file name without file suffix: `device_group`: __srx__.
 
-Here is an example for SRX devices:
-
-
-```yaml
-
+<details><summary>Example group file:</summary>
+<pre><code>
 ---
 #**********************************************************************************************************************
 #GROUP: SRX
@@ -780,7 +814,7 @@ Here is an example for SRX devices:
 TASKS:
   #Enable tasks and set processing order within sequence
   #Sequence: Init, Filecp, Software, Ipam, Configuration, Cert, Discovery, Policy, Assign, Rule, Publish, Cleanup
-  Sequence: [Init, Filecp, Software, Configuration, Cleanup]
+  Sequence: [Init, Configuration, Cleanup]
 
   Provision:
 
@@ -791,6 +825,7 @@ TASKS:
       AssignTemplate: conf/space/151/tempaltes/assignDevice.j2
 
     Configuration:
+      Module: Internal
       Dependencies: []
       DeviceConfTemplateDir: conf/devices/template/   #device specific template config directory
       DeviceConfTemplateFile: srx_no_ipam_no_ossh.j2  #device config template name
@@ -814,6 +849,9 @@ TASKS:
       EnrollmentUrl: ejbca/publicweb/apply/scep/advpn/pkiclient.exe #
       RevocationUrl: ejbca/publicweb/status/ocsp                    #
 
+    Cleanup:
+      test123: 10.1.1.1
+
     Discovery:
       Mode: Discovery                                 #Set discovery mode to either Discovery or Configlet
       UsePing: false                                  #If Mode 'Discovery' use ping
@@ -826,12 +864,20 @@ TASKS:
       FileRemoteDir: /var/db/scripts/op               #Event/Commit/OP Script or any other directory path on device
 
     Ipam:
-      Module: nipap
-      Address: 10.15.115.6
-      Port: '1337'
+      Module: Nipap
       Prefixes: [10.200.0.0/24, 10.13.113.0/24]
-      User: nipap
-      Password: nipap
+
+      Nipap:
+        Address: 10.15.115.6
+        Port: '1337'
+        User: nipap
+        Password: nipap
+
+      Netbox:
+        Address: 10.15.115.6
+        Port: '1337'
+        User: nipap
+        Password: nipap
 
     Policy:
       PolicyTemplate: conf/space/templates/151/fwpolicy.j2
@@ -862,19 +908,21 @@ TASKS:
         SRX345: 15.1X49-D70
 
     Ticket:
-      Module: rt                                                  #Module currently only request_tracker ticketing system
+      Module: Rt                                                  #Module currently only request_tracker ticketing system
       Mode: detail                                                #Mode could be "summary" to give a summarization at the end or "detail" to get update after every task
-      Address: 10.86.9.14                                         #Ticket System IP address
-      Port: 8000                                                  #Ticket System Port
-      Protocol: https                                             #HTTP / HTTPS
-      User: juniper                                               #Ticket system user
-      Password: juniper123                                        #Ticket system passsword
-      Eauth: pam                                                  #EDI authentication module
-      Functions: [request_tracker.create_ticket, request_tracker.update_ticket]   #call edi runner functions
-      NextEvent: None                                             #
-      TemplateDir: lib/emitter/templates/                             #Template directory
-      TicketCreateTemplate: ticket_create_detail_mode.j2          #Template file used for tickte creation
-      TicketUpdateTemplate: ticket_update_detail_mode.j2          #Template file used for ticker update
+
+      Rt:
+        Address: 10.86.9.14                                         #Ticket System IP address
+        Port: 8000                                                  #Ticket System Port
+        Protocol: https                                             #HTTP / HTTPS
+        User: juniper                                               #Ticket system user
+        Password: juniper123                                        #Ticket system passsword
+        Eauth: pam                                                  #EDI authentication module
+        Functions: [request_tracker.create_ticket, request_tracker.update_ticket]   #call edi runner functions
+        NextEvent: None                                             #
+        TemplateDir: lib/emitter/templates/                         #Template directory
+        TicketCreateTemplate: ticket_create_detail_mode.j2          #Template file used for tickte creation
+        TicketUpdateTemplate: ticket_update_detail_mode.j2          #Template file used for ticker update
 
 ########################################################################################################################
 #Verification Task Section
@@ -890,7 +938,9 @@ TASKS:
 
     Jsnap:
       Tests: [test_is_equal.yml]
-```
+</code></pre>
+</details>
+
 
 
 ## Device Config ##
@@ -985,9 +1035,10 @@ device:
     revocation_url: ejbca/publicweb/status/ocsp
 ```
 
-Example of a device template file:
 
-```text
+
+<details><summary>Example of a device template file:</summary>
+<pre><code>
 {{ heading }}
 system {
     host-name {{ device.hostname }};
@@ -1337,7 +1388,8 @@ security {
         }
     }
 }
-```
+</code></pre>
+</details>
 
 ## Task Config ##
 YAPT provides two task categories:
@@ -1935,7 +1987,6 @@ YAPT directory structure
     * __devices__: keeps device specific configuration / templates
     * __groups__: keeps device group related configuration files
     * __jsnapy__ keeps jsnapy related files
-    * __plugins__: keeps source plugin description files
     * __schema__ keeps config validation schema files
     * __services__: keeps service configuration / related files
     * __space__: keeps Junos Space related files
@@ -1946,7 +1997,6 @@ YAPT directory structure
     * __backend__: internal / sql
     * __config__: config source plugins
     * __emitter__: emitter plugins
-    * __plugins__: source plugins
     * __services__: services (OSSH / PHS / FILE)
     * __space__: Junos Space connector
     * __tasks__: provisioning tasks / verification tasks

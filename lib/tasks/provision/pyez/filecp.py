@@ -1,8 +1,9 @@
-# Copyright (c) 1999-2017, Juniper Networks Inc.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
 # All rights reserved.
+# Use is subject to license terms.
 #
-# Authors: cklewar@juniper.net
-#
+# Author: cklewar
 
 import paramiko
 from jnpr.junos.utils.scp import SCP
@@ -46,7 +47,7 @@ class FilecpTask(Task):
         if self.sample_device.deviceConnection.connected:
 
             try:
-                if c.SOURCEPLUGIN_OSSH == self.sample_device.deviceSourcePlugin:
+                if c.SERVICEPLUGIN_OSSH == self.sample_device.deviceServicePlugin:
                     with SCPClient(self.sample_device.deviceConnection._conn._session.transport) as scp:
                         for _file in self.grp_cfg.TASKS.Provision.Filecp.Files:
                             self.update_task_state(new_task_state=c.TASK_STATE_PROGRESS,

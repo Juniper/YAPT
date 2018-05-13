@@ -39,10 +39,6 @@ color: white; /*Change active text color here*/
   background-color: #70868f;
 }
 
-.table {
-  empty-cells: show;
-}
-
 #textarea-wrapper textarea {
   resize: vertical;
 }

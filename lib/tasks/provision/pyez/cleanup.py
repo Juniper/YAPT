@@ -1,8 +1,9 @@
-# Copyright (c) 1999-2017, Juniper Networks Inc.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
 # All rights reserved.
+# Use is subject to license terms.
 #
-# Authors: cklewar@juniper.net
-#
+# Author: cklewar
 
 import lib.constants as c
 
@@ -40,11 +41,10 @@ class CleanupTask(Task):
             self.sample_device.deviceConnection.close()
 
         else:
-            if c.SOURCEPLUGIN_OSSH in self.sample_device.deviceSourcePlugin:
+            if c.SERVICEPLUGIN_OSSH in self.sample_device.deviceServicePlugin:
 
                 try:
                     self.sample_device.deviceConnection.cli('op cleanup', warning=False)
-
                 except ConnectClosedError as cce:
                     pass
 

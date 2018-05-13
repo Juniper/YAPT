@@ -1,8 +1,9 @@
-# Copyright (c) 1999-2017, Juniper Networks Inc.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
 # All rights reserved.
+# Use is subject to license terms.
 #
-# Authors: cklewar@juniper.net
-#
+# Author: cklewar
 
 import abc
 import os
@@ -43,9 +44,9 @@ class Task(object):
         if isValid == self.messages['valid']:
             self.logger.info(
                 Tools.create_log_msg(self.task_name, self.sample_device.deviceSerial, 'Task configuration is valid'))
-            self.pre_run_task()
-            self.run_task()
-            self.post_run_task()
+            # self.pre_run_task()
+            # self.run_task()
+            # self.post_run_task()
 
         elif isValid == self.messages['invalid']:
             Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
@@ -60,9 +61,9 @@ class Task(object):
         else:
             Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
                            message='Task configuration validation deactivated')
-            self.pre_run_task()
-            self.run_task()
-            self.post_run_task()
+            # self.pre_run_task()
+            # self.run_task()
+            # self.post_run_task()
 
     @abc.abstractmethod
     def pre_run_task(self):
@@ -159,7 +160,7 @@ class Task(object):
                 self.task_progress = self.shared[c.TASK_SHARED_PROGRESS]
                 self._update_backend()
                 self.sample_device.deviceTasks.taskState[task_name] = {'taskState': new_task_state,
-                                                                            'taskStateMsg': task_state_message}
+                                                                       'taskStateMsg': task_state_message}
             else:
 
                 self.task_state = new_task_state
@@ -167,26 +168,28 @@ class Task(object):
                 self.task_progress = self.shared[c.TASK_SHARED_PROGRESS]
                 self._update_backend()
                 self.sample_device.deviceTasks.taskState[task_name] = {'taskState': new_task_state,
-                                                                            'taskStateMsg': task_state_message}
+                                                                       'taskStateMsg': task_state_message}
 
         elif new_task_state == c.TASK_STATE_FAILED:
             self.task_state = new_task_state
             self.sample_device.deviceStatus = c.DEVICE_STATUS_FAILED
+            self._update_backend()
             self.sample_device.deviceTasks.taskState[task_name] = {'taskState': new_task_state,
-                                                                        'taskStateMsg': task_state_message}
+                                                                   'taskStateMsg': task_state_message}
 
-        elif new_task_state == c.TASK_STATE_REBOOT:
+        elif new_task_state == c.TASK_STATE_REBOOTING:
             self.task_state = new_task_state
             self.sample_device.deviceStatus = c.DEVICE_STATUS_REBOOTED
+            self._update_backend()
             self.sample_device.deviceTasks.taskState[task_name] = {'taskState': new_task_state,
-                                                                        'taskStateMsg': task_state_message}
+                                                                   'taskStateMsg': task_state_message}
 
         elif new_task_state == c.TASK_STATE_PROGRESS:
             self.task_state = new_task_state
             self.sample_device.deviceStatus = c.DEVICE_STATUS_PROGRESS
             self._update_backend()
             self.sample_device.deviceTasks.taskState[task_name] = {'taskState': new_task_state,
-                                                                        'taskStateMsg': task_state_message}
+                                                                   'taskStateMsg': task_state_message}
 
         else:
             Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,

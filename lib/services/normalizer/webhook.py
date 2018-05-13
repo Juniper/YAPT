@@ -1,8 +1,9 @@
-# Copyright (c) 1999-2018, Juniper Networks Inc.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
 # All rights reserved.
+# Use is subject to license terms.
 #
-# Authors: cklewar@juniper.net
-#
+# Author: cklewar
 
 import lib.constants as c
 import jsonpickle
@@ -40,7 +41,7 @@ class Webhook(Normalizer):
             if resp.payload[0]:
                 sample_device = resp.payload[1]
                 sample_device.deviceSerial = device
-                sample_device.deviceSourcePlugin = c.SOURCEPLUGIN_WEBHOOK
+                sample_device.deviceServicePlugin = c.SERVICEPLUGIN_WEBHOOK
                 sample_device.deviceTimeStamp = timestamp
 
                 return sample_device

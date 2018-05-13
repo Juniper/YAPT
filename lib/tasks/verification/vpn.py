@@ -1,7 +1,7 @@
-# Copyright (c) 1999-2017, Juniper Networks Inc.
+# Copyright (c) 1999-2018, Juniper Networks Inc.
 # All rights reserved.
 #
-# Authors: cklewar@juniper.net
+# Authors: cklewar
 #
 
 import lib.constants as c

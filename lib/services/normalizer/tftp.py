@@ -1,8 +1,9 @@
-# Copyright (c) 1999-2017, Juniper Networks Inc.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
 # All rights reserved.
+# Use is subject to license terms.
 #
-# Authors: cklewar@juniper.net
-#
+# Author: cklewar
 
 import re
 import sys
@@ -51,8 +52,8 @@ class Tftp(Normalizer):
 
             if deviceIP:
                 sample_device = SampleDevice(deviceIP=deviceIP[0], deviceTimeStamp=timestamp,
-                                             deviceStatus=c.DEVICE_STATUS_NEW,
-                                             deviceSourcePlugin=c.SOURCEPLUGIN_TFTP)
+                                             deviceStatus=c.DEVICE_STATUS_INIT,
+                                             deviceServicePlugin=c.SERVICEPLUGIN_TFTP)
                 return sample_device
             else:
                 self.logger.info(

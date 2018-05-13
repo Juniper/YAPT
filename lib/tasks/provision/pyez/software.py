@@ -1,8 +1,9 @@
-# Copyright (c) 1999-2017, Juniper Networks Inc.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
 # All rights reserved.
+# Use is subject to license terms.
 #
-# Authors: cklewar@juniper.net
-#
+# Author: cklewar
 
 import os
 import threading
@@ -28,7 +29,7 @@ class SoftwareTask(Task):
     TASK_TYPE = c.TASK_TYPE_PROVISION
     TASK_VERSION = 1.0
 
-    sample_devices = None
+    sample_devices = dict()
     sample_devices_lock = threading.Lock()
 
     def __init__(self, sample_device=None, shared=None):
@@ -52,13 +53,25 @@ class SoftwareTask(Task):
         target_version = getattr(self.grp_cfg.TASKS.Provision.Software.TargetVersion, self.sample_device.deviceModel,
                                  None)
 
-        if not self.sample_device.deviceIsRebooted:
+        if self.sample_device.deviceStatus == c.DEVICE_STATUS_REBOOTED:
+
+            # Device has been rebooted do not update again
+            Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
+                           message=logmsg.SW_INSTALLED_VERS.format(self.sample_device.softwareVersion))
+            Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
+                           message=logmsg.SW_TARGET_VERS.format(target_version))
+            Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
+                           message=logmsg.SW_NO_UPDATE_NEEDED_SAME)
+            self.sample_device.deviceIsRebooted = False
+            self.update_task_state(new_task_state=c.TASK_STATE_DONE, task_state_message=c.TASK_STATE_MSG_DONE)
+
+        else:
+
             Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
                            message=logmsg.SW_START_UPDATE.format(self.sample_device.deviceSerial))
             SoftwareTask.sample_devices = {self.sample_device.deviceSerial: self.sample_device}
 
             if target_version is not None:
-
                 feedback = Software.compare_device_vers_with_target_vers(self.sample_device.softwareVersion,
                                                                          target_version)
 
@@ -109,11 +122,11 @@ class SoftwareTask(Task):
 
                         if self.sample_device.deviceConnection.connected:
 
-                            self.sample_device = self.install_device_software(full_path, filename)
+                            self.sample_device = self.install_device_software(full_path, filename, target_version)
 
                             if self.sample_device is not None:
 
-                                if self.sample_device.deviceStatus != c.DEVICE_STATUS_FAILED and self.sample_device.deviceStatus != c.DEVICE_STATUS_REBOOTED:
+                                if self.task_state != c.TASK_STATE_FAILED and self.task_state != c.TASK_STATE_REBOOTING:
 
                                     if self.sample_device.deviceConnection is not None:
 
@@ -129,7 +142,6 @@ class SoftwareTask(Task):
                                                        shared=self.shared,
                                                        scope=c.LOGGER_SCOPE_ALL, level=c.LOGGER_LEVEL_INFO,
                                                        message=logmsg.SW_NO_UPDATE_NEEDED_SAME)
-
                                     else:
 
                                         Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
@@ -138,8 +150,8 @@ class SoftwareTask(Task):
                                                                task_state_message=c.TASK_STATE_MSG_FAILED)
                                         return
 
-                                elif self.sample_device.deviceStatus != c.DEVICE_STATUS_FAILED and self.sample_device.deviceStatus == c.DEVICE_STATUS_REBOOTED:
-                                    pass
+                                else:
+                                    return
 
                             else:
                                 Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
@@ -165,17 +177,7 @@ class SoftwareTask(Task):
                                        task_state_message=logmsg.SW_IMG_VALUE_NOK.format(
                                            self.sample_device.deviceGroup))
 
-        else:
-            # Device has been rebooted do not update again
-            Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
-                           message=logmsg.SW_INSTALLED_VERS.format(self.sample_device.softwareVersion))
-            Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
-                           message=logmsg.SW_TARGET_VERS.format(target_version))
-            Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
-                           message=logmsg.SW_NO_UPDATE_NEEDED_SAME)
-            self.update_task_state(new_task_state=c.TASK_STATE_DONE, task_state_message=c.TASK_STATE_MSG_DONE)
-
-    def install_device_software(self, path, image):
+    def install_device_software(self, path, image, target_version):
         """
         Call PyEz to install new JUNOS image to device
         :param sample_device:
@@ -186,7 +188,7 @@ class SoftwareTask(Task):
 
         package = os.path.join(os.getcwd(), path)
 
-        if c.SOURCEPLUGIN_OSSH in self.sample_device.deviceSourcePlugin:
+        if c.SERVICEPLUGIN_OSSH in self.sample_device.deviceServicePlugin:
 
             try:
                 Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
@@ -195,9 +197,9 @@ class SoftwareTask(Task):
                                        task_state_message=logmsg.SW_CLEANUP_STORAGE)
                 self.sample_device.deviceConnection.rpc.request_system_storage_cleanup()
                 Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
-                               message=logmsg.SW_COPY_IMG)
+                               message=logmsg.SW_COPY_IMG.format(image))
                 self.update_task_state(new_task_state=c.TASK_STATE_PROGRESS,
-                                       task_state_message=logmsg.SW_COPY_IMG)
+                                       task_state_message=logmsg.SW_COPY_IMG.format(image))
                 # progress = SoftwareTask.copy_progress
                 with SCPClient(transport=self.sample_device.deviceConnection._conn._session.transport) as scp:
                     scp.put(package, remote_path=self.grp_cfg.TASKS.Provision.Software.RemoteDir)
@@ -212,9 +214,9 @@ class SoftwareTask(Task):
 
             try:
                 Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
-                               message=logmsg.SW_INSTALL_VERS.format(image))
+                               message=logmsg.SW_INSTALL_VERS.format(target_version))
                 self.update_task_state(new_task_state=c.TASK_STATE_PROGRESS,
-                                       task_state_message=logmsg.SW_INSTALL_VERS.format(image))
+                                       task_state_message=logmsg.SW_INSTALL_VERS.format(target_version))
                 result = self.sample_device.deviceConnection.sw.pkgadd(
                     self.grp_cfg.TASKS.Provision.Software.RemoteDir + image,
                     dev_timeout=self.grp_cfg.TASKS.Provision.Software.PkgAddDevTimeout)
@@ -248,11 +250,11 @@ class SoftwareTask(Task):
             try:
                 rsp = self.sample_device.deviceConnection.sw.reboot()
                 Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
-                               message=logmsg.SW_REBOOT_DEV_RESP.format(rsp))
+                               message=logmsg.SW_REBOOT_DEV_RESP.format(rsp.replace('\n', " ")))
                 self.sample_device.deviceConnection.close()
                 self.sample_device.deviceIsRebooted = True
-                self.update_task_state(new_task_state=c.TASK_STATE_REBOOT,
-                                       task_state_message=logmsg.SW_REBOOT.format(self.sample_device.deviceIP))
+                self.update_task_state(new_task_state=c.TASK_STATE_REBOOTING,
+                                       task_state_message='Rebooting...')
                 c.oss_seen_devices_lck.acquire()
 
                 try:
@@ -266,7 +268,7 @@ class SoftwareTask(Task):
             except exception.ConnectClosedError:
                 Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
                                message=logmsg.SW_CONN_LOOSE_REBOOT)
-                self.update_task_state(new_task_state=c.TASK_STATE_REBOOT,
+                self.update_task_state(new_task_state=c.TASK_STATE_REBOOTING,
                                        task_state_message=logmsg.SW_CONN_LOOSE_REBOOT)
                 return self.sample_device
 
@@ -312,20 +314,21 @@ class SoftwareTask(Task):
                                message=logmsg.SW_REBOOT_DEV_RESP.format(rsp))
                 self.sample_device.deviceConnection.close()
                 self.sample_device.deviceIsRebooted = True
-                self.update_task_state(new_task_state=c.TASK_STATE_REBOOT,
+                self.update_task_state(new_task_state=c.TASK_STATE_REBOOTING,
                                        task_state_message=logmsg.SW_REBOOT.format(self.sample_device.deviceIP))
 
             except exception.ConnectClosedError:
                 Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
                                message=logmsg.SW_CONN_LOOSE_REBOOT)
-                self.update_task_state(new_task_state=c.TASK_STATE_REBOOT,
+                self.update_task_state(new_task_state=c.TASK_STATE_REBOOTING,
                                        task_state_message=logmsg.SW_CONN_LOOSE_REBOOT)
             finally:
                 # Should use conn mgr?
                 sample_device = Tools.create_dev_conn(self.sample_device, connect=False)
-                #device = Device(host=self.sample_device.deviceIP, user=c.conf.YAPT.DeviceUsr,
+                # device = Device(host=self.sample_device.deviceIP, user=c.conf.YAPT.DeviceUsr,
                 #                password=c.conf.YAPT.DevicePwd)
-                alive = self.probe_device_not_alive(sample_device, self.grp_cfg.TASKS.Provision.Software.RetryProbeCounter)
+                alive = self.probe_device_not_alive(sample_device,
+                                                    self.grp_cfg.TASKS.Provision.Software.RetryProbeCounter)
 
                 if not alive:
 
@@ -333,9 +336,10 @@ class SoftwareTask(Task):
                                    message=logmsg.SW_PROBE_WAKEUP.format(self.sample_device.deviceIP))
                     # Should use conn mgr?
                     sample_device = Tools.create_dev_conn(self.sample_device, connect=False)
-                    #device = Device(host=self.sample_device.deviceIP, user=c.conf.YAPT.DeviceUsr,
+                    # device = Device(host=self.sample_device.deviceIP, user=c.conf.YAPT.DeviceUsr,
                     #                password=c.conf.YAPT.DevicePwd)
-                    alive = self.probe_device_alive(sample_device, self.grp_cfg.TASKS.Provision.Software.RebootProbeTimeout)
+                    alive = self.probe_device_alive(sample_device,
+                                                    self.grp_cfg.TASKS.Provision.Software.RebootProbeTimeout)
 
                     if alive:
 
@@ -394,7 +398,7 @@ class SoftwareTask(Task):
                 probe_cntr += 1
                 Tools.emit_log(task_name=self.task_name, sample_device=device,
                                message=logmsg.SW_PROBE_DEV.format(timeout))
-                self.update_task_state(new_task_state=c.TASK_STATE_REBOOT,
+                self.update_task_state(new_task_state=c.TASK_STATE_REBOOTING,
                                        task_state_message=logmsg.SW_PROBE_WAIT_REBOOT.format(str(probe_cntr)))
             else:
                 self.update_task_state(new_task_state=c.TASK_STATE_FAILED, task_state_message=c.TASK_STATE_FAILED)
@@ -421,7 +425,7 @@ class SoftwareTask(Task):
                 probe_cntr += 1
                 Tools.emit_log(task_name=self.task_name, sample_device=device,
                                message=logmsg.SW_PROBE_DEV.format(timeout))
-                self.update_task_state(new_task_state=c.TASK_STATE_REBOOT,
+                self.update_task_state(new_task_state=c.TASK_STATE_REBOOTING,
                                        task_state_message=logmsg.SW_PROBE_WAIT_REBOOT.format(str(probe_cntr)))
                 time.sleep(timeout)
             else:

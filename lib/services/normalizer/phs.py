@@ -1,8 +1,9 @@
-# Copyright (c) 1999-2017, Juniper Networks Inc.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
 # All rights reserved.
+# Use is subject to license terms.
 #
-# Authors: cklewar@juniper.net
-#
+# Author: cklewar
 
 from lib.services.normalizer.normalizer import Normalizer
 from lib.sampledevice import SampleDevice
@@ -30,8 +31,8 @@ class Phs(Normalizer):
         if device is not None:
 
             sample_device = SampleDevice(deviceIP=device, deviceTimeStamp=timestamp,
-                                         deviceStatus=c.DEVICE_STATUS_NEW,
-                                         deviceSourcePlugin=c.SOURCEPLUGIN_PHS)
+                                         deviceStatus=c.DEVICE_STATUS_INIT,
+                                         deviceServicePlugin=c.SERVICEPLUGIN_PHS)
             return sample_device
 
         else:

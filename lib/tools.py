@@ -1,6 +1,9 @@
-# Copyright (c) 1999-2017, Juniper Networks Inc.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
 # All rights reserved.
+# Use is subject to license terms.
 #
+# Author: cklewar
 
 import collections
 import getpass
@@ -149,7 +152,7 @@ class Tools:
         if c.conf.DEVICEDRIVER.Driver == c.YAPT_DEVICE_DRIVER_PYEZ:
 
             # If we get an ossh connection hand over sock_fd
-            if c.SOURCEPLUGIN_OSSH == sample_device.deviceSourcePlugin:
+            if c.SERVICEPLUGIN_OSSH == sample_device.deviceServicePlugin:
 
                 if c.conf.YAPT.DevicePwdIsRsa:
 
@@ -510,30 +513,28 @@ class Tools:
                                                            'Checking config id mapping in asset database'))
                         from lib.amqp.amqpmessage import AMQPMessage
                         message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_ASSET_GET_BY_SERIAL,
-                                              payload=sn if sn else osshid,
+                                              payload=osshid if osshid else sn,
                                               source=c.AMQP_PROCESSOR_REST)
                         from lib.processor import BackendClientProcessor
                         _backendp = BackendClientProcessor(exchange='', routing_key=c.AMQP_RPC_BACKEND_QUEUE)
                         response = _backendp.call(message=message)
                         response = jsonpickle.decode(response)
 
-                        if response.payload:
+                        # Check if mapping found
+                        if response.payload[0]:
 
-                            # Check if mapping found
-                            if response.payload[0]:
+                            c.logger.info(Tools.create_log_msg(logmsg.STORAGE_PLG, sn if sn else osshid,
+                                                               'Successfully retrieved config id mapping for {0}<-->{1}'.format(
+                                                                   osshid if osshid else sn, response.payload[1])))
+                            sn = response.payload[1]
 
-                                c.logger.info(Tools.create_log_msg(logmsg.STORAGE_PLG, sn if sn else osshid,
-                                                                   'Successfully retrieved config id mapping for {0}<-->{1}'.format(
-                                                                       sn, response.payload)))
-                                sn = response.payload
+                        else:
+                            c.logger.info(Tools.create_log_msg(logmsg.STORAGE_PLG, sn if sn else osshid,
+                                                               'Failed to retrieve config id mapping for {0}<-->{1}'.format(
+                                                                   sn, response.payload)))
+                            return response.payload[0], response.payload[1]
 
-                            else:
-                                c.logger.info(Tools.create_log_msg(logmsg.STORAGE_PLG, sn if sn else osshid,
-                                                                   'Failed to retrieve config id mapping for {0}<-->{1}'.format(
-                                                                       sn, response.payload)))
-                                return response.payload[0], response.payload[1]
-
-                    status, data = storage.get_device_config_data(serialnumber=sn, deviceOsshId=osshid, isRaw=isRaw)
+                    status, data = storage.get_device_config_data(serialnumber=sn, isRaw=isRaw)
 
                     if status:
                         return status, data
@@ -984,7 +985,7 @@ class Tools:
     @classmethod
     def load_storage_plugin(cls, name):
         importlib.import_module('lib.storage')
-        plugin = importlib.import_module('.' + name, package="lib.storage")
+        plugin = importlib.import_module('.' + name.lower(), package="lib.storage")
         return plugin
 
     @classmethod

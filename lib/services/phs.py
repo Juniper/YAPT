@@ -1,8 +1,9 @@
-# Copyright (c) 1999-2017, Juniper Networks Inc.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
 # All rights reserved.
+# Use is subject to license terms.
 #
-# Authors: cklewar@juniper.net
-#
+# Author: cklewar
 
 import datetime
 import multiprocessing
@@ -40,6 +41,7 @@ class Phs(Service):
     def start_service(self):
 
         if self.status == c.SVC_STOPPED or self.status == c.SVC_INIT:
+            #multiprocessing.set_start_method('spawn')
             self.p = multiprocessing.Process(target=PhsInitC, args=(self.normalizer, self.svc_cfg))
             self.p.start()
             self.status = c.SVC_STARTED
@@ -239,10 +241,10 @@ class PhoneHomeServer(object):
                 self.logger.info(Tools.create_log_msg(logmsg.PHS_SERVICE, self.sn_nr,
                                                       logmsg.PHS_BOOTSTRAP_SUCCESS.format(params['uid'])))
 
-                if c.SOURCEPLUGIN_OSSH in self.service_chain:
+                if c.SERVICEPLUGIN_OSSH in self.service_chain:
                     self.logger.info(Tools.create_log_msg(logmsg.PHS_SERVICE, self.sn_nr,
-                                                          logmsg.PHS_SEC_SVC.format(c.SOURCEPLUGIN_OSSH,
-                                                                                    c.SOURCEPLUGIN_OSSH)))
+                                                          logmsg.PHS_SEC_SVC.format(c.SERVICEPLUGIN_OSSH,
+                                                                                    c.SERVICEPLUGIN_OSSH)))
                     return
 
                 else:

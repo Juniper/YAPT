@@ -1,8 +1,9 @@
-# Copyright (c) 1999-2017, Juniper Networks Inc.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
 # All rights reserved.
+# Use is subject to license terms.
 #
-# Authors: cklewar@juniper.net
-#
+# Author: cklewar
 
 import sys
 
@@ -42,7 +43,7 @@ class Dhcp(Normalizer):
 
                 for device in current_devices:
                     yield SampleDevice(deviceIP=current_devices[device].ip, deviceTimeStamp=timestamp,
-                                       deviceStatus=c.DEVICE_STATUS_NEW, deviceSourcePlugin=c.SOURCEPLUGIN_DHCP)
+                                       deviceStatus=c.DEVICE_STATUS_INIT, deviceServicePlugin=c.SERVICEPLUGIN_DHCP)
 
         except IOError:
             self.logger.info('PROVLOG: Can\'t open logfile: %s ', self.logfile)

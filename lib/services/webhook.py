@@ -1,3 +1,10 @@
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
+# All rights reserved.
+# Use is subject to license terms.
+#
+# Author: cklewar
+
 import os
 import sys
 import cherrypy
@@ -61,6 +68,7 @@ class Webhook(Service):
 
     def start_service(self):
         if self.status == c.SVC_STOPPED or self.status == c.SVC_INIT:
+            #multiprocessing.set_start_method('spawn')
             self.p = multiprocessing.Process(target=WebhookInit, args=(self.normalizer, self.svc_cfg))
             self.p.start()
             self.status = c.SVC_STARTED

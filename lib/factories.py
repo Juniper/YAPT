@@ -1,8 +1,9 @@
-# Copyright (c) 1999-2017, Juniper Networks Inc.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
 # All rights reserved.
+# Use is subject to license terms.
 #
-# Authors: cklewar@juniper.net
-#
+# Author: cklewar
 
 import yaml
 import lib.constants as c
@@ -22,7 +23,7 @@ class FactoryContainer(object):
     def __init__(self):
 
         self.logger = c.logger
-        # Creating empty container of service providers
+        # Creating empty container of providers
         self.__fc = containers.DynamicContainer()
 
         # Load factories configuration
@@ -42,52 +43,97 @@ class FactoryContainer(object):
         return self.__fc
 
 
-class TaskFactory(object):
+class TaskQ(object):
 
-    # Task factory provider creates new task instance of specified class.
-    def __init__(self, sample_device=None, grp_cfg=None):
+    def __init__(self):
 
         self.logger = c.logger
-        self._backendp = BackendClientProcessor(exchange='', routing_key=c.AMQP_RPC_BACKEND_QUEUE)
-        self.tasks = list()
+        self.__taskq = dict()
+
+    def add_device_task_q(self, sample_device=None, grp_cfg=None):
+
         shared = dict()
-        sample_device.deviceGroupData = grp_cfg
-        grp_cfg = Tools.create_config_view(config_type=c.CONFIG_TYPE_GROUP, stream=grp_cfg)
-        sample_device.deviceTaskSeq = list(grp_cfg.TASKS.Sequence)
         shared[c.TASK_SHARED_PROGRESS] = 100 / len(sample_device.deviceTaskSeq)
-        sample_device.deviceTemplate = grp_cfg.TASKS.Provision.Configuration.DeviceConfTemplateFile
 
-        # Set deviceSerial as reference in task observer
-        sample_device.deviceTasks.deviceSerial = sample_device.deviceSerial
+        if sample_device.deviceStatus == c.DEVICE_STATUS_NEW:
 
-        dev_conn = sample_device.deviceConnection
-        sample_device.deviceConnection = hex(id(sample_device.deviceConnection))
-        message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_DEVICE_ADD, payload=sample_device,
-                              source=c.AMQP_PROCESSOR_TASK)
-        resp = self._backendp.call(message=message)
-        resp = jsonpickle.decode(resp)
-        sample_device = resp.payload
-        sample_device.deviceConnection = dev_conn
+            if sample_device.deviceTaskSeq:
+                tasks = list()
 
-        if sample_device.deviceTaskSeq:
+                for _task in sample_device.deviceTaskSeq:
 
-            for _task in sample_device.deviceTaskSeq:
+                    task_module = Tools.get_task_module_from_group(grp_cfg=grp_cfg, task_name=_task)
+                    task = Tools.load_provision_task_plugin(task_name=task_module)
+                    task = task(sample_device=sample_device, shared=shared)
 
-                task_module = Tools.get_task_module_from_group(grp_cfg=grp_cfg, task_name=_task)
-                task = Tools.load_provision_task_plugin(task_name=task_module)
-                sample_device.deviceTasks.taskState[_task] = {'taskState': c.TASK_STATE_INIT,
-                                                              'taskStateMsg': c.TASK_STATE_MSG_INIT}
+                    if task:
+                        tasks.append(task)
+                    else:
+                        self.logger.info(Tools.create_log_msg('TASKQ', sample_device.deviceSerial,
+                                                              'Error importing task <{0}>'.format(task_module)))
+                        break
 
-                if task:
-                    self.tasks.append(providers.Factory(task, sample_device=sample_device, shared=shared))
-                else:
-                    print 'Error importing task: ' + task_module
-                    break
+                self.__taskq[sample_device.deviceSerial] = tasks
 
+            else:
+                self.logger.info(Tools.create_log_msg(logmsg.TASKP, sample_device.deviceSerial,
+                                                      logmsg.TASKP_SEQ_EMPTY))
+                return
+
+        elif sample_device.deviceStatus == c.DEVICE_STATUS_EXISTS:
+
+            if sample_device.deviceTaskSeq:
+                tasks = list()
+
+                for _task in sample_device.deviceTaskSeq:
+
+                    task_module = Tools.get_task_module_from_group(grp_cfg=grp_cfg, task_name=_task)
+                    task = Tools.load_provision_task_plugin(task_name=task_module)
+                    task = task(sample_device=sample_device, shared=shared)
+                    # task.task_state = sample_device.deviceTasks.taskState[_task]
+
+                    if task:
+                        # tasks.append(providers.Factory(task(sample_device=sample_device, shared=shared)))
+                        tasks.append(task)
+                    else:
+                        self.logger.info(Tools.create_log_msg('TASKQ', sample_device.deviceSerial,
+                                                              'Error importing task <{0}>'.format(task_module)))
+                        break
+
+                self.__taskq[sample_device.deviceSerial] = tasks
+
+            else:
+                self.logger.info(Tools.create_log_msg(logmsg.TASKP, sample_device.deviceSerial,
+                                                      logmsg.TASKP_SEQ_EMPTY))
+                return
+
+        elif sample_device.deviceStatus == c.DEVICE_STATUS_REBOOTED:
+
+            if sample_device.deviceTaskSeq:
+                taskq = self.get_device_task_q(sample_device.deviceSerial)
+
+                for task in taskq:
+                    self.logger.debug(Tools.create_log_msg('TASKQ', sample_device.deviceSerial,
+                                                           'Task <{0}> status <{1}>'.format(task.task_name,
+                                                                                            task.task_state)))
+                    task.sample_device = sample_device
+
+            else:
+                self.logger.info(Tools.create_log_msg(logmsg.TASKP, sample_device.deviceSerial,
+                                                      logmsg.TASKP_SEQ_EMPTY))
+                return
+
+    def get_device_task_q(self, sn=None):
+
+        if sn in self.__taskq:
+            return self.__taskq[sn]
         else:
-            self.logger.info(Tools.create_log_msg(logmsg.TASKP, sample_device.deviceSerial,
-                                                  logmsg.TASKP_SEQ_EMPTY))
-            return
+            return False
 
-    def get_tasks(self):
-        return self.tasks
+    def del_device_task_q(self, sn=None):
+
+        if sn in self.__taskq:
+            del self.__taskq[sn]
+            return True
+        else:
+            return False

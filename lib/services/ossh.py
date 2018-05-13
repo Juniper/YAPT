@@ -1,8 +1,9 @@
-# Copyright (c) 1999-2017, Juniper Networks Inc.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
 # All rights reserved.
+# Use is subject to license terms.
 #
-# Authors: cklewar@juniper.net
-#
+# Author: cklewar
 
 import datetime
 import hashlib
@@ -91,7 +92,7 @@ class OSSHServiceThread(threading.Thread):
         super(OSSHServiceThread, self).__init__(group=group, target=target, name=name, args=args, kwargs=kwargs)
         self._logger = c.logger
         self._logmodule = args[0]
-        self._source_plugin = args[1]
+        self._normalizer = args[1]
         self.status = args[2]
         self._stop_service = threading.Event()
         self._ssh_server_bind_address = c.conf.SERVICES.Ossh.ServiceBindAddress
@@ -128,7 +129,7 @@ class OSSHServiceThread(threading.Thread):
                 Tools.create_log_msg(logmsg.OSSH_SERVICE, None, logmsg.OSSH_LISTEN_FAILED.format(e)))
             sys.exit(1)
 
-        while self._stop_service.is_set():
+        while not self._stop_service.is_set():
 
             sock, sock_addr = self._sock.accept()
             sock.settimeout(60)
@@ -210,7 +211,7 @@ class OSSHServiceThread(threading.Thread):
         self._logger.info(Tools.create_log_msg(logmsg.OSSH_SERVICE, conn_addr[0], logmsg.OSSH_CONN_ATTEMPT.format(
             c.oss_seen_devices[conn_addr[0]]['attempt'], conn_addr)))
 
-        sample_device = self._source_plugin.run_normalizer(
+        sample_device = self._normalizer.run_normalizer(
             datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), device=conn_addr[0])
         sample_device.deviceConnection = conn.fileno()
         sample_device.deviceOsshId = deviceId
@@ -218,24 +219,13 @@ class OSSHServiceThread(threading.Thread):
         message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_DEVICE_ADD,
                               payload=sample_device,
                               source=c.AMQP_PROCESSOR_SVC)
-        self._source_plugin.send_message(message=message)
+        self._normalizer.send_message(message=message)
 
     def check_for_dmi(self, conn, conn_addr):
 
         """
         Verify MSG-ID, DeviceID and HMAC. If one of the three doesn't match close connection.
         Otherwise go ahead with provisioning steps.
-        MSG-ID: DEVICE-CONN-INFO
-        MSG-VER: V1
-        DEVICE-ID: abc123
-        HOST-KEY: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDhMc83Qp9ogdGNYJGMjjUfbCAFXspkUPrrcdEI9JgIsng3fbtZl6pSi7xyFYlZrPor' \
-               '/oiNoCxQl+HOArESS+HTjFsd0tgBUyuO+rx53+vtZJ2HarsgZg59F5BjYDQq/ulCBjRDM7BQ2xViItTAIV8Q5nnikaA+mBxnNN/2EEE' \
-               'huXekyibdwDY0z3X4Tc4los2qZaZBVkKeaJ6voj+7dWG8vRQINs+gXfL+jk2Lz4m72zA6y3n7KCcG4lCH3e1C1bdnSX5dblYuEUsCV' \
-               '9XKbNl5qqajDeUaKeCMsjMlmXS7+E+C2pTE/Dir7T9IfN7SEpd3nDjH7fDthKKP9GCq9Lkv
-         HMAC: 7aa4440cc6a8fd12bc9f13ad1af8a28ea6cc1137'
-         SSH Banner:
-         We want MSG-ID, MSG-VER, DEVICE-ID, HOST-KEY and HMAC
-
         :param conn:
         :return:
         """

@@ -1,8 +1,9 @@
-# Copyright (c) 1999-2017, Juniper Networks Inc.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
 # All rights reserved.
+# Use is subject to license terms.
 #
-# Authors: cklewar@juniper.net
-#
+# Author: cklewar
 
 
 import socket
@@ -35,8 +36,11 @@ class TaskProcessor(AMQPBlockingServerAdapter):
                                                 LogCommon.IS_SUBCLASS.format(self.__class__.__name__,
                                                                              issubclass(TaskProcessor,
                                                                                         AMQPBlockingServerAdapter))))
+        self._logger.info(Tools.create_log_msg(self.__class__.__name__, None, 'Starting {0}'.format(name)))
         from lib.tasks.tasktools import Configuration
         self._configurator = Configuration()
+        self._backendp = BackendClientProcessor(exchange='', routing_key=c.AMQP_RPC_BACKEND_QUEUE)
+        self._svcp = ServiceClientProcessor(exchange='', routing_key=c.AMQP_RPC_SERVICE_QUEUE)
 
     def receive_message(self, ch, method, properties, body):
 
@@ -75,29 +79,87 @@ class TaskProcessor(AMQPBlockingServerAdapter):
 
                         if status:
 
-                            tasks = c.fc.task(sample_device=sample_device, grp_cfg=grp_cfg)
+                            sample_device.deviceGroupData = grp_cfg
+                            grp_cfg = Tools.create_config_view(config_type=c.CONFIG_TYPE_GROUP, stream=grp_cfg)
+                            sample_device.deviceTemplate = grp_cfg.TASKS.Provision.Configuration.DeviceConfTemplateFile
+                            sample_device.deviceTaskSeq = list(grp_cfg.TASKS.Sequence)
+                            dev_conn = sample_device.deviceConnection
+                            sample_device.deviceConnection = hex(id(sample_device.deviceConnection))
+                            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_DEVICE_ADD, payload=sample_device,
+                                                  source=c.AMQP_PROCESSOR_TASK)
+                            resp = self._backendp.call(message=message)
+                            resp = jsonpickle.decode(resp)
+                            sample_device = resp.payload
+                            sample_device.deviceConnection = dev_conn
+                            self._logger.info(Tools.create_log_msg(logmsg.TASKP, sample_device.deviceSerial,
+                                                                   logmsg.TASKP_LOAD_TASK_SEQ.format(
+                                                                       sample_device.deviceTaskSeq)))
+                            c.taskq.add_device_task_q(sample_device=sample_device, grp_cfg=grp_cfg)
+                            taskq = c.taskq.get_device_task_q(sn=sample_device.deviceSerial)
+                            self._logger.debug(Tools.create_log_msg(self.name, sample_device.deviceSerial,
+                                                                    'Device status: <{0}>'.format(
+                                                                        sample_device.deviceStatus)))
 
-                            if c.DEVICE_STATUS_NEW == sample_device.deviceStatus \
-                                    or c.DEVICE_STATUS_REBOOTED == sample_device.deviceStatus \
-                                    or c.DEVICE_STATUS_EXISTS == sample_device.deviceStatus:
-                                self._logger.info(Tools.create_log_msg(logmsg.TASKP, sample_device.deviceSerial,
-                                                                       logmsg.TASKP_LOAD_TASK_SEQ.format(
-                                                                           sample_device.deviceTaskSeq)))
+                            if taskq:
 
-                                for task in tasks.get_tasks():
-                                    task = task()
+                                for task in taskq:
+                                    self._logger.debug(Tools.create_log_msg(self.name, sample_device.deviceSerial,
+                                                                            'Task: <{0}> status: <{1}>'.format(
+                                                                                task.task_name, task.task_state)))
 
-                                    if task.task_state == c.TASK_STATE_DONE:
+                                    if task.task_state == c.TASK_STATE_INIT:
+                                        task.pre_run_task()
+                                        task.run_task()
+                                        task.post_run_task()
+
+                                        if task.task_state == c.TASK_STATE_REBOOTING:
+                                            self._logger.debug(
+                                                Tools.create_log_msg(self.name, sample_device.deviceSerial,
+                                                                     'Task: <{0}> status: <{1}>'.format(
+                                                                         task.task_name, task.task_state)))
+                                            self._logger.info(
+                                                Tools.create_log_msg(logmsg.TASKP, sample_device.deviceSerial,
+                                                                     logmsg.TASKP_STOP_DEV_REBOOT.format(
+                                                                         sample_device.deviceSerial)))
+                                            break
+
+                                        elif task.task_state == c.TASK_STATE_FAILED:
+                                            self._logger.debug(
+                                                Tools.create_log_msg(self.name, sample_device.deviceSerial,
+                                                                     'Task: <{0}> status: <{1}>'.format(
+                                                                         task.task_name, task.task_state)))
+                                            self._logger.info(
+                                                Tools.create_log_msg(logmsg.TASKP, sample_device.deviceSerial,
+                                                                     logmsg.TASKP_TASK_ERROR.format(
+                                                                         task.task_name, )))
+                                            self.close_dev_conn(sample_device=sample_device)
+                                            break
+
+                                    elif task.task_state == c.TASK_STATE_REBOOTING:
+                                        task.pre_run_task()
+                                        task.run_task()
+                                        task.post_run_task()
+
+                                        if task.task_state == c.TASK_STATE_FAILED:
+                                            self._logger.debug(
+                                                Tools.create_log_msg(self.name, sample_device.deviceSerial,
+                                                                     'Task: <{0}> status: <{1}>'.format(
+                                                                         task.task_name, task.task_state)))
+                                            self._logger.info(
+                                                Tools.create_log_msg(logmsg.TASKP, sample_device.deviceSerial,
+                                                                     logmsg.TASKP_TASK_ERROR.format(
+                                                                         task.task_name, )))
+                                            self.close_dev_conn(sample_device=sample_device)
+                                            break
+
+                                    elif task.task_state == c.TASK_STATE_DONE:
                                         pass
 
-                                    elif task.task_state == c.TASK_STATE_REBOOT:
-                                        self._logger.info(
-                                            Tools.create_log_msg(logmsg.TASKP, sample_device.deviceSerial,
-                                                                 logmsg.TASKP_STOP_DEV_REBOOT.format(
-                                                                     sample_device.deviceSerial)))
-
                                     elif task.task_state == c.TASK_STATE_FAILED:
-                                        sample_device.deviceStatus = c.DEVICE_STATUS_FAILED
+                                        self._logger.debug(
+                                            Tools.create_log_msg(self.name, sample_device.deviceSerial,
+                                                                 'Task: <{0}> status: <{1}>'.format(
+                                                                     task.task_name, task.task_state)))
                                         self._logger.info(
                                             Tools.create_log_msg(logmsg.TASKP, sample_device.deviceSerial,
                                                                  logmsg.TASKP_TASK_ERROR.format(
@@ -106,9 +168,16 @@ class TaskProcessor(AMQPBlockingServerAdapter):
                                         break
 
                                     else:
-                                        Tools.create_log_msg(logmsg.TASKP, sample_device.deviceSerial,
-                                                             'Unknown task state <{0}>'.format(task.task_state))
+                                        self._logger.info(Tools.create_log_msg(logmsg.TASKP, sample_device.deviceSerial,
+                                                                               'Task <{0}> state: <{1}> unknown'.format(
+                                                                                   task.task_name, task.task_state)))
+                                        break
 
+                                # print 'After running all tasks device status is: <{0}>'.format(
+                                #    sample_device.deviceStatus)
+
+                                if sample_device.deviceStatus == c.DEVICE_STATUS_DONE:
+                                    c.taskq.del_device_task_q(sample_device.deviceSerial)
                         else:
                             self._logger.info(Tools.create_log_msg(logmsg.TASKP, sample_device.deviceSerial,
                                                                    logmsg.TASKP_STOP_NO_DEVGRP_CFG.format(grp_cfg)))
@@ -158,14 +227,16 @@ class TaskProcessor(AMQPBlockingServerAdapter):
 
         elif isinstance(sample_device.deviceConnection, jnpr.junos.device.Device):
 
-            if sample_device.deviceSourcePlugin == c.SOURCEPLUGIN_OSSH:
+            if sample_device.deviceServicePlugin == c.SERVICEPLUGIN_OSSH:
                 sample_device.deviceConnection = ''
                 message = AMQPMessage(
                     message_type=c.AMQP_MSG_TYPE_SVC_OSSH_CLOSE_SOCKET,
                     payload=sample_device,
                     source=c.AMQP_PROCESSOR_TASK)
-                self.send_message(message=message,
-                                  routing_key=c.AMQP_PROCESSOR_SVC)
+
+                response = self._svcp.call(message=message)
+                response = jsonpickle.decode(response)
+                print response.payload
 
             elif sample_device.deviceConnection.connected:
                 try:
@@ -186,6 +257,7 @@ class ServiceProcessor(AMQPRpcServerAdapter):
                                                 LogCommon.IS_SUBCLASS.format(self.__class__.__name__,
                                                                              issubclass(ServiceProcessor,
                                                                                         AMQPBlockingServerAdapter))))
+        self._logger.info(Tools.create_log_msg(self.__class__.__name__, None, 'Starting {0}'.format(name)))
         self.registry = ServicePluginFactory(c.conf.SERVICES.Plugins).registry
 
     def on_request(self, ch, method, props, body):
@@ -201,6 +273,7 @@ class ServiceProcessor(AMQPRpcServerAdapter):
 
                 if sample_device.deviceIP in c.oss_seen_devices:
                     # Todo: Move to service OSSH
+
                     sock = c.oss_seen_devices[sample_device.deviceIP]['socket']
                     sock.shutdown(socket.SHUT_RDWR)
                     sock.close()
@@ -208,27 +281,28 @@ class ServiceProcessor(AMQPRpcServerAdapter):
                     with c.oss_seen_devices_lck:
                         if sample_device.deviceIP in c.oss_seen_devices:
                             c.oss_seen_devices.pop(sample_device.deviceIP, None)
-                self.processRequest(ch=ch, method=method, props=props, response='Done')
+                self.process_req(ch=ch, method=method, props=props, response='Done')
 
             elif isinstance(body_decoded,
-                          AMQPMessage) and c.AMQP_MSG_TYPE_REST_SVC_START == body_decoded.message_type:
+                            AMQPMessage) and c.AMQP_MSG_TYPE_REST_SVC_START == body_decoded.message_type:
                 resp = self.registry[body_decoded.payload].start_service()
-                self.processRequest(ch=ch, method=method, props=props, response=resp)
+                self.process_req(ch=ch, method=method, props=props, response=resp)
 
             elif isinstance(body_decoded,
-                          AMQPMessage) and c.AMQP_MSG_TYPE_REST_SVC_STOP == body_decoded.message_type:
+                            AMQPMessage) and c.AMQP_MSG_TYPE_REST_SVC_STOP == body_decoded.message_type:
                 resp = self.registry[body_decoded.payload].stop_service()
-                self.processRequest(ch=ch, method=method, props=props, response=resp)
+                self.process_req(ch=ch, method=method, props=props, response=resp)
 
             elif isinstance(body_decoded,
-                          AMQPMessage) and c.AMQP_MSG_TYPE_REST_SVC_RESTART == body_decoded.message_type:
+                            AMQPMessage) and c.AMQP_MSG_TYPE_REST_SVC_RESTART == body_decoded.message_type:
                 resp = self.registry[body_decoded.payload].restart_service()
-                self.processRequest(ch=ch, method=method, props=props, response=resp)
+                self.process_req(ch=ch, method=method, props=props, response=resp)
 
             else:
                 self._logger.info(Tools.create_log_msg('SVCPROCESSOR', None, 'Unknown AMQP message type'))
 
-    def processRequest(self, ch=None, method=None, props=None, response=None):
+    @staticmethod
+    def process_req(ch=None, method=None, props=None, response=None):
 
         message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_RESPONSE, payload=response,
                               source=c.AMQP_PROCESSOR_SVC)

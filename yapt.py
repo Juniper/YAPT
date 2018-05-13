@@ -1,12 +1,13 @@
-# Copyright (c) 1999-2017, Juniper Networks Inc.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
 # All rights reserved.
+# Use is subject to license terms.
 #
-# Authors: cklewar@juniper.net
-#
+# Author: cklewar
 
 import lib.constants as c
+import multiprocessing
 
-from multiprocessing import Process
 from lib.pluginfactory import EmitterPlgFact
 from lib.factories import FactoryContainer
 from lib.backend.backend import Backend
@@ -28,11 +29,12 @@ class Yapt(object):
         uiprocessor = UiProcessor(target=UiProcessor, name=c.AMQP_PROCESSOR_UI, args=(
             c.conf.AMQP.Exchange, c.conf.AMQP.Type, c.AMQP_PROCESSOR_UI, c.AMQP_PROCESSOR_UI,))
         uiprocessor.start()
-
-        p = Process(target=UiInit, args=())
+        #multiprocessing.set_start_method('spawn')
+        p = multiprocessing.Process(target=UiInit, args=())
         p.start()
 
         c.fc = FactoryContainer().get_factory_container()
+        c.taskq = c.fc.taskq()
 
         BackendPluginFactory(plugin_name=c.conf.BACKEND.Module, target=Backend,
                              name=c.AMQP_PROCESSOR_BACKEND)

@@ -27,7 +27,7 @@ YAPT:
 #Storage Section
 ########################################################################################################################
 STORAGE:
-  DeviceConfOoba: false                         #Enable OOBA DB check
+  DeviceConfOoba: true                         #Enable OOBA DB check
   DeviceConfSrcPlugins: [Cgitlab]               #Configuration source plugin order
 
   Local:
@@ -62,7 +62,7 @@ BACKEND:
 #Source / Service Plugins Section
 ########################################################################################################################
 SERVICES:
-  Plugins: [File, Ossh, Phs, Webhook]                                             #Activate available services
+  Plugins: [Ossh]                                             #Activate available services
 
   File:
     Normalizer: [Tftp, Dhcp]

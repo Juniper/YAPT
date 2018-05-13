@@ -1,8 +1,9 @@
-# Copyright (c) 1999-2017, Juniper Networks Inc.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
 # All rights reserved.
+# Use is subject to license terms.
 #
-# Authors: cklewar@juniper.net
-#
+# Author: cklewar
 
 import logging
 import logging.config
@@ -46,15 +47,8 @@ class Local(Emitter):
         elif c.YAPT_LOGGER_LEVEL_DEBUG == c.conf.EMITTER.Local.LogLevel:
             c.logger = logging.getLogger('YAPT.DEBUG')
         else:
-            print 'Unknow loglevel in YAPT config file: {0}'.format(c.conf.YAPT.LogLevel)
+            print 'Unknow log level in YAPT config file: {0}'.format(c.conf.YAPT.LogLevel)
             sys.exit()
-            # emitter.getLogger("pika").setLevel(emitter.WARNING)
-            # emitter.getLogger("requests").setLevel(emitter.WARNING)
-            # logging.getLogger("pika").propagate = False
-            # logging.getLogger("requests").propagate = False
-            # logging.getLogger("ncclient").propagate = False
-            # logging.getLogger("paramiko").propagate = False
-            # logging.getLogger("ws4py").propagate = False
 
     def emit(self, task_name=None, task_state=None, sample_device=None, grp_cfg=None, shared=None, message=None,
              level=logging.INFO):

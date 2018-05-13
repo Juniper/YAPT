@@ -1,8 +1,9 @@
-# Copyright (c) 1999-2017, Juniper Networks Inc.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
 # All rights reserved.
+# Use is subject to license terms.
 #
-# Authors: cklewar@juniper.net
-#
+# Author: cklewar
 
 
 from napalm_base.exceptions import MergeConfigException
@@ -43,7 +44,7 @@ class ConfigurationTask(Task):
         self.logger.info(Tools.create_log_msg(self.task_name, self.sample_device.deviceSerial,
                                               logmsg.CONF_TASK_INIT.format(format(self.sample_device.deviceSerial))))
         configurator = Configuration()
-        resp = configurator.prepare_device_config(sample_device=self.sample_device, grp_cfg=self.grp_cfg)
+        resp = configurator.prepare_device_config(sample_device=self.sample_device)
         self._device_config_file = resp['configfilename']
 
         if self.sample_device.deviceConnection is not None:

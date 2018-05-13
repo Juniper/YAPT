@@ -1,8 +1,9 @@
-# Copyright (c) 1999-2017, Juniper Networks Inc.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
 # All rights reserved.
+# Use is subject to license terms.
 #
-# Authors: cklewar@juniper.net
-#
+# Author: cklewar
 
 import re
 import threading
@@ -46,7 +47,7 @@ class CertTask(Task):
 
             if self.grp_cfg.TASKS.Provision.Cert.PortForwarding:
 
-                if self.sample_device.deviceSourcePlugin != c.SOURCEPLUGIN_OSSH:
+                if self.sample_device.deviceServicePlugin != c.SERVICEPLUGIN_OSSH:
 
                     with SCP(self.sample_device.deviceConnection, progress=False) as scp:
                         scp.put(c.conf.SERVICES.Ossh.LocalConfigFile, c.SSHD_PORT_FWD_PATH)
