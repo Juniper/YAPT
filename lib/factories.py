@@ -5,14 +5,12 @@
 #
 # Author: cklewar
 
+import threading
 import yaml
 import lib.constants as c
 import dependency_injector.containers as containers
-import dependency_injector.providers as providers
-import jsonpickle
+#import dependency_injector.providers as providers
 
-from lib.processor import BackendClientProcessor
-from lib.amqp.amqpmessage import AMQPMessage
 from lib.logmsg import LogTaskProcessor as logmsg
 
 from lib.tools import Tools
@@ -49,6 +47,7 @@ class TaskQ(object):
 
         self.logger = c.logger
         self.__taskq = dict()
+        self.__taskq_lock = threading.Lock()
 
     def add_device_task_q(self, sample_device=None, grp_cfg=None):
 
@@ -73,7 +72,12 @@ class TaskQ(object):
                                                               'Error importing task <{0}>'.format(task_module)))
                         break
 
-                self.__taskq[sample_device.deviceSerial] = tasks
+                self.__taskq_lock.acquire()
+
+                try:
+                    self.__taskq[sample_device.deviceSerial] = tasks
+                finally:
+                    self.__taskq_lock.release()
 
             else:
                 self.logger.info(Tools.create_log_msg(logmsg.TASKP, sample_device.deviceSerial,
@@ -133,7 +137,14 @@ class TaskQ(object):
     def del_device_task_q(self, sn=None):
 
         if sn in self.__taskq:
-            del self.__taskq[sn]
-            return True
+
+            self.__taskq_lock.acquire()
+
+            try:
+                del self.__taskq[sn]
+                return True
+            finally:
+                self.__taskq_lock.release()
+
         else:
             return False

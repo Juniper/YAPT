@@ -236,7 +236,6 @@ class TaskProcessor(AMQPBlockingServerAdapter):
 
                 response = self._svcp.call(message=message)
                 response = jsonpickle.decode(response)
-                print response.payload
 
             elif sample_device.deviceConnection.connected:
                 try:
@@ -281,7 +280,7 @@ class ServiceProcessor(AMQPRpcServerAdapter):
                     with c.oss_seen_devices_lck:
                         if sample_device.deviceIP in c.oss_seen_devices:
                             c.oss_seen_devices.pop(sample_device.deviceIP, None)
-                self.process_req(ch=ch, method=method, props=props, response='Done')
+                self.process_req(ch=ch, method=method, props=props, response=c.AMQP_MSG_TYPE_RESPONSE)
 
             elif isinstance(body_decoded,
                             AMQPMessage) and c.AMQP_MSG_TYPE_REST_SVC_START == body_decoded.message_type:

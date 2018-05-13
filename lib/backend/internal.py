@@ -16,9 +16,10 @@ from lib.tools import Tools
 
 
 class Internal(Backend):
-    def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, verbose=None):
 
-        super(Internal, self).__init__(group=group, target=target, name=name, args=args, kwargs=None, verbose=None)
+    def __init__(self, group=None, target=None, name=None, args=(), kwargs=None):
+
+        super(Internal, self).__init__(group=group, target=target, name=name, args=args, kwargs=kwargs)
         self._logger.debug(Tools.create_log_msg(self.__class__.__name__, None,
                                                 LogCommon.IS_SUBCLASS.format(self.__class__.__name__,
                                                                              issubclass(Internal, Backend))))
@@ -275,3 +276,66 @@ class Internal(Backend):
 
     def get_groups(self):
         return self.groups
+
+    def add_device_config(self, configSerial, configDescr, configConfigSource):
+        pass
+
+    def del_device_config(self, configSerial):
+        pass
+
+    def get_device_config_by_sn(self, configSerial):
+        pass
+
+    def get_device_configs(self):
+        pass
+
+    def del_site(self, siteId):
+        pass
+
+    def get_asset_by_site_id(self, assetSiteId):
+        pass
+
+    def del_group_by_name(self, groupName):
+        pass
+
+    def add_template(self, templateName, templateConfig, templateDescr, templateConfigSource, templateDevGrp):
+        pass
+
+    def del_template_by_name(self, templateName):
+        pass
+
+    def get_template_by_name(self, templateName):
+        pass
+
+    def get_templates(self):
+        pass
+
+    def add_image(self, imageName, imageDescr):
+        pass
+
+    def del_image_by_name(self, imageName):
+        pass
+
+    def get_image_by_name(self, imageName):
+        pass
+
+    def get_images(self):
+        pass
+
+    def get_service_by_name(self, serviceName):
+        pass
+
+    def get_services(self):
+        pass
+
+    def validate_phc(self, username, password):
+        pass
+
+    def get_validation_all(self):
+        pass
+
+    def add_asset_to_validation_db(self, username, password):
+        pass
+
+    def del_asset_from_validation_db(self, username):
+        pass
