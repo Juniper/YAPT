@@ -7,8 +7,8 @@ yapt:
 
 device:
   hostname: vsrx_ztp01
-  encrypted_password: $5$Wbt5G9uy$IW32MqVW.3.sxbrz0jzs4X/JrTAbNk1E41N9.lMO0j5
-  ossh_secret: $9$m5zntu1ylM/ClM8XbwmfT
+  encrypted_password: $1$8h4Q8Mii$2Jo9dOaRdINsNxKn8H1f0.
+  ossh_secret: $9$Qgbv3/t1RSM87uO87-V4oz369uOIEclvW
   timezone: Europe/Berlin
   domain_name: mycompany.local
   ntp_server: 192.168.2.1

@@ -80,6 +80,7 @@ class Sql(Backend):
             dpts = self.DeviceTasks.create(owner=new_device.deviceSerial)
             dpts.save()
             database.close()
+            new_device.deviceTasks.is_callback = False
 
             for item in new_device.deviceTaskSeq:
 
@@ -90,13 +91,14 @@ class Sql(Backend):
                     where(self.DeviceTasks.owner == new_device.deviceSerial)
                 query.execute()
 
+            new_device.deviceTasks.is_callback = True
             new_device.deviceStatus = c.DEVICE_STATUS_NEW
 
             message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_DEVICE_ADD,
                                   payload=new_device, source=c.AMQP_PROCESSOR_BACKEND)
             self.amqpCl.send_message(message=message)
 
-            return new_device
+            return True, new_device
 
         else:
 
@@ -138,7 +140,7 @@ class Sql(Backend):
 
             self.amqpCl.send_message(message=message)
 
-            return new_device
+            return True, new_device
 
     def add_device_config(self, configSerial=None, configDescr=None, configConfigSource=None):
 

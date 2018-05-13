@@ -59,6 +59,7 @@ class TaskProcessor(AMQPBlockingServerAdapter):
                 if status:
 
                     sample_device = Tools.get_device_facts(sample_device=sample_device)
+
                     status, data = Tools.get_config(lookup_type=c.CONFIG_LOOKUP_TYPE_GET_DEVICE_CFG,
                                                     sample_device=sample_device)
 
@@ -67,6 +68,7 @@ class TaskProcessor(AMQPBlockingServerAdapter):
                         sample_device.deviceConfigData = data
 
                         try:
+
                             sample_device.deviceGroup = data['yapt']['device_group']
 
                         except KeyError as ke:
@@ -89,7 +91,7 @@ class TaskProcessor(AMQPBlockingServerAdapter):
                                                   source=c.AMQP_PROCESSOR_TASK)
                             resp = self._backendp.call(message=message)
                             resp = jsonpickle.decode(resp)
-                            sample_device = resp.payload
+                            sample_device = resp.payload[1]
                             sample_device.deviceConnection = dev_conn
                             self._logger.info(Tools.create_log_msg(logmsg.TASKP, sample_device.deviceSerial,
                                                                    logmsg.TASKP_LOAD_TASK_SEQ.format(
@@ -99,7 +101,6 @@ class TaskProcessor(AMQPBlockingServerAdapter):
                             self._logger.debug(Tools.create_log_msg(self.name, sample_device.deviceSerial,
                                                                     'Device status: <{0}>'.format(
                                                                         sample_device.deviceStatus)))
-
                             if taskq:
 
                                 for task in taskq:

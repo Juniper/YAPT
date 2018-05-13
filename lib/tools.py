@@ -12,7 +12,6 @@ import inspect
 import os
 import re
 import sys
-import StringIO
 import jsonpickle
 
 import jnpr.junos.exception
@@ -25,7 +24,6 @@ import constants as c
 from cryptography.fernet import Fernet
 from jnpr.junos import Device
 from napalm_base import NetworkDriver
-from ruamel.yaml.comments import CommentedMap
 from lib.logmsg import LogTools as logmsg
 from lib.objectstore import ObjectView
 
@@ -511,10 +509,12 @@ class Tools:
                     if c.conf.STORAGE.DeviceConfOoba:
                         c.logger.info(Tools.create_log_msg(logmsg.STORAGE_PLG, sn if sn else osshid,
                                                            'Checking config id mapping in asset database'))
+
                         from lib.amqp.amqpmessage import AMQPMessage
                         message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_REST_ASSET_GET_BY_SERIAL,
                                               payload=osshid if osshid else sn,
                                               source=c.AMQP_PROCESSOR_REST)
+
                         from lib.processor import BackendClientProcessor
                         _backendp = BackendClientProcessor(exchange='', routing_key=c.AMQP_RPC_BACKEND_QUEUE)
                         response = _backendp.call(message=message)
