@@ -103,10 +103,14 @@ class Sql(Backend):
             if device.deviceIsRebooted:
                 new_device.deviceStatus = c.DEVICE_STATUS_REBOOTED
                 new_device.deviceTaskProgress = device.deviceTaskProgress
+                message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_UI_UPDATE_AND_REBOOT, payload=new_device,
+                                      source=c.AMQP_PROCESSOR_BACKEND)
 
             else:
                 new_device.deviceStatus = c.DEVICE_STATUS_EXISTS
                 new_device.deviceTaskProgress = 0.0
+                message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_UI_UPDATE_AND_RESET, payload=new_device,
+                                      source=c.AMQP_PROCESSOR_BACKEND)
 
             device.deviceName = new_device.deviceName
             device.deviceIP = new_device.deviceIP
@@ -132,8 +136,6 @@ class Sql(Backend):
             new_device.deviceTasks.is_callback = True
             database.close()
 
-            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_UI_UPDATE_AND_RESET, payload=new_device,
-                                  source=c.AMQP_PROCESSOR_BACKEND)
             self.amqpCl.send_message(message=message)
 
             return new_device

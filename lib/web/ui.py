@@ -1,6 +1,9 @@
-# Copyright (c) 1999-2018, Juniper Networks Inc.
+# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER
+# Copyright (c) 2018 Juniper Networks, Inc.
 # All rights reserved.
+# Use is subject to license terms.
 #
+# Author: cklewar
 
 import socket
 
@@ -70,6 +73,13 @@ class UiProcessor(AMQPBlockingServerAdapter):
 
                 Tools.amqp_receive_to_logger(routing_key=method.routing_key, body_decoded=body_decoded)
                 message = body_decoded.payload.device_to_json(action=c.UI_ACTION_UPDATE_DEVICE_AND_RESET_TASK)
+                self.conn_hdlr(message=message)
+
+            elif isinstance(body_decoded,
+                            AMQPMessage) and c.AMQP_MSG_TYPE_UI_UPDATE_AND_REBOOT == body_decoded.message_type:
+
+                Tools.amqp_receive_to_logger(routing_key=method.routing_key, body_decoded=body_decoded)
+                message = body_decoded.payload.device_to_json(action=c.UI_ACTION_UPDATE_DEVICE)
                 self.conn_hdlr(message=message)
 
             elif isinstance(body_decoded,
