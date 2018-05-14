@@ -83,7 +83,6 @@ class Sql(Backend):
             new_device.deviceTasks.is_callback = False
 
             for item in new_device.deviceTaskSeq:
-
                 new_device.deviceTasks.taskState[item] = {'taskState': c.TASK_STATE_INIT,
                                                           'taskStateMsg': c.TASK_STATE_MSG_INIT}
                 key = {item: c.TASK_STATE_MSG_WAIT}
@@ -93,6 +92,8 @@ class Sql(Backend):
 
             new_device.deviceTasks.is_callback = True
             new_device.deviceStatus = c.DEVICE_STATUS_NEW
+            # Set deviceSerial as reference in task observer
+            new_device.deviceTasks.deviceSerial = new_device.deviceSerial
 
             message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_DEVICE_ADD,
                                   payload=new_device, source=c.AMQP_PROCESSOR_BACKEND)
@@ -128,11 +129,11 @@ class Sql(Backend):
             device.save()
 
             task = self.DeviceTasks.get(device.deviceSerial == self.DeviceTasks.owner)
+            # Set deviceSerial as reference in task observer
             new_device.deviceTasks.deviceSerial = new_device.deviceSerial
             new_device.deviceTasks.is_callback = False
 
             for item in device.deviceTaskSeq:
-
                 new_device.deviceTasks.taskState[item] = task._data[item]
 
             new_device.deviceTasks.is_callback = True

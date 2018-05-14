@@ -518,8 +518,8 @@ def action(self, instance, task_name):
     if isinstance(instance, TaskState):
 
         message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_DEVICE_UPDATE_TASK_STATE,
-                              payload={'deviceSerial': getattr(instance, 'deviceSerial', 'none'),
-                                       'isCallback': getattr(instance, 'is_callback', 'none'), 'taskName': task_name,
+                              payload={'deviceSerial': getattr(instance, 'deviceSerial', None),
+                                       'isCallback': getattr(instance, 'is_callback', None), 'taskName': task_name,
                                        'taskState': instance.taskState[task_name]},
                               source=task_name)
         backendp.call(message=message)
