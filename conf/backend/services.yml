@@ -1,0 +1,13 @@
+---
+File:
+  descr: File Observer Service
+  status: init
+Phs:
+  descr: Phone Home Service
+  status: init
+Ossh:
+  descr: Outbound SSH Service
+  status: init
+Webhook:
+  descr: Webhook Service
+  status: init

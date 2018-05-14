@@ -6,6 +6,8 @@
 # Author: cklewar
 
 import datetime
+import yaml
+import lib.constants as c
 
 from peewee import BooleanField
 from peewee import CharField
@@ -24,7 +26,6 @@ from peewee import prefetch
 
 from lib.amqp.amqpmessage import AMQPMessage
 from lib.backend.backend import Backend
-import lib.constants as c
 from lib.logmsg import LogCommon
 from lib.logmsg import LogSqlBackend as logmsg
 from lib.sampledevice import SampleDevice
@@ -48,8 +49,6 @@ class Sql(Backend):
         if c.conf.BACKEND.Sqlite.AutoCreateDb:
             task_plugins = Tools.get_task_plugins()
             self.DeviceTasks = Sql.create_tables(dbname='devicetasks', fields=task_plugins, refName='Tasks')
-        else:
-            pass
 
     @classmethod
     def create_tables(cls, dbname=None, fields=None, refName=None):
@@ -58,8 +57,28 @@ class Sql(Backend):
         database.connect()
         database.create_tables(tables, safe=True)
         database.close()
-
+        Sql.import_data()
         return dynTable
+
+    @classmethod
+    def import_data(cls):
+        svc_data = None
+
+        try:
+            with open('conf/backend/services.yml', 'r') as stream:
+
+                svc_data = yaml.safe_load(stream)
+
+        except IOError as ioe:
+            print Tools.create_log_msg('YAPTBACKEND', None, ioe.message)
+
+        if svc_data:
+            for k, v in svc_data.iteritems():
+                try:
+                    Service.get_or_create(serviceName=k, serviceDescr=v['descr'], serviceStatus=v['status'])
+                    database.close()
+                except IntegrityError as ie:
+                    print Tools.create_log_msg('YAPTBACKEND', None, ie)
 
     def add_device(self, new_device=None):
 
