@@ -116,11 +116,19 @@ class TaskQ(object):
             if sample_device.deviceTaskSeq:
                 taskq = self.get_device_task_q(sample_device.deviceSerial)
 
-                for task in taskq:
-                    self.logger.debug(Tools.create_log_msg('TASKQ', sample_device.deviceSerial,
-                                                           'Task <{0}> status <{1}>'.format(task.task_name,
-                                                                                            task.task_state)))
-                    task.sample_device = sample_device
+                if taskq:
+
+                    for task in taskq:
+                        self.logger.debug(Tools.create_log_msg('TASKQ', sample_device.deviceSerial,
+                                                               'Task <{0}> status <{1}>'.format(task.task_name,
+                                                                                                task.task_state)))
+                        task.sample_device = sample_device
+
+                else:
+                    self.logger.info(Tools.create_log_msg('TASKQ', sample_device.deviceSerial,
+                                                          'Device status is <{0}> and device reboot state is <{1}>. Can not proceed without resetting device state'.format(
+                                                              sample_device.deviceStatus,
+                                                              sample_device.deviceIsRebooted)))
 
             else:
                 self.logger.info(Tools.create_log_msg(logmsg.TASKP, sample_device.deviceSerial,
@@ -132,7 +140,7 @@ class TaskQ(object):
         if sn in self.__taskq:
             return self.__taskq[sn]
         else:
-            return False
+            return None
 
     def del_device_task_q(self, sn=None):
 
@@ -147,4 +155,4 @@ class TaskQ(object):
                 self.__taskq_lock.release()
 
         else:
-            return False
+            return None

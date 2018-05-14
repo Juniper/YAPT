@@ -200,19 +200,18 @@ class Tools:
 
                     dev_conn = Device(host=sample_device.deviceIP, user=c.conf.YAPT.DeviceUsr,
                                       ssh_private_key_file=Tools.get_password(c.YAPT_PASSWORD_TYPE_DEVICE_RSA))
-                    c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceIP,
-                                                       logmsg.CONN_MGMT_PROBING_DEV.format(sample_device.deviceIP,
-                                                                                           c.conf.YAPT.ConnectionProbeTimeout)))
 
-                    probe = dev_conn.probe(timeout=c.conf.YAPT.ConnectionProbeTimeout)
-
-                    if probe:
+                    if connect:
                         c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceIP,
-                                                           logmsg.CONN_MGMT_PROBING_OK.format(
-                                                               sample_device.deviceIP,
-                                                               c.conf.YAPT.ConnectionProbeTimeout)))
-                        if connect:
+                                                           logmsg.CONN_MGMT_PROBING_DEV.format(sample_device.deviceIP,
+                                                                                               c.conf.YAPT.ConnectionProbeTimeout)))
+                        probe = dev_conn.probe(timeout=c.conf.YAPT.ConnectionProbeTimeout)
 
+                        if probe:
+                            c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceIP,
+                                                               logmsg.CONN_MGMT_PROBING_OK.format(
+                                                                   sample_device.deviceIP,
+                                                                   c.conf.YAPT.ConnectionProbeTimeout)))
                             try:
                                 dev_conn.open()
                                 sample_device.deviceConnection = dev_conn
@@ -222,36 +221,35 @@ class Tools:
                                 c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceIP,
                                                                    logmsg.CONN_MGMT_OPEN_FAILED.format(err)))
                                 return False, err
+
                         else:
-                            sample_device.deviceConnection = dev_conn
-                            return True, sample_device
+                            c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceIP,
+                                                               logmsg.CONN_MGMT_PROBING_FAILED.format(
+                                                                   sample_device.deviceIP)))
+                            return False, Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceIP,
+                                                               logmsg.CONN_MGMT_PROBING_FAILED.format(
+                                                                   sample_device.deviceIP))
 
                     else:
-                        c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceIP,
-                                                           logmsg.CONN_MGMT_PROBING_FAILED.format(
-                                                               sample_device.deviceIP)))
-                        return False, Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceIP,
-                                                           logmsg.CONN_MGMT_PROBING_FAILED.format(
-                                                               sample_device.deviceIP))
+                        sample_device.deviceConnection = dev_conn
+                        return True, sample_device
 
                 else:
 
                     dev_conn = Device(host=sample_device.deviceIP, user=c.conf.YAPT.DeviceUsr,
                                       password=Tools.get_password(c.YAPT_PASSWORD_TYPE_DEVICE), gather_facts=False)
 
-                    c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceSerial,
-                                                       logmsg.CONN_MGMT_PROBING_DEV.format(sample_device.deviceIP,
-                                                                                           c.conf.YAPT.ConnectionProbeTimeout)))
-
-                    probe = dev_conn.probe(timeout=c.conf.YAPT.ConnectionProbeTimeout)
-
-                    if probe:
+                    if connect:
                         c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceSerial,
-                                                           logmsg.CONN_MGMT_PROBING_OK.format(
-                                                               sample_device.deviceIP,
-                                                               c.conf.YAPT.ConnectionProbeTimeout)))
-                        if connect:
+                                                           logmsg.CONN_MGMT_PROBING_DEV.format(sample_device.deviceIP,
+                                                                                               c.conf.YAPT.ConnectionProbeTimeout)))
+                        probe = dev_conn.probe(timeout=c.conf.YAPT.ConnectionProbeTimeout)
 
+                        if probe:
+                            c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceSerial,
+                                                               logmsg.CONN_MGMT_PROBING_OK.format(
+                                                                   sample_device.deviceIP,
+                                                                   c.conf.YAPT.ConnectionProbeTimeout)))
                             try:
                                 dev_conn.open()
                                 sample_device.deviceConnection = dev_conn
@@ -261,17 +259,17 @@ class Tools:
                                 c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceIP,
                                                                    logmsg.CONN_MGMT_OPEN_FAILED.format(err)))
                                 return False, err
-                        else:
-                            sample_device.deviceConnection = dev_conn
-                            return True, sample_device
 
+                        else:
+                            c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceSerial,
+                                                               logmsg.CONN_MGMT_PROBING_FAILED.format(
+                                                                   sample_device.deviceIP)))
+                            return False, Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceSerial,
+                                                               logmsg.CONN_MGMT_PROBING_FAILED.format(
+                                                                   sample_device.deviceIP))
                     else:
-                        c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceSerial,
-                                                           logmsg.CONN_MGMT_PROBING_FAILED.format(
-                                                               sample_device.deviceIP)))
-                        return False, Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceSerial,
-                                                           logmsg.CONN_MGMT_PROBING_FAILED.format(
-                                                               sample_device.deviceIP))
+                        sample_device.deviceConnection = dev_conn
+                        return True, sample_device
 
         elif c.conf.DEVICEDRIVER.Driver == c.YAPT_DEVICE_DRIVER_NAPALM:
 

@@ -311,11 +311,8 @@ class SoftwareTask(Task):
             try:
                 rsp = self.sample_device.deviceConnection.sw.reboot()
                 Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
-                               message=logmsg.SW_REBOOT_DEV_RESP.format(rsp))
-                self.sample_device.deviceConnection.close()
-                self.sample_device.deviceIsRebooted = True
-                self.update_task_state(new_task_state=c.TASK_STATE_REBOOTING,
-                                       task_state_message=logmsg.SW_REBOOT.format(self.sample_device.deviceIP))
+                               message=logmsg.SW_REBOOT_DEV_RESP.format(rsp.replace('\n', " ")))
+                # self.sample_device.deviceConnection.close()
 
             except exception.ConnectClosedError:
                 Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
@@ -323,52 +320,50 @@ class SoftwareTask(Task):
                 self.update_task_state(new_task_state=c.TASK_STATE_REBOOTING,
                                        task_state_message=logmsg.SW_CONN_LOOSE_REBOOT)
             finally:
-                # Should use conn mgr?
-                sample_device = Tools.create_dev_conn(self.sample_device, connect=False)
-                # device = Device(host=self.sample_device.deviceIP, user=c.conf.YAPT.DeviceUsr,
-                #                password=c.conf.YAPT.DevicePwd)
-                alive = self.probe_device_not_alive(sample_device,
+
+                alive = self.probe_device_not_alive(self.sample_device,
                                                     self.grp_cfg.TASKS.Provision.Software.RetryProbeCounter)
 
                 if not alive:
-
+                    self.sample_device.deviceIsRebooted = True
                     Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
                                    message=logmsg.SW_PROBE_WAKEUP.format(self.sample_device.deviceIP))
-                    # Should use conn mgr?
-                    sample_device = Tools.create_dev_conn(self.sample_device, connect=False)
-                    # device = Device(host=self.sample_device.deviceIP, user=c.conf.YAPT.DeviceUsr,
-                    #                password=c.conf.YAPT.DevicePwd)
-                    alive = self.probe_device_alive(sample_device,
-                                                    self.grp_cfg.TASKS.Provision.Software.RebootProbeTimeout)
+                    status, self.sample_device = Tools.create_dev_conn(self.sample_device, connect=False)
 
-                    if alive:
+                    if status:
 
-                        Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
-                                       message=logmsg.SW_PROBE_WAKUP_OK.format(self.sample_device.deviceIP))
-                        self.update_task_state(new_task_state=c.TASK_STATE_PROGRESS,
-                                               task_state_message=logmsg.SW_PROBE_WAKUP_OK.format(
-                                                   self.sample_device.deviceIP))
-                        status, self.sample_device = Tools.create_dev_conn(self.sample_device)
+                        alive = self.probe_device_alive(self.sample_device,
+                                                        self.grp_cfg.TASKS.Provision.Software.RebootProbeTimeout)
 
-                        if status:
+                        if alive:
 
-                            self.sample_device.deviceConnection.bind(cu=Config, sw=SW)
-                            # Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
-                            #               message=logmsg.SW_CONN_OK.format(self.sample_device.deviceIP))
+                            Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
+                                           message=logmsg.SW_PROBE_WAKUP_OK.format(self.sample_device.deviceIP))
+                            self.sample_device.deviceIsRebooted = False
                             self.update_task_state(new_task_state=c.TASK_STATE_PROGRESS,
-                                                   task_state_message=logmsg.SW_CONN_OK.format(
+                                                   task_state_message=logmsg.SW_PROBE_WAKUP_OK.format(
                                                        self.sample_device.deviceIP))
+                            status, self.sample_device = Tools.create_dev_conn(self.sample_device)
 
-                            return self.sample_device
+                            if status:
+
+                                self.sample_device.deviceConnection.bind(cu=Config, sw=SW)
+                                # Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
+                                #               message=logmsg.SW_CONN_OK.format(self.sample_device.deviceIP))
+                                self.update_task_state(new_task_state=c.TASK_STATE_PROGRESS,
+                                                       task_state_message=logmsg.SW_CONN_OK.format(
+                                                           self.sample_device.deviceIP))
+
+                                return self.sample_device
+
+                            else:
+                                return self.sample_device
 
                         else:
+                            self.update_task_state(new_task_state=c.TASK_STATE_FAILED,
+                                                   task_state_message=c.TASK_STATE_MSG_FAILED)
+                            self.sample_device.deviceConnection = None
                             return self.sample_device
-
-                    else:
-                        self.update_task_state(new_task_state=c.TASK_STATE_FAILED,
-                                               task_state_message=c.TASK_STATE_MSG_FAILED)
-                        self.sample_device.deviceConnection = None
-                        return self.sample_device
 
                 else:
                     Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
@@ -394,7 +389,7 @@ class SoftwareTask(Task):
         while not alive:
 
             if probe_cntr <= probe_attemps:
-                alive = device.probe(timeout)
+                alive = device.deviceConnection.probe(timeout)
                 probe_cntr += 1
                 Tools.emit_log(task_name=self.task_name, sample_device=device,
                                message=logmsg.SW_PROBE_DEV.format(timeout))
@@ -421,7 +416,7 @@ class SoftwareTask(Task):
         while alive:
 
             if probe_cntr <= probe_attemps:
-                alive = device.probe(1)
+                alive = device.deviceConnection.probe(1)
                 probe_cntr += 1
                 Tools.emit_log(task_name=self.task_name, sample_device=device,
                                message=logmsg.SW_PROBE_DEV.format(timeout))
@@ -437,7 +432,7 @@ class SoftwareTask(Task):
     @staticmethod
     def install_progress(dev, report):
         c.logger.info(
-            '{0:{1}}{2:{3}}{4}'.format('SOFTWARE', c.FIRST_PAD, dev.facts["serialnumber"], c.SECOND_PAD, report))
+            '[{0:{1}}][{2:{3}}][{4}]'.format('SOFTWARE', c.FIRST_PAD, dev.facts["serialnumber"], c.SECOND_PAD, report))
         SoftwareTask.sample_devices[dev.facts['serialnumber']].deviceTasks.taskState['Software'] = {
             'taskState': c.TASK_STATE_PROGRESS, 'taskStateMsg': report}
 
