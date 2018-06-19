@@ -38,7 +38,7 @@ class UiInit(object):
     def __init__(self):
         self._current_dir = os.path.dirname(os.path.abspath(__file__))
 
-        USERS = {'jon': 'secret'}
+        #USERS = {'jon': 'secret'}
 
         cherrypy.config.update('{0}/{1}'.format(os.getcwd(), c.SVC_UI_CONF))
 

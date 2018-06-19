@@ -150,8 +150,9 @@ To run YAPT in a standalone environment grab a CentOS 7 box and follow steps bel
 - Prepare your seed host (in this case a Ubuntu box)
   * Install python with `sudo apt-get install python python-pip -y`
   * Install ansible with `sudo apt-get install ansible -y`
-  * Update python pip with `sudo pip install --upgrade pip`
-  * Update ansible with `sudo pip install --upgrade ansible`
+  * Install git with `sudo apt-get install git -y`
+  * Update python pip with `sudo pip install --upgrade pip==9.0.1`
+  * Update ansible with `sudo pip install --upgrade ansible==2.4.4.0`
 - Clone YAPT installer repository on your seed host with
   * `git clone https://github.com/Juniper/YAPT-docker`
 - Change into directory
@@ -164,7 +165,14 @@ To run YAPT in a standalone environment grab a CentOS 7 box and follow steps bel
   [yapt]
   yapt-01 ansible_host=172.16.146.131 ansible_connection=ssh ansible_user=root
   ```
-      
+- If you want to install YAPT on same host installer is running from than change inventory file to:
+
+
+  ```yaml
+  [yapt]
+  yapt-01 ansible_connection=local ansible_user=root
+  ``` 
+
 - Edit group variables file `all` and change needed setting to fit your environment
   * `nano group_vars/all`
   

@@ -6,8 +6,8 @@
 # Author: cklewar
 
 import socket
-
 import jsonpickle
+import lib.constants as c
 
 from lib.amqp.amqpadapter import AMQPBlockingServerAdapter
 from lib.amqp.amqpmessage import AMQPMessage
@@ -15,7 +15,6 @@ from lib.web.logviewer import LogViewer
 from lib.logmsg import LogCommon
 from lib.logmsg import LogUiProcessor as logmsg
 from lib.processor import BackendClientProcessor
-import lib.constants as c
 from lib.tools import Tools
 from lib.web.adapter.amqp2ws import Amqp2ws
 

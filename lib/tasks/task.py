@@ -7,12 +7,11 @@
 
 import abc
 import os
-
 import yaml
-from cerberus import Validator
-
-from lib.amqp.amqpmessage import AMQPMessage
 import lib.constants as c
+
+from cerberus import Validator
+from lib.amqp.amqpmessage import AMQPMessage
 from lib.processor import BackendClientProcessor
 from lib.tools import Tools
 
