@@ -6,11 +6,12 @@
 # Author: cklewar
 
 import argparse
+import lib.constants as c
 from lib.processor import TaskProcessor
 from lib.processor import ServiceProcessor
 from lib.pluginfactory import EmitterPlgFact
 from lib.pluginfactory import SpacePluginFactory
-import lib.constants as c
+from lib.factories import FactoryContainer
 from lib.tools import Tools
 
 
@@ -25,6 +26,9 @@ class YaptSvc(object):
         parser.add_argument("amqpIp", help="provide amqp bus ip")
         args = parser.parse_args()
         c.conf.AMQP.Host = args.amqpIp
+
+        c.fc = FactoryContainer().get_factory_container()
+        c.taskq = c.fc.taskq()
 
         if c.conf.JUNOSSPACE.Enabled:
             spf = SpacePluginFactory(c.conf.JUNOSSPACE.Version)
