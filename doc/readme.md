@@ -149,14 +149,13 @@ To run YAPT in a standalone environment grab a CentOS 7 box and follow steps bel
   * This box runs YAPT services later on
 - Prepare your seed host (in this case a Ubuntu box)
   * Install python with `sudo apt-get install python python-pip -y`
-  * Install ansible with `sudo apt-get install ansible -y`
   * Install git with `sudo apt-get install git -y`
-  * Update python pip with `sudo pip install --upgrade pip==9.0.1`
-  * Update ansible with `sudo pip install --upgrade ansible==2.4.4.0`
+  * Update python pip with `sudo python -m pip install --upgrade pip==9.0.1`
+  * Install ansible with `sudo python -m pip install ansible==2.4.4.0`
 - Clone YAPT installer repository on your seed host with
   * `git clone https://github.com/Juniper/YAPT-docker`
 - Change into directory
-  * `cd yapt-docker/standalone/ansible`
+  * `cd YAPT-docker/standalone/ansible`
 - Edit the hosts inventory file and change according your environment
   * `nano inventory/hosts`
   
@@ -220,13 +219,13 @@ To bring up YAPT docker environment we need following steps:
 
 - Prepare your seed host (in this case a Ubuntu box)
   * Install python with `sudo apt-get install python python-pip -y`
-  * Install ansible with `sudo apt-get install ansible -y`
-  * Update python pip with `sudo pip install --upgrade pip`
-  * Update ansible with `sudo pip install --upgrade ansible`
+  * Install git with `sudo apt-get install git -y`
+  * Update python pip with `sudo python -m pip install --upgrade pip==9.0.1`
+  * Install ansible with `sudo python -m pip install ansible==2.4.4.0`
 - Clone YAPT installer repository with
   * `git clone https://github.com/Juniper/YAPT-docker`
 - Change into directory
-  * `cd yapt-docker/docker/ansible`
+  * `cd YAPT-docker/docker/ansible`
 - Edit the hosts inventory file and change according your environment
   * `nano inventory/hosts`
   
@@ -291,8 +290,8 @@ To install YAPT with vagrant follow following steps:
 
 ## EDI ##
 
-To install YAPT to integrate into j-EDI we need to:
-- Setup j-EDI environment <https://github.com/Juniper/jedi-seed/blob/master/README.md>
+To install YAPT to integrate with EDI we need to:
+- Setup EDI environment <https://github.com/Juniper/jedi-seed/blob/master/README.md>
 - Setup the YAPT EDI plugin: <https://github.com/Juniper/j-EDI/blob/master/saltstack/srv/plugins/yapt/README.md> 
 
 Current integration is with RT ticketing system. We could demonstrate updating a ticket with provisioning / verification task information.   

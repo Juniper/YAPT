@@ -35,12 +35,12 @@ STORAGE:
     DeviceConfDataDir: conf/devices/data/           #device specific data config directory
 
   Cgitlab:
-    Address: 10.16.116.142
-    Port: 9080
+    Address: 172.16.146.146
+    Port: 8480
     Protocol: http
     LoginUrl: /oauth/token
     User: root
-    Password: password
+    Password: juniper123
     DevCfg: demo_ops/yapt_dev_conf
     DevCfgTemplate: demo_ops/yapt_dev_conf_template
     DevCfgGrp: demo_ops/yapt_dev_grp_conf
@@ -62,7 +62,7 @@ BACKEND:
 #Source / Service Plugins Section
 ########################################################################################################################
 SERVICES:
-  Plugins: [File, Ossh]                                       #Activate available services
+  Plugins: [File, Phs, Webhook, Ossh]                         #Activate available services
 
   File:
     Normalizer: [Tftp, Dhcp]
@@ -73,7 +73,7 @@ SERVICES:
 
       #dnsmasq TFTP Pattern (Ubuntu/Centos)
       Dnsmasq:
-        Pattern: .*?\sdnsmasq-tftp\[\d.*\]:\ssent\s/var/lib/tftpboot/init.conf\sto\s((?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3}))
+        Pattern: .*?\sdnsmasq-tftp\[\d.*\]:\ssent\s.*?.conf\sto\s((?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3}))
         #Pattern: '.*?\sdnsmasq-tftp\[\d.*\]:\sTFTP\ssent\s/var/lib/tftpboot/init.conf\sto\s((?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3}))'
 
       #HPA TFTP Pattern

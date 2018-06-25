@@ -520,6 +520,7 @@ class Site(RestBase):
     @cherrypy.tools.json_out()
     @cherrypy.tools.json_in()
     def POST(self, action=None, name=None):
+        print action, name
 
         if action == 'add':
 
@@ -685,9 +686,9 @@ class Service(RestBase):
 
                     code = ruamel.yaml.load(stream, ruamel.yaml.RoundTripLoader)
                     code = code['SERVICES'][name]
-                    #print json.dumps(code)
-                    #output = StringIO.StringIO()
-                    #ruamel.yaml.dump(code, output, Dumper=ruamel.yaml.RoundTripDumper)
+                    # print json.dumps(code)
+                    # output = StringIO.StringIO()
+                    # ruamel.yaml.dump(code, output, Dumper=ruamel.yaml.RoundTripDumper)
 
                     return json.dumps((True, json.dumps(code)))
 
@@ -978,7 +979,30 @@ class Logs(RestBase):
                         payload=json.dumps({'action': c.UI_ACTION_INIT_LOG_VIEWER, 'data': ''.join(data[-lines:])}))
                     break
         wsc.close()
-        pass
+
+
+class Settings(RestBase):
+    exposed = True
+
+    @cherrypy.tools.json_out()
+    def GET(self, action=None, name=None):
+
+        if action == 'json':
+
+            try:
+
+                with open(os.getcwd() + '/conf/yapt/yapt.yml', 'r') as stream:
+
+                    code = ruamel.yaml.load(stream, ruamel.yaml.RoundTripLoader)
+                    code = code[name]
+                    print json.dumps(code)
+                    # output = StringIO.StringIO()
+                    # ruamel.yaml.dump(code, output, Dumper=ruamel.yaml.RoundTripDumper)
+
+                    return json.dumps((True, json.dumps(code)))
+
+            except EnvironmentError as ee:  # parent of IOError, OSError *and* WindowsError where available
+                return False, ee.message
 
 
 class YaptRestApi(object):
@@ -988,7 +1012,7 @@ class YaptRestApi(object):
 
     url_map = {'device': Device, 'template': Template, 'group': Group, 'image': Image, 'service': Service,
                'configsrc': Configsrc, 'upload': Upload, 'validation': Validation, 'site': Site, 'asset': Asset,
-               'logs': Logs}
+               'settings': Settings, 'logs': Logs}
 
     def _setattr_url_map(self, args=None):
         """

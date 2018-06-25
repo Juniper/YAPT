@@ -90,7 +90,7 @@ class Cgitlab(Storage):
 
         try:
 
-            self.logger.debug(Tools.create_log_msg(self.name, None, "POST {0}, {1}, {2}".format(LOGIN_URL, payload, headers)))
+            self.logger.debug(Tools.create_log_msg(self.name, None, "POST {0}, {1}, {2}".format(LOGIN_URL, json.dumps(payload), headers)))
             response = requests.request("POST", LOGIN_URL, data=json.dumps(payload), headers=headers)
 
         except ConnectionError as ce:
