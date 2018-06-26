@@ -143,7 +143,6 @@ class Configuration:
 
             if status:
                 config = data.render(sample_device.deviceConfigData)
-                print config
                 sample_device.deviceConfiguration = config
                 _device_config_file = '{0}-{1}.conf'.format(sample_device.deviceSerial, now)
                 target = open(grp_cfg.TASKS.Provision.Configuration.ConfigFileHistory + _device_config_file, 'w')

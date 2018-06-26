@@ -150,13 +150,16 @@ class GitlabWebHookHandler(object):
 
             data = item.rsplit('.', 1)[0]
             self.logger.info(Tools.create_log_msg(logmsg.WEBHOOK_SERVICE, data, logmsg.WEBHOOK_RECEIVED.format(data)))
-            sample_device = self._normalizer.run_normalizer(
+            _data = self._normalizer.run_normalizer(
                 timestamp=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), device=data)
-            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_DEVICE_ADD,
-                                  payload=sample_device,
-                                  source=c.AMQP_PROCESSOR_SVC)
 
-            self._normalizer.send_message(message=message)
+            if _data[0]:
+
+                message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_DEVICE_ADD,
+                                      payload=_data[1],
+                                      source=c.AMQP_PROCESSOR_SVC)
+
+                self._normalizer.send_message(message=message)
 
 
 class GithubWebHookHandler(object):

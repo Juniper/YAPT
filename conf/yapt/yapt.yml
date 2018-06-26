@@ -62,7 +62,7 @@ BACKEND:
 #Source / Service Plugins Section
 ########################################################################################################################
 SERVICES:
-  Plugins: [File]                         #Activate available services
+  Plugins: [File, Webhook]                         #Activate available services
 
   File:
     Normalizer: [Tftp, Dhcp]
@@ -107,7 +107,7 @@ SERVICES:
   Webhook:
     Normalizer: Webhook
     Modules: [Gitlab]                                       #Load repository module. Could be Gitlab or Github
-    ServiceBindAddress: 192.168.2.20                        #HTTP Server bind address
+    ServiceBindAddress: 172.16.146.1                        #HTTP Server bind address
     ServiceListenPort: 6584                                 #HTTP Server listen port
 
 ########################################################################################################################

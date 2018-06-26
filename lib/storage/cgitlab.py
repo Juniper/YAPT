@@ -162,7 +162,8 @@ class Cgitlab(Storage):
                     else:
 
                         try:
-                            template = Environment(loader=BaseLoader).from_string(f.decode())
+                            template = Environment(loader=BaseLoader, trim_blocks=True, lstrip_blocks=True).from_string(
+                                f.decode())
                             return True, template
 
                         except TypeError as te:

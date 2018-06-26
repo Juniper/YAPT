@@ -137,9 +137,9 @@ class InternalTask(Task):
                         comment='Commit confirmed by YAPT at {0}'.format(
                             datetime.datetime.now().strftime('%Y-%m-%d-%H%M')))
 
-                    if not self.sample_device.deviceModel.startswith(
-                            'NFX') or not self.sample_device.deviceModel.startswith('VQFX'):
-                        self.sample_device.deviceConnection.cu.rescue('save')
+                    #if not self.sample_device.deviceModel.startswith(
+                    #        'NFX') or not self.sample_device.deviceModel.startswith('VQFX-10000'):
+                    #    self.sample_device.deviceConnection.cu.rescue('save')
 
                 except (CommitError, ConnectClosedError, RpcTimeoutError, TimeoutExpiredError) as err:
 

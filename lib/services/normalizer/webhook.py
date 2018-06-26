@@ -44,7 +44,7 @@ class Webhook(Normalizer):
                 sample_device.deviceServicePlugin = c.SERVICEPLUGIN_WEBHOOK
                 sample_device.deviceTimeStamp = timestamp
 
-                return sample_device
+                return True, sample_device
             else:
                 return False
 
