@@ -296,6 +296,25 @@ class Sql(Backend):
             self._logger.info(Tools.create_log_msg(logmsg.SQLBACKEND, None, dne.message))
             return False, dne.message
 
+    def get_device_by_cfg_id(self, cfg_id=None):
+
+        try:
+
+            data = self.get_asset_by_cfg_id(cfgId=cfg_id)
+
+            if data[0]:
+
+                device = Device.get(Device.deviceSerial == data[1])
+                sample_device = SampleDevice(deviceIP=device.deviceIP, deviceStatus=device.deviceStatus,
+                                             deviceServicePlugin=device.deviceServicePlugin,
+                                             deviceTimeStamp=device.deviceTimeStamp)
+                sample_device.deviceSerial = data[1]
+                return True, sample_device
+
+        except DoesNotExist as dne:
+            self._logger.info(Tools.create_log_msg(logmsg.SQLBACKEND, None, dne.message))
+            return False, dne.message
+
     def get_devices(self):
 
         sample_devices = dict()
@@ -435,6 +454,15 @@ class Sql(Backend):
 
         try:
             data = Asset.get(Asset.assetSerial == assetSerial).assetConfigId
+            return True, data
+
+        except DoesNotExist as dne:
+            return False, dne.message
+
+    def get_asset_by_cfg_id(self, cfgId=None):
+
+        try:
+            data = Asset.get(Asset.assetConfigId == cfgId).assetSerial
             return True, data
 
         except DoesNotExist as dne:

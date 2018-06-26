@@ -52,6 +52,7 @@ AMQP_PROCESSOR_REST = 'restprocessor'
 # AMQP message constants
 AMQP_MSG_TYPE_DEVICE_ADD = 'device_add'
 AMQP_MSG_TYPE_DEVICE_GET_BY_SN = 'device_get_by_sn'
+AMQP_MSG_TYPE_DEVICE_GET_BY_CFG_ID = 'device_get_by_cfg_id'
 AMQP_MSG_TYPE_DEVICE_UPDATE = 'device_update'
 AMQP_MSG_TYPE_DEVICE_DELETE = 'device_delete'
 AMQP_MSG_TYPE_DEVICE_VERIFY = 'device_verify'

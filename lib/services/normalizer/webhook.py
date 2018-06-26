@@ -32,21 +32,41 @@ class Webhook(Normalizer):
 
         if device:
 
-            message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_DEVICE_GET_BY_SN,
-                                  payload=device,
-                                  source=c.AMQP_PROCESSOR_SVC)
             backendp = BackendClientProcessor(exchange='', routing_key=c.AMQP_RPC_BACKEND_QUEUE)
-            resp = jsonpickle.decode(backendp.call(message=message))
 
-            if resp.payload[0]:
-                sample_device = resp.payload[1]
-                sample_device.deviceSerial = device
-                sample_device.deviceServicePlugin = c.SERVICEPLUGIN_WEBHOOK
-                sample_device.deviceTimeStamp = timestamp
+            if c.conf.STORAGE.DeviceConfOoba:
 
-                return True, sample_device
+                message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_DEVICE_GET_BY_CFG_ID,
+                                      payload=device,
+                                      source=c.AMQP_PROCESSOR_SVC)
+                resp = jsonpickle.decode(backendp.call(message=message))
+
+                if resp.payload[0]:
+                    sample_device = resp.payload[1]
+                    sample_device.deviceSerial = device
+                    sample_device.deviceServicePlugin = c.SERVICEPLUGIN_WEBHOOK
+                    sample_device.deviceTimeStamp = timestamp
+
+                    return True, sample_device
+                else:
+                    return False
+
             else:
-                return False
+
+                message = AMQPMessage(message_type=c.AMQP_MSG_TYPE_DEVICE_GET_BY_SN,
+                                      payload=device,
+                                      source=c.AMQP_PROCESSOR_SVC)
+                resp = jsonpickle.decode(backendp.call(message=message))
+
+                if resp.payload[0]:
+                    sample_device = resp.payload[1]
+                    sample_device.deviceSerial = device
+                    sample_device.deviceServicePlugin = c.SERVICEPLUGIN_WEBHOOK
+                    sample_device.deviceTimeStamp = timestamp
+
+                    return True, sample_device
+                else:
+                    return False
 
         else:
             return False

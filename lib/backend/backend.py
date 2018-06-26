@@ -94,6 +94,12 @@ class Backend(AMQPRpcServerAdapter):
                 self.processRequest(ch=ch, method=method, props=props, response=response)
 
             elif isinstance(body_decoded,
+                            AMQPMessage) and c.AMQP_MSG_TYPE_DEVICE_GET_BY_CFG_ID == body_decoded.message_type:
+
+                response = self.get_device_by_cfg_id(body_decoded.payload)
+                self.processRequest(ch=ch, method=method, props=props, response=response)
+
+            elif isinstance(body_decoded,
                             AMQPMessage) and c.AMQP_MSG_TYPE_REST_DEVICE_GET_ALL == body_decoded.message_type:
 
                 response = self.get_devices()
@@ -318,6 +324,10 @@ class Backend(AMQPRpcServerAdapter):
         raise NotImplementedError()
 
     @abc.abstractmethod
+    def get_asset_by_cfg_id(self, cfgId):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
     def get_devices(self):
         raise NotImplementedError()
 
@@ -347,6 +357,10 @@ class Backend(AMQPRpcServerAdapter):
 
     @abc.abstractmethod
     def get_asset_by_serial(self, assetSerial):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def get_device_by_cfg_id(self, cfgId):
         raise NotImplementedError()
 
     @abc.abstractmethod

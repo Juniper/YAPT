@@ -1,0 +1,33 @@
+yapt:
+  device_type: qfx
+  device_group: qfx
+  service_chain: []
+  bootstrap_template_dir: conf/vnf/template
+  bootstrap_template_file: vsrx_ztp_bootstrap.j2
+
+device:
+  hostname: vQFX-R16-12
+  encrypted_password: $5$q24sOtoE$48sYy4JYG9fe3Q4PN/aZskulTHlI1KfIG.PiszMwVv0
+  ossh_secret: $9$m5zntu1ylM/ClM8XbwmfT
+  timezone: Europe/Berlin
+  domain_name: mycompany.local
+  ntp_server: 192.168.2.1
+  community: public
+  interfaces:
+  - name: em0
+    description: Storage1
+    family: inet
+    address: dhcp
+  - name: xe-0/0/0
+    description: Storage2
+    family: inet
+    address: dhcp
+  - name: xe-0/0/1
+    description: Storage3
+    family: inet
+    address: dhcp
+  - name: xe-0/0/2
+    description: trust
+    family: inet
+    address: 10.12.112.254
+    mask: 24
