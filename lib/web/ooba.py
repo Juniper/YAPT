@@ -23,8 +23,8 @@ class YaptOoba(object):
     """
 
     def __init__(self):
-        self._host = c.conf.YAPT.WebUiAddress
-        self._port = int(c.conf.YAPT.OobaUiPort)
+        self._host = c.conf.COMMON.WebUiAddress
+        self._port = int(c.conf.COMMON.OobaUiPort)
         self._current_dir = os.path.dirname(os.path.abspath(__file__))
 
         yapt_rest_server = Server()
@@ -35,9 +35,9 @@ class YaptOoba(object):
     @cherrypy.expose
     def index(self):
 
-        if c.conf.YAPT.WebUiProxy:
-            _host = c.conf.YAPT.WebUiProxyIp
-            _port = int(c.conf.YAPT.OobaUiProxyPort)
+        if c.conf.COMMON.WebUiProxy:
+            _host = c.conf.COMMON.WebUiProxyIp
+            _port = int(c.conf.COMMON.OobaUiProxyPort)
         else:
             _host = self._host
             _port = self._port

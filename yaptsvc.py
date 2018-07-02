@@ -34,7 +34,7 @@ class YaptSvc(object):
             spf = SpacePluginFactory(c.conf.JUNOSSPACE.Version)
             c.SRC = spf.init_plugin()
 
-        for item in range(c.conf.YAPT.WorkerThreads):
+        for item in range(c.conf.COMMON.WorkerThreads):
             taskprocessor = TaskProcessor(target=TaskProcessor, name=c.AMQP_PROCESSOR_TASK + str(item),
                                           args=(c.conf.AMQP.Exchange, c.conf.AMQP.Type, c.AMQP_PROCESSOR_TASK,
                                                 c.AMQP_PROCESSOR_TASK,))

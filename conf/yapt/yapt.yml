@@ -2,7 +2,7 @@
 ########################################################################################################################
 # YAPT Global Section
 ########################################################################################################################
-YAPT:
+COMMON:
   PwdFile: conf/yapt/masterkey.yml                #Stores masterkey
   DevicePwdIsRsa: false                           #use ssh rsa authentication
   DeviceUsr: root                                 #initial device provisioning user

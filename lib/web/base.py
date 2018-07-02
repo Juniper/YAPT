@@ -42,16 +42,16 @@ class UiInit(object):
 
         cherrypy.config.update('{0}/{1}'.format(os.getcwd(), c.SVC_UI_CONF))
 
-        if c.conf.YAPT.StartWebUi:
+        if c.conf.COMMON.StartWebUi:
 
-            if c.conf.YAPT.WebUiProxy:
+            if c.conf.COMMON.WebUiProxy:
                 print '\n\n############## Starting YAPT WebUI at: http://{0}:{1}/yapt/ui ##############\n\n'.format(
-                    c.conf.YAPT.WebUiProxyIp, str(
-                        str(c.conf.YAPT.WebUiPort)))
+                    c.conf.COMMON.WebUiProxyIp, str(
+                        str(c.conf.COMMON.WebUiPort)))
             else:
                 print '\n\n############## Starting YAPT WebUI at: http://{0}:{1}/yapt/ui ##############\n\n'.format(
-                    c.conf.YAPT.WebUiAddress, str(
-                        str(c.conf.YAPT.WebUiPort)))
+                    c.conf.COMMON.WebUiAddress, str(
+                        str(c.conf.COMMON.WebUiPort)))
 
             web = cherrypy.tree.mount(Web(), '/yapt', '{0}/{1}'.format(os.getcwd(), c.SVC_UI_CONF))
 
@@ -201,7 +201,7 @@ class WSHandler(WebSocket):
 
     def opened(self):
 
-        if self.clientname != c.conf.YAPT.WebUiPlugin:
+        if self.clientname != c.conf.COMMON.WebUiPlugin:
 
             if cherrypy.engine.publish('check-client', self.clientname)[0]:
                 pass
@@ -241,8 +241,8 @@ class Web(object):
 
     def __init__(self):
 
-        self._host = c.conf.YAPT.WebUiAddress
-        self._port = int(c.conf.YAPT.WebUiPort)
+        self._host = c.conf.COMMON.WebUiAddress
+        self._port = int(c.conf.COMMON.WebUiPort)
         self._scheme = 'ws'
 
         Plugin(cherrypy.engine).subscribe()
@@ -259,16 +259,16 @@ class Web(object):
     @cherrypy.expose
     def ui(self):
 
-        if c.conf.YAPT.WebUiProxy:
-            _host = c.conf.YAPT.WebUiProxyIp
-            _port = int(c.conf.YAPT.WebUiProxyPort)
+        if c.conf.COMMON.WebUiProxy:
+            _host = c.conf.COMMON.WebUiProxyIp
+            _port = int(c.conf.COMMON.WebUiProxyPort)
         else:
             _host = self._host
             _port = self._port
 
         try:
 
-            tmpl = env.get_template(c.conf.YAPT.WebUiIndex)
+            tmpl = env.get_template(c.conf.COMMON.WebUiIndex)
             index = tmpl.render(devices=list(), scheme=self._scheme, host=_host,
                                 port=_port, clientname="Client%d" % random.randint(0, 100),
                                 action_update_status=c.UI_ACTION_UPDATE_STATUS,

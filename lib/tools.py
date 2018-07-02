@@ -152,9 +152,9 @@ class Tools:
             # If we get an ossh connection hand over sock_fd
             if c.SERVICEPLUGIN_OSSH == sample_device.deviceServicePlugin:
 
-                if c.conf.YAPT.DevicePwdIsRsa:
+                if c.conf.COMMON.DevicePwdIsRsa:
 
-                    dev_conn = Device(host=None, sock_fd=sample_device.deviceConnection, user=c.conf.YAPT.DeviceUsr,
+                    dev_conn = Device(host=None, sock_fd=sample_device.deviceConnection, user=c.conf.COMMON.DeviceUsr,
                                       password=Tools.get_password(c.YAPT_PASSWORD_TYPE_DEVICE_RSA),
                                       gather_facts=False)
 
@@ -175,7 +175,7 @@ class Tools:
                             return True, sample_device
                 else:
 
-                    dev_conn = Device(host=None, sock_fd=sample_device.deviceConnection, user=c.conf.YAPT.DeviceUsr,
+                    dev_conn = Device(host=None, sock_fd=sample_device.deviceConnection, user=c.conf.COMMON.DeviceUsr,
                                       password=Tools.get_password(c.YAPT_PASSWORD_TYPE_DEVICE), gather_facts=False)
 
                     if dev_conn is not None:
@@ -196,22 +196,22 @@ class Tools:
                             return True, sample_device
             else:
 
-                if c.conf.YAPT.DevicePwdIsRsa:
+                if c.conf.COMMON.DevicePwdIsRsa:
 
-                    dev_conn = Device(host=sample_device.deviceIP, user=c.conf.YAPT.DeviceUsr,
+                    dev_conn = Device(host=sample_device.deviceIP, user=c.conf.COMMON.DeviceUsr,
                                       ssh_private_key_file=Tools.get_password(c.YAPT_PASSWORD_TYPE_DEVICE_RSA))
 
                     if connect:
                         c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceIP,
                                                            logmsg.CONN_MGMT_PROBING_DEV.format(sample_device.deviceIP,
-                                                                                               c.conf.YAPT.ConnectionProbeTimeout)))
-                        probe = dev_conn.probe(timeout=c.conf.YAPT.ConnectionProbeTimeout)
+                                                                                               c.conf.COMMON.ConnectionProbeTimeout)))
+                        probe = dev_conn.probe(timeout=c.conf.COMMON.ConnectionProbeTimeout)
 
                         if probe:
                             c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceIP,
                                                                logmsg.CONN_MGMT_PROBING_OK.format(
                                                                    sample_device.deviceIP,
-                                                                   c.conf.YAPT.ConnectionProbeTimeout)))
+                                                                   c.conf.COMMON.ConnectionProbeTimeout)))
                             try:
                                 dev_conn.open()
                                 sample_device.deviceConnection = dev_conn
@@ -236,20 +236,20 @@ class Tools:
 
                 else:
 
-                    dev_conn = Device(host=sample_device.deviceIP, user=c.conf.YAPT.DeviceUsr,
+                    dev_conn = Device(host=sample_device.deviceIP, user=c.conf.COMMON.DeviceUsr,
                                       password=Tools.get_password(c.YAPT_PASSWORD_TYPE_DEVICE), gather_facts=False)
 
                     if connect:
                         c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceSerial,
                                                            logmsg.CONN_MGMT_PROBING_DEV.format(sample_device.deviceIP,
-                                                                                               c.conf.YAPT.ConnectionProbeTimeout)))
-                        probe = dev_conn.probe(timeout=c.conf.YAPT.ConnectionProbeTimeout)
+                                                                                               c.conf.COMMON.ConnectionProbeTimeout)))
+                        probe = dev_conn.probe(timeout=c.conf.COMMON.ConnectionProbeTimeout)
 
                         if probe:
                             c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceSerial,
                                                                logmsg.CONN_MGMT_PROBING_OK.format(
                                                                    sample_device.deviceIP,
-                                                                   c.conf.YAPT.ConnectionProbeTimeout)))
+                                                                   c.conf.COMMON.ConnectionProbeTimeout)))
                             try:
                                 dev_conn.open()
                                 sample_device.deviceConnection = dev_conn
@@ -277,7 +277,7 @@ class Tools:
             driver = napalm.base.get_network_driver(c.conf.DEVICEDRIVER.Napalm.Module)
 
             # Connect
-            dev_conn = driver(hostname=sample_device.deviceIP, username=c.conf.YAPT.DeviceUsr,
+            dev_conn = driver(hostname=sample_device.deviceIP, username=c.conf.COMMON.DeviceUsr,
                               password=Tools.get_password(c.YAPT_PASSWORD_TYPE_DEVICE),
                               optional_args={'port': c.conf.DEVICEDRIVER.Napalm.Port})
 
@@ -434,7 +434,7 @@ class Tools:
             mkey = yaml.load(f)
 
         if pwd_type == c.YAPT_PASSWORD_TYPE_DEVICE:
-            return Fernet(mkey['MasterKey']).decrypt(c.conf.YAPT.DevicePwd)
+            return Fernet(mkey['MasterKey']).decrypt(c.conf.COMMON.DevicePwd)
         elif pwd_type == c.YAPT_PASSWORD_TYPE_DEVICE_RSA:
             return 'conf/yapt/id_rsa'
         elif pwd_type == c.YAPT_PASSWORD_TYPE_OSSH:

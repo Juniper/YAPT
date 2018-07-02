@@ -27,9 +27,9 @@ class UiProcessor(AMQPBlockingServerAdapter):
                                                 LogCommon.IS_SUBCLASS.format(self.__class__.__name__,
                                                                              issubclass(UiProcessor,
                                                                                         AMQPBlockingServerAdapter))))
-        self.url = 'ws://{0}:{1}/yapt/ws?clientname={2}'.format(c.conf.YAPT.WebUiAddress,
-                                                                str(c.conf.YAPT.WebUiPort), c.conf.YAPT.WebUiPlugin)
-        self.amqp2ws = Amqp2ws(name=c.conf.YAPT.WebUiPlugin, url=self.url)
+        self.url = 'ws://{0}:{1}/yapt/ws?clientname={2}'.format(c.conf.COMMON.WebUiAddress,
+                                                                str(c.conf.COMMON.WebUiPort), c.conf.COMMON.WebUiPlugin)
+        self.amqp2ws = Amqp2ws(name=c.conf.COMMON.WebUiPlugin, url=self.url)
         self.backendp = BackendClientProcessor(exchange='', routing_key=c.AMQP_RPC_BACKEND_QUEUE)
         LogViewer().run_service()
 
@@ -98,7 +98,7 @@ class UiProcessor(AMQPBlockingServerAdapter):
 
     def conn_hdlr(self, message=None):
 
-        amqp2ws = Amqp2ws(name=c.conf.YAPT.WebUiPlugin, url=self.url)
+        amqp2ws = Amqp2ws(name=c.conf.COMMON.WebUiPlugin, url=self.url)
 
         try:
             amqp2ws.connect()

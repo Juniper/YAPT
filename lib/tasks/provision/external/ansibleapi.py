@@ -86,7 +86,7 @@ class AnsibleapiTask(Task):
 
                 rendered_inventory = inventory_template.render({
                     'hosts': self.sample_device.deviceIP,
-                    'junos_user': c.conf.YAPT.DeviceUsr,
+                    'junos_user': c.conf.COMMON.DeviceUsr,
                     'junos_password': Tools.get_password(c.YAPT_PASSWORD_TYPE_DEVICE),
                     'template_src': template_file,
                     'template_dst': os.getcwd() + '/history/' + self.sample_device.deviceSerial + '-' + datetime.datetime.now().strftime(

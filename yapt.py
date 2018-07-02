@@ -39,7 +39,7 @@ class Yapt(object):
         BackendPluginFactory(plugin_name=c.conf.BACKEND.Module, target=Backend,
                              name=c.AMQP_PROCESSOR_BACKEND)
 
-        for item in range(c.conf.YAPT.WorkerThreads):
+        for item in range(c.conf.COMMON.WorkerThreads):
             taskprocessor = TaskProcessor(target=TaskProcessor, name=c.AMQP_PROCESSOR_TASK + str(item),
                                           args=(c.conf.AMQP.Exchange, c.conf.AMQP.Type, c.AMQP_PROCESSOR_TASK,
                                                 c.AMQP_PROCESSOR_TASK,))

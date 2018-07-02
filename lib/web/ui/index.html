@@ -354,15 +354,20 @@ Author: cklewar
                 <div class="panel-body">
                     <div class="tab">
                         <button class="tablinks" onclick="openSetting(event, 'Common')" id="defaultOpen">Common</button>
+                        <button class="tablinks" onclick="openSetting(event, 'Storage')">Storage</button>
                         <button class="tablinks" onclick="openSetting(event, 'Passwords')">Passwords</button>
                         <button class="tablinks" onclick="openSetting(event, 'Backend')">Backend</button>
-                        <button class="tablinks" onclick="openSetting(event, 'Driver')">Driver</button>
+                        <button class="tablinks" onclick="openSetting(event, 'Driver')">Devicedriver</button>
                         <button class="tablinks" onclick="openSetting(event, 'Emitter')">Emitter</button>
                     </div>
+
                     <div id="Common" class="tabcontent">
-                        <h3>Common</h3>
+                        <p/>
                     </div>
 
+                    <div id="Storage" class="tabcontent">
+                        <h3>Storage</h3>
+                    </div>
                     <div id="Passwords" class="tabcontent">
                         <h3>Passwords</h3>
                         <table id="tablePasswords1" class="table table-striped table-responsive">
@@ -490,6 +495,7 @@ Author: cklewar
         var action_update_status = "{{ action_update_status }}";
         var action_update_log_viewer = "{{ action_update_log_viewer }}";
         var action_init_log_viewer = "{{ action_init_log_viewer }}";
+
 
 
 </script>

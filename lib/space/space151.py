@@ -592,7 +592,7 @@ class Space151(SpaceRestConnector):
                 'Content-Type': 'application/vnd.net.juniper.space.device-management.discover-devices+xml;version=2;charset=UTF-8'}
 
             template = Template(open(c.conf.JUNOSSPACE.TemplateDir + '/discoverDevice.j2').read())
-            BODY = template.render(ip_address=sample_device.deviceIP, user=c.conf.YAPT.DeviceUsr,
+            BODY = template.render(ip_address=sample_device.deviceIP, user=c.conf.COMMON.DeviceUsr,
                                    password=Tools.get_password(c.YAPT_PASSWORD_TYPE_DEVICE))
 
             response = self.post(URI, HEADER, BODY)

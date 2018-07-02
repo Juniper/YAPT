@@ -182,7 +182,7 @@ class OSSHServiceThread(threading.Thread):
         try:
 
             transport = paramiko.Transport(conn)
-            transport.connect(username=c.conf.YAPT.DeviceUsr,
+            transport.connect(username=c.conf.COMMON.DeviceUsr,
                               password=Tools.get_password(pwd_type=c.YAPT_PASSWORD_TYPE_DEVICE))
 
             with SCPClient(transport=transport) as scp:

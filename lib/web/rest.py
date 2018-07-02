@@ -953,8 +953,8 @@ class Logs(RestBase):
 
     def GET(self):
 
-        url = 'ws://{0}:{1}/yapt/ws?clientname={2}'.format(c.conf.YAPT.WebUiAddress,
-                                                           str(c.conf.YAPT.WebUiPort), c.conf.YAPT.WebUiPlugin)
+        url = 'ws://{0}:{1}/yapt/ws?clientname={2}'.format(c.conf.COMMON.WebUiAddress,
+                                                           str(c.conf.COMMON.WebUiPort), c.conf.COMMON.WebUiPlugin)
         wsc = WebSocketClient(url=url)
         wsc.connect()
         fname = './logs/info.log'
@@ -994,7 +994,7 @@ class Settings(RestBase):
                 with open(os.getcwd() + '/conf/yapt/yapt.yml', 'r') as stream:
 
                     code = ruamel.yaml.load(stream, ruamel.yaml.RoundTripLoader)
-                    code = code[name]
+                    code = code[name.upper()]
                     print json.dumps(code)
                     # output = StringIO.StringIO()
                     # ruamel.yaml.dump(code, output, Dumper=ruamel.yaml.RoundTripDumper)
@@ -1031,8 +1031,8 @@ class YaptRestApi(object):
         _backendp = BackendClientProcessor(exchange='', routing_key=c.AMQP_RPC_BACKEND_QUEUE)
         self._setattr_url_map(args=_backendp)
 
-        _host = c.conf.YAPT.WebUiAddress
-        _port = int(c.conf.YAPT.RestApiPort)
+        _host = c.conf.COMMON.WebUiAddress
+        _port = int(c.conf.COMMON.RestApiPort)
 
         yapt_rest_server = Server()
         yapt_rest_server.socket_host = _host

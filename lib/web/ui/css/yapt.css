@@ -157,8 +157,9 @@ body {font-family: "Lato", sans-serif;}
     float: left;
     padding: 0px 12px;
     border: 1px solid #ccc;
-    width: 70%;
+    width: 80%;
     border-left: none;
     height: 400px;
+    overflow-y:scroll;s
 }
 

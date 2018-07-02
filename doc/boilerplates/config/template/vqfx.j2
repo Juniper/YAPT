@@ -1,0 +1,62 @@
+{{ heading }}
+system {
+    host-name {{ device.hostname }};
+    time-zone {{ device.timezone }};
+    domain-name {{ device.domain_name }};
+    root-authentication {
+        encrypted-password "{{ device.encrypted_password }}"; ## SECRET-DATA
+        ssh-rsa "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDNRZHZGfeKpivvJxvcLEFbn37+m9HaAAjX5yPdHR/p9YBme+S7P9OcQv3Y5aRLsDjmGI3jqnEDDtw8XxS/Ky2DQ9g/uVb++MWTOu739iJiF6wwOJXUvFLbFzG8TF1i0mrGYyZ/5UtPL1YWrKnRO86mhbQDPie9H8dIoZb1AYBEugm0GwOqA0luRuAgvoAuOr15qYu0zDcwXF3f5ZpRh8TcVgWsPQ/HQK/WaWjOyeUz6a7iC1VtcmXn3LY6RG2iTCSxQz6n1Z/JBEUQfjKG9o9XEZ7Pf3eN8tGbTWXtiQVsfJ1VXTOPm/YUaABIhY5t72K3F7mMwoQmVS2GpG2PwRgr cklewar@cklewar-mbp"; ## SECRET-DATA
+    }
+    services {
+        ssh {
+            protocol-version v2;
+            root-login allow;
+        }
+        netconf {
+            ssh;
+        }
+    }
+    syslog {
+        user * {
+            any emergency;
+        }
+        file messages {
+            any any;
+            authorization info;
+        }
+        file interactive-commands {
+            interactive-commands any;
+        }
+    }
+    ntp {
+        server {{ device.ntp_server }};
+    }
+}
+interfaces {
+    {% for interface in device.interfaces %}
+    {% if interface.address == "dhcp" %}
+    {{ interface.name }} {
+        description "{{ interface.description }}";
+        unit 0 {
+            family {{ interface.family }} {
+                dhcp;
+            }
+        }
+    }
+    {% else %}
+    {{ interface.name }} {
+        description "{{ interface.description }}";
+        unit 0 {
+            family {{ interface.family }} {
+                address {{ interface.address }}/{{ interface.mask }};
+            }
+        }
+    }
+    {% endif %}
+    {% endfor %}
+}
+snmp {
+    community {{ device.community }} {
+        authorization read-only;
+    }
+}
