@@ -29,6 +29,7 @@ class Yapt(object):
         uiprocessor = UiProcessor(target=UiProcessor, name=c.AMQP_PROCESSOR_UI, args=(
             c.conf.AMQP.Exchange, c.conf.AMQP.Type, c.AMQP_PROCESSOR_UI, c.AMQP_PROCESSOR_UI,))
         uiprocessor.start()
+
         #multiprocessing.set_start_method('spawn')
         p = multiprocessing.Process(target=UiInit, args=())
         p.start()

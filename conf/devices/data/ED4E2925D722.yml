@@ -7,7 +7,7 @@ yapt:
 
 device:
   hostname: vsrx_ztp01
-  encrypted_password: $5$Wbt5G9uy$IW32MqVW.3.sxbrz0jzs4X/JrTAbNk1E41N9.lMO0j5
+  encrypted_password: $5$q24sOtoE$48sYy4JYG9fe3Q4PN/aZskulTHlI1KfIG.PiszMwVv0
   ossh_secret: $9$m5zntu1ylM/ClM8XbwmfT
   timezone: Europe/Berlin
   domain_name: mycompany.local
@@ -15,10 +15,6 @@ device:
   community: public
   interfaces:
   - name: fxp0
-    description: MGMT
-    family: inet
-    address: dhcp
-  - name: ge-0/0/0
     description: MGMT
     family: inet
     address: dhcp

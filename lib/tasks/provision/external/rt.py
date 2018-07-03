@@ -47,17 +47,17 @@ class RtTask(Task):
 
         Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
                        message=logmsg.TICKET_INIT.format(self.sample_device.deviceSerial,
-                                                         self.grp_cfg.TASKS.Provision.Ticket.Mode))
-        url = '{0}://{1}:{2}/login'.format(self.grp_cfg.TASKS.Provision.Ticket.Protocol,
-                                           self.grp_cfg.TASKS.Provision.Ticket.Address,
-                                           self.grp_cfg.TASKS.Provision.Ticket.Port)
+                                                         self.grp_cfg.TASKS.Provision.Ticket.Rt.Mode))
+        url = '{0}://{1}:{2}/login'.format(self.grp_cfg.TASKS.Provision.Ticket.Rt.Protocol,
+                                           self.grp_cfg.TASKS.Provision.Ticket.Rt.Address,
+                                           self.grp_cfg.TASKS.Provision.Ticket.Rt.Port)
 
         session = requests.Session()
 
         data = {
-            'username': "{0}".format(self.grp_cfg.TASKS.Provision.Ticket.User),
-            'password': "{0}".format(self.grp_cfg.TASKS.Provision.Ticket.Password),
-            'eauth': "{0}".format(self.grp_cfg.TASKS.Provision.Ticket.Eauth),
+            'username': "{0}".format(self.grp_cfg.TASKS.Provision.Ticket.Rt.User),
+            'password': "{0}".format(self.grp_cfg.TASKS.Provision.Ticket.Rt.Password),
+            'eauth': "{0}".format(self.grp_cfg.TASKS.Provision.Ticket.Rt.Eauth),
         }
 
         Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
@@ -82,14 +82,14 @@ class RtTask(Task):
 
                 try:
                     env = Environment(autoescape=False,
-                                      loader=FileSystemLoader(self.grp_cfg.TASKS.Provision.Ticket.TemplateDir),
+                                      loader=FileSystemLoader(self.grp_cfg.TASKS.Provision.Ticket.Rt.TemplateDir),
                                       trim_blocks=True, lstrip_blocks=True)
                     self.update_task_state(new_task_state=c.TASK_STATE_PROGRESS,
                                            task_state_message='Found template <{0}>)'.format(
-                                               self.grp_cfg.TASKS.Provision.Ticket.TicketCreateTemplate))
+                                               self.grp_cfg.TASKS.Provision.Ticket.Rt.TicketCreateTemplate))
                     Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
                                    message='Found template directory <{0}>'.format(
-                                       self.grp_cfg.TASKS.Provision.Ticket.TemplateDir))
+                                       self.grp_cfg.TASKS.Provision.Ticket.Rt.TemplateDir))
 
                 except TemplateNotFound as err:
 
@@ -101,7 +101,7 @@ class RtTask(Task):
                     return
 
                 try:
-                    template = env.get_template(self.grp_cfg.TASKS.Provision.Ticket.TicketCreateTemplate)
+                    template = env.get_template(self.grp_cfg.TASKS.Provision.Ticket.Rt.TicketCreateTemplate)
                     tasks = collections.OrderedDict()
 
                     for task in self.grp_cfg.TASKS.Sequence:
@@ -116,34 +116,34 @@ class RtTask(Task):
 
                     self.update_task_state(new_task_state=c.TASK_STATE_PROGRESS,
                                            task_state_message='Successfully rendered template <{0}>'.format(
-                                               self.grp_cfg.TASKS.Provision.Ticket.TicketCreateTemplate))
+                                               self.grp_cfg.TASKS.Provision.Ticket.Rt.TicketCreateTemplate))
                     Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
                                    message='Successfully rendered template <{0}>'.format(
-                                       self.grp_cfg.TASKS.Provision.Ticket.TicketCreateTemplate))
+                                       self.grp_cfg.TASKS.Provision.Ticket.Rt.TicketCreateTemplate))
 
                 except TemplateNotFound as err:
 
                     self.update_task_state(new_task_state=c.TASK_STATE_FAILED,
                                            task_state_message='Error in getting template file <{0}{1}>'.format(
-                                               self.grp_cfg.TASKS.Provision.Ticket.TemplateDir, err.message))
+                                               self.grp_cfg.TASKS.Provision.Ticket.Rt.TemplateDir, err.message))
                     Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
                                    message='Error in getting template file <{0}{1}>'.format(
-                                       self.grp_cfg.TASKS.Provision.Ticket.TemplateDir,
+                                       self.grp_cfg.TASKS.Provision.Ticket.Rt.TemplateDir,
                                        err.message))
                     return
 
                 data = {
                     "client": "runner",
-                    "fun": "{0}".format(self.grp_cfg.TASKS.Provision.Ticket.Functions[0]),
+                    "fun": "{0}".format(self.grp_cfg.TASKS.Provision.Ticket.Rt.Functions[0]),
                     "subject": "YAPT new provisioning device <{0}>".format(self.sample_device.deviceSerial),
                     "text": ticket_created,
-                    "next_event": "{0}".format(self.grp_cfg.TASKS.Provision.Ticket.NextEvent),
+                    "next_event": "{0}".format(self.grp_cfg.TASKS.Provision.Ticket.Rt.NextEvent),
                     "data": dict()
                 }
 
-                url = '{0}://{1}:{2}/'.format(self.grp_cfg.TASKS.Provision.Ticket.Protocol,
-                                              self.grp_cfg.TASKS.Provision.Ticket.Address,
-                                              self.grp_cfg.TASKS.Provision.Ticket.Port)
+                url = '{0}://{1}:{2}/'.format(self.grp_cfg.TASKS.Provision.Ticket.Rt.Protocol,
+                                              self.grp_cfg.TASKS.Provision.Ticket.Rt.Address,
+                                              self.grp_cfg.TASKS.Provision.Ticket.Rt.Port)
 
                 resp = None
 
@@ -160,9 +160,9 @@ class RtTask(Task):
 
                         data = resp.json()
                         self.shared[c.TASK_SHARED_TICKET] = data['return'][0]['ticket_id']
-                        url = '{0}://{1}:{2}/logout'.format(self.grp_cfg.TASKS.Provision.Ticket.Protocol,
-                                                            self.grp_cfg.TASKS.Provision.Ticket.Address,
-                                                            self.grp_cfg.TASKS.Provision.Ticket.Port)
+                        url = '{0}://{1}:{2}/logout'.format(self.grp_cfg.TASKS.Provision.Ticket.Rt.Protocol,
+                                                            self.grp_cfg.TASKS.Provision.Ticket.Rt.Address,
+                                                            self.grp_cfg.TASKS.Provision.Ticket.Rt.Port)
                         resp = session.post(url, verify=False)
 
                         if resp.status_code == 200:
@@ -204,21 +204,21 @@ class RtTask(Task):
 
         # Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
         #               message=logmsg.TICKET_INIT.format(self.sample_device.deviceSerial))
-        url = '{0}://{1}:{2}/login'.format(self.grp_cfg.TASKS.Provision.Ticket.Protocol,
-                                           self.grp_cfg.TASKS.Provision.Ticket.Address,
-                                           self.grp_cfg.TASKS.Provision.Ticket.Port)
-        session = requests.Session()
+        url = '{0}://{1}:{2}/login'.format(self.grp_cfg.TASKS.Provision.Ticket.Rt.Protocol,
+                                           self.grp_cfg.TASKS.Provision.Ticket.Rt.Address,
+                                           self.grp_cfg.TASKS.Provision.Ticket.Rt.Port)
 
         data = {
-            'username': "{0}".format(self.grp_cfg.TASKS.Provision.Ticket.User),
-            'password': "{0}".format(self.grp_cfg.TASKS.Provision.Ticket.Password),
-            'eauth': "{0}".format(self.grp_cfg.TASKS.Provision.Ticket.Eauth),
+            'username': "{0}".format(self.grp_cfg.TASKS.Provision.Ticket.Rt.User),
+            'password': "{0}".format(self.grp_cfg.TASKS.Provision.Ticket.Rt.Password),
+            'eauth': "{0}".format(self.grp_cfg.TASKS.Provision.Ticket.Rt.Eauth),
         }
 
         Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
                        message=logmsg.TICKET_CONN_INIT.format(url))
 
         resp = None
+        session = requests.Session()
 
         try:
 
@@ -237,14 +237,14 @@ class RtTask(Task):
 
                 try:
                     env = Environment(autoescape=False,
-                                      loader=FileSystemLoader(self.grp_cfg.TASKS.Provision.Ticket.TemplateDir),
+                                      loader=FileSystemLoader(self.grp_cfg.TASKS.Provision.Ticket.Rt.TemplateDir),
                                       trim_blocks=True, lstrip_blocks=True)
                     self.update_task_state(new_task_state=c.TASK_STATE_PROGRESS,
                                            task_state_message='Found template <{0}>)'.format(
-                                               self.grp_cfg.TASKS.Provision.Ticket.TicketCreateTemplate))
+                                               self.grp_cfg.TASKS.Provision.Ticket.Rt.TicketCreateTemplate))
                     Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
                                    message='Found template directory <{0}>'.format(
-                                       self.grp_cfg.TASKS.Provision.Ticket.TemplateDir))
+                                       self.grp_cfg.TASKS.Provision.Ticket.Rt.TemplateDir))
 
                 except TemplateNotFound as err:
 
@@ -256,7 +256,7 @@ class RtTask(Task):
                     return
 
                 try:
-                    template = env.get_template(self.grp_cfg.TASKS.Provision.Ticket.TicketCreateTemplate)
+                    template = env.get_template(self.grp_cfg.TASKS.Provision.Ticket.Rt.TicketCreateTemplate)
                     ticket_created = template.render(deviceSerial=self.sample_device.deviceSerial,
                                                      deviceName=self.sample_device.deviceName,
                                                      deviceModel=self.sample_device.deviceModel,
@@ -265,34 +265,34 @@ class RtTask(Task):
                                                      lastSeen=self.sample_device.deviceTimeStamp)
                     self.update_task_state(new_task_state=c.TASK_STATE_PROGRESS,
                                            task_state_message='Successfully rendered template <{0}>'.format(
-                                               self.grp_cfg.TASKS.Provision.Ticket.TicketCreateTemplate))
+                                               self.grp_cfg.TASKS.Provision.Ticket.Rt.TicketCreateTemplate))
                     Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
                                    message='Successfully rendered template <{0}>'.format(
-                                       self.grp_cfg.TASKS.Provision.Ticket.TicketCreateTemplate))
+                                       self.grp_cfg.TASKS.Provision.Ticket.Rt.TicketCreateTemplate))
 
                 except TemplateNotFound as err:
 
                     self.update_task_state(new_task_state=c.TASK_STATE_FAILED,
                                            task_state_message='Error in getting template file <{0}{1}>'.format(
-                                               self.grp_cfg.TASKS.Provision.Ticket.TemplateDir, err.message))
+                                               self.grp_cfg.TASKS.Provision.Ticket.Rt.TemplateDir, err.message))
                     Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
                                    message='Error in getting template file <{0}{1}>'.format(
-                                       self.grp_cfg.TASKS.Provision.Ticket.TemplateDir,
+                                       self.grp_cfg.TASKS.Provision.Ticket.Rt.TemplateDir,
                                        err.message))
                     return
 
                 data = {
                     "client": "runner",
-                    "fun": "{0}".format(self.grp_cfg.TASKS.Provision.Ticket.Functions[0]),
+                    "fun": "{0}".format(self.grp_cfg.TASKS.Provision.Ticket.Rt.Functions[0]),
                     "subject": "YAPT new provisioning device <{0}>".format(self.sample_device.deviceSerial),
                     "text": ticket_created,
-                    "next_event": "{0}".format(self.grp_cfg.TASKS.Provision.Ticket.NextEvent),
+                    "next_event": "{0}".format(self.grp_cfg.TASKS.Provision.Ticket.Rt.NextEvent),
                     "data": dict()
                 }
 
-                url = '{0}://{1}:{2}/'.format(self.grp_cfg.TASKS.Provision.Ticket.Protocol,
-                                              self.grp_cfg.TASKS.Provision.Ticket.Address,
-                                              self.grp_cfg.TASKS.Provision.Ticket.Port)
+                url = '{0}://{1}:{2}/'.format(self.grp_cfg.TASKS.Provision.Ticket.Rt.Protocol,
+                                              self.grp_cfg.TASKS.Provision.Ticket.Rt.Address,
+                                              self.grp_cfg.TASKS.Provision.Ticket.Rt.Port)
                 try:
 
                     resp = session.post(url, json=data, verify=False)
@@ -309,17 +309,17 @@ class RtTask(Task):
 
                         data = resp.json()
                         self.shared[c.TASK_SHARED_TICKET] = data['return'][0]['ticket_id']
-                        url = '{0}://{1}:{2}/logout'.format(self.grp_cfg.TASKS.Provision.Ticket.Protocol,
-                                                            self.grp_cfg.TASKS.Provision.Ticket.Address,
-                                                            self.grp_cfg.TASKS.Provision.Ticket.Port)
+                        url = '{0}://{1}:{2}/logout'.format(self.grp_cfg.TASKS.Provision.Ticket.Rt.Protocol,
+                                                            self.grp_cfg.TASKS.Provision.Ticket.Rt.Address,
+                                                            self.grp_cfg.TASKS.Provision.Ticket.Rt.Port)
                         resp = session.post(url, verify=False)
 
                         if resp.status_code == 200:
 
                             self.update_task_state(new_task_state=c.TASK_STATE_DONE,
                                                    task_state_message=c.TASK_STATE_MSG_DONE)
-                            Tools.emit_log(task_name=self.task_name,
-                                           task_state=self.sample_device.deviceTasks.taskState[self.task_name],
+                            Tools.emit_log(task_name=RtTask.TASK_DESCENT,
+                                           task_state=self.sample_device.deviceTasks.taskState[RtTask.TASK_DESCENT],
                                            sample_device=self.sample_device, grp_cfg=self.grp_cfg,
                                            shared=self.shared,
                                            message=logmsg.TICKET_CREATE_OK.format(self.shared[c.TASK_SHARED_TICKET]),

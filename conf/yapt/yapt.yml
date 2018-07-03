@@ -27,8 +27,8 @@ COMMON:
 #Storage Section
 ########################################################################################################################
 STORAGE:
-  DeviceConfOoba: true                         #Enable OOBA DB check
-  DeviceConfSrcPlugins: [Cgitlab]               #Configuration source plugin order
+  DeviceConfOoba: false                         #Enable OOBA DB check
+  DeviceConfSrcPlugins: [Local]               #Configuration source plugin order
 
   Local:
     DeviceGrpFilesDir: conf/groups/                 #Map device to a provisioning group
@@ -62,7 +62,7 @@ BACKEND:
 #Source / Service Plugins Section
 ########################################################################################################################
 SERVICES:
-  Plugins: [File, Webhook]                         #Activate available services
+  Plugins: [File, Phs]                         #Activate available services
 
   File:
     Normalizer: [Tftp, Dhcp]

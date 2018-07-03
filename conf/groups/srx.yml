@@ -9,7 +9,7 @@
 TASKS:
   #Enable tasks and set processing order within sequence
   #Sequence: Init, Filecp, Software, Ipam, Configuration, Cert, Discovery, Policy, Assign, Rule, Publish, Cleanup
-  Sequence: [Init, Configuration, Cleanup]
+  Sequence: [Ticket, Init, Configuration, Cleanup]
 
   Provision:
 
@@ -107,9 +107,9 @@ TASKS:
       Mode: detail                                                #Mode could be "summary" to give a summarization at the end or "detail" to get update after every task
 
       Rt:
-        Address: 10.86.9.14                                         #Ticket System IP address
+        Address: 127.0.0.1                                          #Ticket System IP address
         Port: 8000                                                  #Ticket System Port
-        Protocol: https                                             #HTTP / HTTPS
+        Protocol: http                                              #HTTP / HTTPS
         User: juniper                                               #Ticket system user
         Password: juniper123                                        #Ticket system passsword
         Eauth: pam                                                  #EDI authentication module

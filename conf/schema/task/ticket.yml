@@ -2,14 +2,18 @@ Ticket:
   schema:
     Module: {'required': True, 'type': 'string'}
     Mode: {'required': True, 'type': 'string'}
-    Address: {'required': True, 'type': 'string'}
-    Port: {'required': True, 'type': 'integer'}
-    User: {'required': True, 'type': 'string'}
-    Eauth: {'required': True, 'type': 'string'}
-    Password: {'required': True, 'type': 'string'}
-    Functions: {'required': True, 'type': 'list'}
-    NextEvent: {'required': True, 'type': 'string'}
-    TicketCreateTemplate: {'required': True, 'type': 'string'}
-    TicketUpdateTemplate: {'required': True, 'type': 'string'}
+    Rt:
+      schema:
+        Address: {'required': True, 'type': 'string'}
+        Port: {'required': True, 'type': 'integer'}
+        User: {'required': True, 'type': 'string'}
+        Eauth: {'required': True, 'type': 'string'}
+        Password: {'required': True, 'type': 'string'}
+        Functions: {'required': True, 'type': 'list'}
+        NextEvent: {'required': True, 'type': 'string'}
+        TicketCreateTemplate: {'required': True, 'type': 'string'}
+        TicketUpdateTemplate: {'required': True, 'type': 'string'}
+      required: True
+      type: 'dict'
   required: True
   type: 'dict'

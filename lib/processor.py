@@ -191,8 +191,8 @@ class TaskProcessor(AMQPBlockingServerAdapter):
                         self.close_dev_conn(sample_device=sample_device)
                         return
                 else:
-                    self._logger.info(Tools.create_log_msg(logmsg.TASKP, sample_device.deviceSerial,
-                                                           logmsg.TASKP_CONN_ERR.format(sample_device.deviceSerial)))
+                    self._logger.info(Tools.create_log_msg(logmsg.TASKP, sample_device.deviceIp,
+                                                           logmsg.TASKP_CONN_ERR.format(sample_device.deviceIp)))
                     return
             else:
                 Tools.amqp_receive_error_to_logger(routing_key=method.routing_key, body_decoded=body_decoded)
