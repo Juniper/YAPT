@@ -9,7 +9,7 @@
 TASKS:
   #Enable tasks and set processing order within sequence
   #Sequence: Init, Filecp, Software, Ipam, Configuration, Cert, Discovery, Policy, Assign, Rule, Publish, Cleanup
-  Sequence: [Ticket, Init, Configuration, Cleanup]
+  Sequence: [Ticket, Init, Configuration, Cleanup, Proxym]
 
   Provision:
 
@@ -118,6 +118,15 @@ TASKS:
         TemplateDir: lib/emitter/templates/                         #Template directory
         TicketCreateTemplate: ticket_create_detail_mode.j2          #Template file used for tickte creation
         TicketUpdateTemplate: ticket_update_detail_mode.j2          #Template file used for ticker update
+
+    Proxym:
+      Address: 127.0.0.1                                          #EDI System IP address
+      Port: 8000                                                  #EDI System Port
+      Protocol: http                                              #HTTP / HTTPS
+      User: juniper                                               #EDI system user
+      Password: juniper123                                        #EDI system passsword
+      Eauth: pam                                                  #EDI authentication module
+      Tag: hook/jnpr/yapt/ztp/new_dev                             #EDI Webhook URL
 
 ########################################################################################################################
 #Verification Task Section
