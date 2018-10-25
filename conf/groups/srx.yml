@@ -9,7 +9,7 @@
 TASKS:
   #Enable tasks and set processing order within sequence
   #Sequence: Init, Filecp, Software, Ipam, Configuration, Cert, Discovery, Policy, Assign, Rule, Publish, Cleanup
-  Sequence: [Ticket, Init, Configuration, Cleanup, Proxym]
+  Sequence: [Init, Configuration, Cleanup]
 
   Provision:
 

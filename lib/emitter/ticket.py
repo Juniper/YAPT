@@ -120,6 +120,6 @@ class Ticket(Emitter):
             else:
                 self.logger.info(Tools.create_log_msg(self.__class__.__name__, sample_device.deviceSerial,
                                                       'Not updating ticket since no ticket id yet'))
-        else:
-            self.logger.debug(Tools.create_log_msg(self.__class__.__name__, sample_device.deviceSerial,
-                                                   'Not processing ticket update since not in task sequence'))
+        #else:
+        #    self.logger.debug(Tools.create_log_msg(self.__class__.__name__, sample_device.deviceSerial,
+        #                                           'Not processing ticket update since not in task sequence'))

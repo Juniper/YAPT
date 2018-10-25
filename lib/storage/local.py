@@ -187,39 +187,36 @@ class Local(Storage):
                                                                       logmsg.LOCAL_DEV_CFG_FILE_OK.format(filename)))
 
                                 self.logger.info(
-                                    Tools.create_log_msg(logmsg.CONF_VALIDATE,
-                                                         serialnumber if serialnumber else deviceOsshId,
+                                    Tools.create_log_msg(logmsg.CONF_VALIDATE, serialnumber,
                                                          logmsg.CONF_VALIDATE_INIT.format('device')))
                                 resp, err = self.validate(source=datavars,
                                                           lookup_type=c.CONFIG_LOOKUP_TYPE_GET_DEVICE_CFG)
 
                                 if resp:
-                                    self.logger.info(Tools.create_log_msg(logmsg.CONF_VALIDATE,
-                                                                          serialnumber if serialnumber else deviceOsshId,
+                                    self.logger.info(Tools.create_log_msg(logmsg.CONF_VALIDATE, serialnumber,
                                                                           logmsg.CONF_VALIDATE_OK.format('Device')))
                                     return True, datavars
                                 else:
-                                    self.logger.info(Tools.create_log_msg(logmsg.CONF_VALIDATE,
-                                                                          serialnumber if serialnumber else deviceOsshId,
+                                    self.logger.info(Tools.create_log_msg(logmsg.CONF_VALIDATE, serialnumber,
                                                                           logmsg.CONF_VALIDATE_NOK.format(err)))
                                     return False, err
 
                             except yaml.YAMLError as exc:
                                 self.logger.info(
                                     '{0}-[{1}]: Error in loading config file <{2}> --> {3}'.format(self.name,
-                                                                                                   serialnumber if serialnumber else deviceOsshId,
+                                                                                                   serialnumber,
                                                                                                    dev_conf_path + filename,
                                                                                                    exc))
                                 return False, '{0}-[{1}]: Error in loading config file <{2}> --> {3}'.format(self.name,
-                                                                                                             serialnumber if serialnumber else deviceOsshId,
+                                                                                                             serialnumber,
                                                                                                              dev_conf_path + filename,
                                                                                                              exc)
                     except IOError:
                         self.logger.info('{0}-[{1}]: Error in opening config file <{2}>'.format(self.name,
-                                                                                                serialnumber if serialnumber else deviceOsshId,
+                                                                                                serialnumber,
                                                                                                 dev_conf_path + filename))
                         return False, '{0}-[{1}]: Error in opening config file <{2}>'.format(self.name,
-                                                                                             serialnumber if serialnumber else deviceOsshId,
+                                                                                             serialnumber,
                                                                                              dev_conf_path + filename)
             else:
                 self.logger.info(Tools.create_log_msg(self.name, serialnumber,

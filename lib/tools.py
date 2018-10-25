@@ -117,7 +117,7 @@ class Tools:
             p = getpass.getpass(prompt='Enter ' + pwd_type + ' secret: ')
             q = getpass.getpass(prompt='Confirm ' + pwd_type + ' secret: ')
             if p == q:
-                _datavars['YAPT']['DevicePwd'] = Fernet(mkey['MasterKey']).encrypt(p)
+                _datavars['COMMON']['DevicePwd'] = Fernet(mkey['MasterKey']).encrypt(p)
         elif pwd_type == c.YAPT_PASSWORD_TYPE_OSSH:
             p = getpass.getpass(prompt='Enter ' + pwd_type + ' secret: ')
             q = getpass.getpass(prompt='Confirm ' + pwd_type + ' secret: ')

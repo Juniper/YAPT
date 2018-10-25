@@ -46,8 +46,6 @@ class ProxymTask(Task):
             'eauth': "{0}".format(self.grp_cfg.TASKS.Provision.Proxym.Eauth),
         }
 
-        resp = None
-
         try:
             resp = session.post(url, json=data, verify=False)
             self.logger.info(
@@ -70,9 +68,14 @@ class ProxymTask(Task):
             'ticket_id': self.shared[c.TASK_SHARED_TICKET]
         }
 
-        resp = session.post(url, json=data, verify=False)
-        self.logger.info(
-            Tools.create_log_msg(self.task_name, self.sample_device.deviceSerial, resp.status_code))
+        try:
+            self.update_task_state(new_task_state=c.TASK_STATE_PROGRESS, task_state_message='Firing event to event bus')
+            resp = session.post(url, json=data, verify=False)
+            self.logger.info(Tools.create_log_msg(self.task_name, self.sample_device.deviceSerial, resp.status_code))
+
+        except Exception as ex:
+
+            self.logger.info(Tools.create_log_msg(self.task_name, self.sample_device.deviceSerial, ex))
 
         url = '{0}://{1}:{2}/logout'.format(self.grp_cfg.TASKS.Provision.Proxym.Protocol,
                                             self.grp_cfg.TASKS.Provision.Proxym.Address,
@@ -81,6 +84,7 @@ class ProxymTask(Task):
         self.logger.info(Tools.create_log_msg(self.task_name, self.sample_device.deviceSerial, url))
         resp = session.post(url, verify=False)
         self.logger.info(Tools.create_log_msg(self.task_name, self.sample_device.deviceSerial, resp.status_code))
+        self.update_task_state(new_task_state=c.TASK_STATE_DONE, task_state_message=c.TASK_STATE_MSG_DONE)
 
     def post_run_task(self):
         pass

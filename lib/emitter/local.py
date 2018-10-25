@@ -47,7 +47,7 @@ class Local(Emitter):
         elif c.YAPT_LOGGER_LEVEL_DEBUG == c.conf.EMITTER.Local.LogLevel:
             c.logger = logging.getLogger('YAPT.DEBUG')
         else:
-            print 'Unknow log level in YAPT config file: {0}'.format(c.conf.COMMON.LogLevel)
+            print 'Unknown log level in YAPT config file: {0}'.format(c.conf.COMMON.LogLevel)
             sys.exit()
 
     def emit(self, task_name=None, task_state=None, sample_device=None, grp_cfg=None, shared=None, message=None,
