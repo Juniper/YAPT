@@ -520,7 +520,6 @@ class Site(RestBase):
     @cherrypy.tools.json_out()
     @cherrypy.tools.json_in()
     def POST(self, action=None, name=None):
-        print action, name
 
         if action == 'add':
 
@@ -995,7 +994,6 @@ class Settings(RestBase):
 
                     code = ruamel.yaml.load(stream, ruamel.yaml.RoundTripLoader)
                     code = code[name.upper()]
-                    print json.dumps(code)
                     # output = StringIO.StringIO()
                     # ruamel.yaml.dump(code, output, Dumper=ruamel.yaml.RoundTripDumper)
 

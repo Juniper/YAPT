@@ -116,8 +116,6 @@ class SoftwareTask(Task):
                     filename = Software.get_software_image_name(self.sample_device, target_version,
                                                                 grp_cfg=self.grp_cfg)
 
-                    print filename
-
                     if filename:
 
                         full_path = self.grp_cfg.TASKS.Provision.Software.ImageDir + filename

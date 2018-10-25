@@ -177,5 +177,5 @@ class GithubWebHookHandler(object):
 
         _data = [_file for commit in input_json['commits'] for _file in commit['modified']]
 
-        for item in _data:
-            print item.rsplit('.', 1)[0]
+        #for item in _data:
+        #    print item.rsplit('.', 1)[0]
