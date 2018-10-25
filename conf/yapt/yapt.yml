@@ -62,7 +62,7 @@ BACKEND:
 #Source / Service Plugins Section
 ########################################################################################################################
 SERVICES:
-  Plugins: [File, Phs]                         #Activate available services
+  Plugins: [File]                         #Activate available services
 
   File:
     Normalizer: [Tftp, Dhcp]
@@ -71,12 +71,12 @@ SERVICES:
       Module: Dnsmasq                                         #dnsmasq TFTP Server or hpa TFTP Server
       LogFile: logs/testlogs/tftpd.log                        #Path to the log file being observed (TFTP/DHCP/etc)
 
-      #dnsmasq TFTP Pattern (Ubuntu/Centos)
+      # dnsmasq TFTP Pattern (Ubuntu/Centos)
       Dnsmasq:
         Pattern: .*?\sdnsmasq-tftp\[\d.*\]:\ssent\s.*?.conf\sto\s((?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3}))
         #Pattern: '.*?\sdnsmasq-tftp\[\d.*\]:\sTFTP\ssent\s/var/lib/tftpboot/init.conf\sto\s((?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3})\.(?:[\d]{1,3}))'
 
-      #HPA TFTP Pattern
+      # HPA TFTP Pattern
       Hpa:
         Pattern: '(\d+/\d+/\d+@\d+:\d+:\d+).*?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$)'
 

@@ -59,9 +59,31 @@ TASKS:
 
     Software:
       ImageDir: images/                               #device software images directory
+      RemoteDir: /var/tmp/                            #destination directory
+      RebootProbeCounter: 30                          #How many times probe should be send while dev rebooting
+      RebootProbeTimeout: 30                          #wait n sec starting probing after device is rebooted
+      RetryProbeCounter: 5                            #How many times probe should be send while going into reboot
+      PkgAddDevTimeout: 1800                          #Timeout for pkgadd function (OSSH)
 
       TargetVersion:
         NFX250-S2: 17.3R2
+
+    Ticket:
+      Module: Rt                                                  #Module currently only request_tracker ticketing system
+      Mode: detail                                                #Mode could be "summary" to give a summarization at the end or "detail" to get update after every task
+
+      Rt:
+        Address: 10.86.9.14                                         #Ticket System IP address
+        Port: 8000                                                  #Ticket System Port
+        Protocol: https                                             #HTTP / HTTPS
+        User: juniper                                               #Ticket system user
+        Password: juniper123                                        #Ticket system passsword
+        Eauth: pam                                                  #EDI authentication module
+        Functions: [request_tracker.create_ticket, request_tracker.update_ticket]   #call edi runner functions
+        NextEvent: None                                             #
+        TemplateDir: lib/emitter/templates/                         #Template directory
+        TicketCreateTemplate: ticket_create_detail_mode.j2          #Template file used for tickte creation
+        TicketUpdateTemplate: ticket_update_detail_mode.j2          #Template file used for ticker update
 
     Vnfstage:
 

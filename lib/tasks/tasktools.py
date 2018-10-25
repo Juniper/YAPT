@@ -216,7 +216,7 @@ class Software:
 
             if filename.endswith(".tgz"):
 
-                local_version = re.findall(r"(?:[\d.X]+)(?:\-*)(?:[D\d.]+)", filename)[0]
+                local_version = re.findall(r"(?:[\d.X]+)(?:\-*)(?:[D|R\d{1}.]+)", os.path.splitext(filename)[0])[0]
 
                 if target_version == local_version:
                     Tools.emit_log(task_name='SOFTWARE', sample_device=sample_device,

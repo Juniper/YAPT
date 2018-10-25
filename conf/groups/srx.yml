@@ -9,7 +9,7 @@
 TASKS:
   #Enable tasks and set processing order within sequence
   #Sequence: Init, Filecp, Software, Ipam, Configuration, Cert, Discovery, Policy, Assign, Rule, Publish, Cleanup
-  Sequence: [Init, Configuration, Cleanup]
+  Sequence: [Init, Software, Configuration, Cleanup]
 
   Provision:
 
@@ -107,9 +107,9 @@ TASKS:
       Mode: detail                                                #Mode could be "summary" to give a summarization at the end or "detail" to get update after every task
 
       Rt:
-        Address: 127.0.0.1                                          #Ticket System IP address
+        Address: 10.86.9.14                                         #Ticket System IP address
         Port: 8000                                                  #Ticket System Port
-        Protocol: http                                              #HTTP / HTTPS
+        Protocol: https                                             #HTTP / HTTPS
         User: juniper                                               #Ticket system user
         Password: juniper123                                        #Ticket system passsword
         Eauth: pam                                                  #EDI authentication module
@@ -118,15 +118,6 @@ TASKS:
         TemplateDir: lib/emitter/templates/                         #Template directory
         TicketCreateTemplate: ticket_create_detail_mode.j2          #Template file used for tickte creation
         TicketUpdateTemplate: ticket_update_detail_mode.j2          #Template file used for ticker update
-
-    Proxym:
-      Address: 127.0.0.1                                          #EDI System IP address
-      Port: 8000                                                  #EDI System Port
-      Protocol: http                                              #HTTP / HTTPS
-      User: juniper                                               #EDI system user
-      Password: juniper123                                        #EDI system passsword
-      Eauth: pam                                                  #EDI authentication module
-      Tag: hook/jnpr/yapt/ztp/new_dev                             #EDI Webhook URL
 
 ########################################################################################################################
 #Verification Task Section
