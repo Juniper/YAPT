@@ -17,6 +17,7 @@ TASKS:
       Dependencies: [Configuration, Software]
 
     Configuration:
+      Module: Internal
       Dependencies: []
       DeviceConfTemplateDir: conf/devices/template/   #device specific template config directory
       DeviceConfTemplateFile: nfx_no_ipam.j2          #device config template name

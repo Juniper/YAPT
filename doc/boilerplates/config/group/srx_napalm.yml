@@ -14,6 +14,8 @@ TASKS:
     Sequence: [Init, Configuration]
 
     Configuration:
+      Module: Internal
+      Dependencies: []
       DeviceConfTemplateDir: conf/devices/template/   #device specific template config directory
       DeviceConfTemplateFile: srx_no_ipam.j2          #device config template name
       DefaultConfDir: conf/devices/default/           #default config template file directory

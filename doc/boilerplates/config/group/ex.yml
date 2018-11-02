@@ -7,63 +7,88 @@
 #Tasks Section (turn on/off provisioning tasks / configure specific task settings)
 ########################################################################################################################
 TASKS:
-  #Enable provision tasks and set processing order within sequence
+  #Enable tasks and set processing order within sequence
   #Sequence: Init, Filecp, Software, Ipam, Configuration, Cert, Discovery, Policy, Assign, Rule, Publish, Cleanup
-  Sequence: [Init, Filecp, Software, Configuration, Cleanup]
+  Sequence: [Init, Software, Configuration, Cleanup]
 
   Provision:
 
     Init:
       Dependencies: [Configuration, Software]
 
+    Assign:
+      AssignTemplate: conf/space/151/tempaltes/assignDevice.j2
+
     Configuration:
+      Module: Internal
       Dependencies: []
       DeviceConfTemplateDir: conf/devices/template/   #device specific template config directory
-      DeviceConfTemplateFile: ex_no_ipam.j2           #device config template name
+      DeviceConfTemplateFile: ex3400.j2               #device config template name
       ConfigFileHistory: history/                     #path to dir where commited device config being saved
       Merge: True                                     #Merge Configuration
       Overwrite: False                                #Replace Configuration
 
       Internal:
         CommitTimeout: 120                            #Set Commit Timeout to x sec
-        ConfirmedTimeout: 5                           #Set Commit confirmed timeout to x min
+        ConfirmedTimeout: 1                           #Set Commit confirmed timeout to x min
 
       Ansibleapi:
         PlaybookPath: conf/ansible/playbooks/         #Set path to playbook
         Playbook: yapt_playbook.yml                   #Set Playbook file name. Playbooks stored in conf/ansible/playbook
 
     Cert:
-      PortForwarding: False                                         #Enable Port Forwarding for cert retrieval
+      PortForwarding: false                                         #Enable Port Forwarding for cert retrieval
       LocalFwdPort: 5554                                            #Forwarding Port on device
       RemoteFwdHost: 10.15.115.2                                    #Remote host to forward to
       RemoteFwdHostPort: 8080                                       #Port on remote host to forward to
       EnrollmentUrl: ejbca/publicweb/apply/scep/advpn/pkiclient.exe #
       RevocationUrl: ejbca/publicweb/status/ocsp                    #
 
+    Cleanup:
+      test123: 10.1.1.1
+
     Discovery:
       Mode: Discovery                                 #Set discovery mode to either Discovery or Configlet
-      ConnectionConfigletDir: conf/configlet/         #modeled device configlet file path
+      UsePing: false                                  #If Mode 'Discovery' use ping
+      UseSnmp: true                                   #If Mode 'Discovery' use snmp
+      ConnectionConfigletDir: conf/space/configlet/   #modeled device configlet file path
 
     Filecp:
-      Files: [ADVPNCertRollout.slax]                  #File(s) to be copied to device (e.g. SLAX)
+      Files: [cleanup.slax]                           #File(s) to be copied to device (e.g. SLAX)
       FileLocalDir: scripts/                          #source directory where to find files (defaults to script dir)
-      FileRemoteDir: /var/db/scripts/event            #Event/Commit/OP Script or any other directory path on device
+      FileRemoteDir: /var/db/scripts/op               #Event/Commit/OP Script or any other directory path on device
 
     Ipam:
-      Module: nipap
-      Address: 10.15.115.6
-      Port: '1337'
+      Module: Nipap
       Prefixes: [10.200.0.0/24, 10.13.113.0/24]
-      User: nipap
-      Password: nipap
+
+      Nipap:
+        Address: 10.15.115.6
+        Port: '1337'
+        User: nipap
+        Password: nipap
+
+      Netbox:
+        Address: 10.15.115.6
+        Port: '1337'
+        User: nipap
+        Password: nipap
+
+    Policy:
+      PolicyTemplate: conf/space/templates/151/fwpolicy.j2
+      LookupType: DEVICE
+
+    Rule:
+      RuleTemplate: conf/space/templates/151/fwdefaultrule.j2
+      RuleTemplateVars: conf/space/templates/151/fwdefaultrule.yml
 
     Software:
       ImageDir: images/                               #device software images directory
-        RemoteDir: /var/tmp/                            #destination directory
-        RebootProbeCounter: 30                          #How many times probe should be send while dev rebooting
-        RebootProbeTimeout: 30                          #wait n sec starting probing after device is rebooted
-        RetryProbeCounter: 5                            #How many times probe should be send while going into reboot
-        PkgAddDevTimeout: 1800                          #Timeout for pkgadd function (OSSH)
+      RemoteDir: /var/tmp/                            #destination directory
+      RebootProbeCounter: 30                          #How many times probe should be send while dev rebooting
+      RebootProbeTimeout: 30                          #wait n sec starting probing after device is rebooted
+      RetryProbeCounter: 5                            #How many times probe should be send while going into reboot
+      PkgAddDevTimeout: 1800                          #Timeout for pkgadd function (OSSH)
 
       TargetVersion:
         EX4300-24P: 17.2R1.13
@@ -71,19 +96,21 @@ TASKS:
         EX3400-24T: 18.1R3.3
 
     Ticket:
-      Module: rt                                                  #Module currently only request_tracker ticketing system
+      Module: Rt                                                  #Module currently only request_tracker ticketing system
       Mode: detail                                                #Mode could be "summary" to give a summarization at the end or "detail" to get update after every task
-      Address: 10.86.9.14                                         #Ticket System IP address
-      Port: 8000                                                  #Ticket System Port
-      Protocol: https                                             #HTTP / HTTPS
-      User: juniper                                               #Ticket system user
-      Password: juniper123                                        #Ticket system passsword
-      Eauth: pam                                                  #EDI authentication module
-      Functions: [request_tracker.create_ticket, request_tracker.update_ticket]   #call edi runner functions
-      NextEvent: None                                             #
-      TemplateDir: lib/emitter/templates/                             #Template directory
-      TicketCreateTemplate: ticket_create_detail_mode.j2          #Template file used for tickte creation
-      TicketUpdateTemplate: ticket_update_detail_mode.j2          #Template file used for ticker update
+
+      Rt:
+        Address: 10.86.9.14                                         #Ticket System IP address
+        Port: 8000                                                  #Ticket System Port
+        Protocol: https                                             #HTTP / HTTPS
+        User: juniper                                               #Ticket system user
+        Password: juniper123                                        #Ticket system passsword
+        Eauth: pam                                                  #EDI authentication module
+        Functions: [request_tracker.create_ticket, request_tracker.update_ticket]   #call edi runner functions
+        NextEvent: None                                             #
+        TemplateDir: lib/emitter/templates/                         #Template directory
+        TicketCreateTemplate: ticket_create_detail_mode.j2          #Template file used for tickte creation
+        TicketUpdateTemplate: ticket_update_detail_mode.j2          #Template file used for ticker update
 
 ########################################################################################################################
 #Verification Task Section

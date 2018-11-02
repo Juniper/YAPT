@@ -17,6 +17,8 @@ TASKS:
       Dependencies: [Configuration, Software]
 
     Configuration:
+      Module: Internal
+      Dependencies: []
       DeviceConfTemplateDir: conf/devices/template/   #device specific template config directory
       DeviceConfTemplateFile: vmx_no_ipam.j2          #device config template name
       ConfigFileHistory: history/                     #path to dir where commited device config being saved
