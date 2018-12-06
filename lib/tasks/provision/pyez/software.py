@@ -69,7 +69,7 @@ class SoftwareTask(Task):
 
             Tools.emit_log(task_name=self.task_name, sample_device=self.sample_device,
                            message=logmsg.SW_START_UPDATE.format(self.sample_device.deviceSerial))
-            SoftwareTask.sample_devices = {self.sample_device.deviceSerial: self.sample_device}
+            SoftwareTask.sample_devices[self.sample_device.deviceSerial] = self.sample_device
 
             if target_version is not None:
                 feedback = Software.compare_device_vers_with_target_vers(self.sample_device.softwareVersion,
@@ -183,6 +183,7 @@ class SoftwareTask(Task):
         :param sample_device:
         :param path:
         :param image:
+        :param target_version
         :return:
         """
 
@@ -275,7 +276,6 @@ class SoftwareTask(Task):
         else:
 
             try:
-
                 result = self.sample_device.deviceConnection.sw.install(package=package,
                                                                         remote_path=self.grp_cfg.TASKS.Provision.Software.RemoteDir,
                                                                         cleanfs=True, no_copy=False,
@@ -433,8 +433,10 @@ class SoftwareTask(Task):
     def install_progress(dev, report):
         c.logger.info(
             '[{0:{1}}][{2:{3}}][{4}]'.format('SOFTWARE', c.FIRST_PAD, dev.facts["serialnumber"], c.SECOND_PAD, report))
-        SoftwareTask.sample_devices[dev.facts['serialnumber']].deviceTasks.taskState['Software'] = {
-            'taskState': c.TASK_STATE_PROGRESS, 'taskStateMsg': report}
+
+        with SoftwareTask.sample_devices_lock:
+            SoftwareTask.sample_devices[dev.facts['serialnumber']].deviceTasks.taskState['Software'] = {
+                'taskState': c.TASK_STATE_PROGRESS, 'taskStateMsg': report}
 
     @staticmethod
     def copy_progress(filename, size, sent):
@@ -443,7 +445,8 @@ class SoftwareTask(Task):
 
         c.logger.info('PROVSW: Copy file <%s> progress <%s>', filename,
                       (sent / (1024 * 1024)) * 100.0 / (size / (1024 * 1024)))
-        # SoftwareTask.sample_devices[dev.facts['serialnumber']].deviceTasks.taskState['Software'] = (sent / (1024 * 1024)) * 100.0 / (size / (1024 * 1024)))
+        #with SoftwareTask.sample_devices_lock:
+            # SoftwareTask.sample_devices[dev.facts['serialnumber']].deviceTasks.taskState['Software'] = (sent / (1024 * 1024)) * 100.0 / (size / (1024 * 1024)))
 
     def post_run_task(self):
         with SoftwareTask.sample_devices_lock:

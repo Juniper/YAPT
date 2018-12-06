@@ -16,6 +16,7 @@ from jnpr.junos.exception import *
 from paramiko.ssh_exception import SSHException
 from lib.logmsg import LogTaskTools as logmsg
 from lib.tools import Tools
+from pathlib2 import Path
 
 
 class SSHPortForward(object):
@@ -210,28 +211,41 @@ class Software:
 
         Tools.emit_log(task_name='SOFTWARE', sample_device=sample_device,
                        message=logmsg.SW_CHECK_DIR.format(target_version))
-        f = False
 
-        for filename in os.listdir(grp_cfg.TASKS.Provision.Software.ImageDir):
+        _filename = Path("{0}/{1}.tgz".format(grp_cfg.TASKS.Provision.Software.ImageDir, target_version))
 
-            if filename.endswith(".tgz"):
-
-                local_version = re.findall(r"(?:[\d.X]+)(?:\-*)(?:[D\d.]+)", filename)[0]
-
-                if target_version == local_version:
-                    Tools.emit_log(task_name='SOFTWARE', sample_device=sample_device,
-                                   message=logmsg.SW_IMAGE_OK.format(local_version))
-                    f = filename
-                    break
-                else:
-                    pass
-
-        if not f:
-            # if no file found, return False
+        if _filename.is_file():
             Tools.emit_log(task_name='SOFTWARE', sample_device=sample_device,
-                           message=logmsg.SW_IMAGE_NOK.format(target_version))
+                                       message=logmsg.SW_IMAGE_OK.format(target_version))
+            return "{0}.tgz".format(target_version)
+        else:
+            Tools.emit_log(task_name='SOFTWARE', sample_device=sample_device,
+                               message=logmsg.SW_IMAGE_NOK.format(target_version))
+            return False
 
-        return f
+        #f = False
+
+        #for filename in os.listdir(grp_cfg.TASKS.Provision.Software.ImageDir):
+
+        #    if filename.endswith(".tgz"):
+
+                #local_version = re.findall(r"(?:[\d.X]+)(?:\-*)(?:[D\d.]+)", filename)[0]
+        #        local_version = ''.format()
+
+        #        if target_version == local_version:
+        #            Tools.emit_log(task_name='SOFTWARE', sample_device=sample_device,
+        #                           message=logmsg.SW_IMAGE_OK.format(local_version))
+        #            f = filename
+        #            break
+        #        else:
+        #            pass
+
+        #if not f:
+            # if no file found, return False
+        #    Tools.emit_log(task_name='SOFTWARE', sample_device=sample_device,
+        #                   message=logmsg.SW_IMAGE_NOK.format(target_version))
+
+        #return f
 
     @classmethod
     def compare_device_vers_with_target_vers(cls, device_version, target_version):

@@ -28,7 +28,7 @@ YAPT:
 ########################################################################################################################
 STORAGE:
   DeviceConfOoba: false                         #Enable OOBA DB check
-  DeviceConfSrcPlugins: [Cgitlab]               #Configuration source plugin order
+  DeviceConfSrcPlugins: [Local]               #Configuration source plugin order
 
   Local:
     DeviceGrpFilesDir: conf/groups/                 #Map device to a provisioning group
@@ -62,7 +62,7 @@ BACKEND:
 #Source / Service Plugins Section
 ########################################################################################################################
 SERVICES:
-  Plugins: [File, Ossh]                                       #Activate available services
+  Plugins: [File]                                            #Activate available services
 
   File:
     Normalizer: [Tftp, Dhcp]

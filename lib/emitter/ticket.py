@@ -56,14 +56,14 @@ class Ticket(Emitter):
                                               loader=FileSystemLoader(grp_cfg.TASKS.Provision.Ticket.TemplateDir),
                                               trim_blocks=True, lstrip_blocks=True)
 
-                            self.logger.info(Tools.create_log_msg(self.__class__.__name__, sample_device.deviceSerial,
-                                                                  'Found template directory <{0}>)'.format(
-                                                                      grp_cfg.TASKS.Provision.Ticket.TemplateDir)))
+                            c.logger.info(Tools.create_log_msg(self.__class__.__name__, sample_device.deviceSerial,
+                                                               'Found template directory <{0}>)'.format(
+                                                                   grp_cfg.TASKS.Provision.Ticket.TemplateDir)))
                         except TemplateNotFound as err:
 
-                            self.logger.info(Tools.create_log_msg(self.__class__.__name__, sample_device.deviceSerial,
-                                                                  'Error in getting template directory <{0}>'.format(
-                                                                      err.message)))
+                            c.logger.info(Tools.create_log_msg(self.__class__.__name__, sample_device.deviceSerial,
+                                                               'Error in getting template directory <{0}>'.format(
+                                                                   err.message)))
                             return
 
                         try:
@@ -77,11 +77,11 @@ class Ticket(Emitter):
                                                              taskName=task_name, tasks=task_state)
 
                         except TemplateNotFound as err:
-                            self.logger.info(Tools.create_log_msg(self.__class__.__name__, sample_device.deviceSerial,
-                                                                  'Error in getting template file <{0}{1}>'.format(
-                                                                      grp_cfg.TASKS.Provision.Ticket.TemplateDir,
-                                                                      err.message)
-                                                                  ))
+                            c.logger.info(Tools.create_log_msg(self.__class__.__name__, sample_device.deviceSerial,
+                                                               'Error in getting template file <{0}{1}>'.format(
+                                                                   grp_cfg.TASKS.Provision.Ticket.TemplateDir,
+                                                                   err.message)
+                                                               ))
                             return
 
                         data = {
@@ -100,23 +100,23 @@ class Ticket(Emitter):
                             resp = session.post(url, verify=False)
 
                             if resp.status_code == 200:
-                                self.logger.info(
+                                c.logger.info(
                                     Tools.create_log_msg(self.__class__.__name__, sample_device.deviceSerial,
                                                          'Successfully updated ticket with ID <{0}>'.format(
                                                              shared[c.TASK_SHARED_TICKET])))
 
                         else:
-                            self.logger.info(Tools.create_log_msg(self.__class__.__name__, sample_device.deviceSerial,
-                                                                  'Failure in updating ticket <{0}> with error <{1}>'.format(
-                                                                      shared[c.TASK_SHARED_TICKET], resp.status_code)))
+                            c.logger.info(Tools.create_log_msg(self.__class__.__name__, sample_device.deviceSerial,
+                                                               'Failure in updating ticket <{0}> with error <{1}>'.format(
+                                                                   shared[c.TASK_SHARED_TICKET], resp.status_code)))
 
                     else:
-                        self.logger.info(Tools.create_log_msg(self.__class__.__name__, sample_device.deviceSerial,
-                                                              'Failure in updating ticket <{0}>'.format(
-                                                                  shared[c.TASK_SHARED_TICKET])))
+                        c.logger.info(Tools.create_log_msg(self.__class__.__name__, sample_device.deviceSerial,
+                                                           'Failure in updating ticket <{0}>'.format(
+                                                               shared[c.TASK_SHARED_TICKET])))
             else:
-                self.logger.info(Tools.create_log_msg(self.__class__.__name__, sample_device.deviceSerial,
-                                                      'Not updating ticket since no ticket id yet'))
+                c.logger.info(Tools.create_log_msg(self.__class__.__name__, sample_device.deviceSerial,
+                                                   'Not updating ticket since no ticket id yet'))
         else:
-            self.logger.debug(Tools.create_log_msg(self.__class__.__name__, sample_device.deviceSerial,
-                                                   'Not processing ticket update since not in task sequence'))
+            c.logger.info(Tools.create_log_msg(self.__class__.__name__, sample_device.deviceSerial,
+                                               'Not processing ticket update since not in task sequence'))

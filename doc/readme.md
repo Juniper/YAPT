@@ -1750,6 +1750,7 @@ Here some example configurations of those:
 ### DHCP server (ISC DHCP) ###
 
 ```ini
+ping-check true;
 option domain-name "yapt.local";
 
 default-lease-time 600;
@@ -1768,7 +1769,6 @@ option broadcast-address 192.168.1.255;
 option routers 192.168.1.1;
 next-server 192.168.60.6;
 filename "init.conf";
-
 }
 ```
 

@@ -6,8 +6,8 @@ yapt:
   bootstrap_template_file: vsrx_ztp_bootstrap.j2
 
 device:
-  hostname: vsrx_ztp01
-  encrypted_password: $5$q24sOtoE$48sYy4JYG9fe3Q4PN/aZskulTHlI1KfIG.PiszMwVv0
+  hostname: vsrx_ztp02
+  encrypted_password: $1$aZjUdOrF$vI6etro/pEIqRmT1.lOvY.
   ossh_secret: $9$m5zntu1ylM/ClM8XbwmfT
   timezone: Europe/Berlin
   domain_name: mycompany.local
@@ -38,7 +38,7 @@ device:
     ca_profile: ejbca
     ca_identity: advpn
     subject: CN=vsrx_ztp01,OU=IT,O=MyCompany,L=Berlin,DC=mycompany.local,C=DE
-    domain_name: vsrx_ztp01.mycompany.local
+    domain_name: vsrx_ztp02.mycompany.local
     enrollment_url: ejbca/publicweb/apply/scep/advpn/pkiclient.exe
     oscp_url: ejbca/publicweb/status/ocsp
     challenge_password: juniper123
