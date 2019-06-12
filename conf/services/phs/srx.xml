@@ -3,7 +3,7 @@
     <activation-code>abc123</activation-code>
     <configuration>
         <config>
-            <configuration>
+            <configuration operation="merge">
                 <system>
                     <host-name>init</host-name>
                     <root-authentication>
@@ -11,7 +11,7 @@
                     </root-authentication>
                     <services>
                         <netconf>
-                            <ssh></ssh>
+                            <ssh/>
                         </netconf>
                     </services>
                 </system>
