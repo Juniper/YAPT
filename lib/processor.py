@@ -53,8 +53,8 @@ class TaskProcessor(AMQPBlockingServerAdapter):
             if isinstance(body_decoded,
                           AMQPMessage) and c.AMQP_MSG_TYPE_DEVICE_ADD == body_decoded.message_type:
 
-                sample_device = body_decoded.payload
-                status, sample_device = Tools.create_dev_conn(sample_device=sample_device)
+                _sample_device = body_decoded.payload
+                status, sample_device = Tools.create_dev_conn(sample_device=_sample_device)
 
                 if status:
 
@@ -191,8 +191,8 @@ class TaskProcessor(AMQPBlockingServerAdapter):
                         self.close_dev_conn(sample_device=sample_device)
                         return
                 else:
-                    self._logger.info(Tools.create_log_msg(logmsg.TASKP, sample_device.deviceIp,
-                                                           logmsg.TASKP_CONN_ERR.format(sample_device.deviceIp)))
+                    self._logger.info(Tools.create_log_msg(logmsg.TASKP, _sample_device.deviceIP,
+                                                           logmsg.TASKP_CONN_ERR.format(_sample_device.deviceIP)))
                     return
             else:
                 Tools.amqp_receive_error_to_logger(routing_key=method.routing_key, body_decoded=body_decoded)

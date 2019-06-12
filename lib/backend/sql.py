@@ -95,7 +95,6 @@ class Sql(Backend):
                       'deviceTaskSeq': new_device.deviceTaskSeq})
 
         if created:
-
             dpts = self.DeviceTasks.create(owner=new_device.deviceSerial)
             dpts.save()
             database.close()
@@ -146,7 +145,6 @@ class Sql(Backend):
             device.deviceTaskSeq = new_device.deviceTaskSeq
             new_device.deviceIsRebooted = device.deviceIsRebooted
             device.save()
-
             task = self.DeviceTasks.get(device.deviceSerial == self.DeviceTasks.owner)
             # Set deviceSerial as reference in task observer
             new_device.deviceTasks.deviceSerial = new_device.deviceSerial

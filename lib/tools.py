@@ -12,18 +12,18 @@ import inspect
 import os
 import re
 import sys
-import jsonpickle
 
 import jnpr.junos.exception
+import jsonpickle
 import napalm
 import requests
 import ruamel.yaml
 import yaml
-import constants as c
-
 from cryptography.fernet import Fernet
 from jnpr.junos import Device
 from napalm_base import NetworkDriver
+
+import constants as c
 from lib.logmsg import LogTools as logmsg
 from lib.objectstore import ObjectView
 
@@ -148,10 +148,8 @@ class Tools:
         """
 
         if c.conf.DEVICEDRIVER.Driver == c.YAPT_DEVICE_DRIVER_PYEZ:
-
             # If we get an ossh connection hand over sock_fd
             if c.SERVICEPLUGIN_OSSH == sample_device.deviceServicePlugin:
-
                 if c.conf.COMMON.DevicePwdIsRsa:
 
                     dev_conn = Device(host=None, sock_fd=sample_device.deviceConnection, user=c.conf.COMMON.DeviceUsr,
@@ -179,9 +177,7 @@ class Tools:
                                       password=Tools.get_password(c.YAPT_PASSWORD_TYPE_DEVICE), gather_facts=False)
 
                     if dev_conn is not None:
-
                         if connect:
-
                             try:
                                 dev_conn.open()
                                 sample_device.deviceConnection = dev_conn
@@ -195,9 +191,7 @@ class Tools:
                             sample_device.deviceConnection = dev_conn
                             return True, sample_device
             else:
-
                 if c.conf.COMMON.DevicePwdIsRsa:
-
                     dev_conn = Device(host=sample_device.deviceIP, user=c.conf.COMMON.DeviceUsr,
                                       ssh_private_key_file=Tools.get_password(c.YAPT_PASSWORD_TYPE_DEVICE_RSA))
 
@@ -235,9 +229,10 @@ class Tools:
                         return True, sample_device
 
                 else:
-
                     dev_conn = Device(host=sample_device.deviceIP, user=c.conf.COMMON.DeviceUsr,
-                                      password=Tools.get_password(c.YAPT_PASSWORD_TYPE_DEVICE), gather_facts=False)
+                                      password=Tools.get_password(c.YAPT_PASSWORD_TYPE_DEVICE),
+                                      port=c.conf.DEVICEDRIVER.Pyez.port,
+                                      gather_facts=False)
 
                     if connect:
                         c.logger.info(Tools.create_log_msg(logmsg.CONN_MGMT, sample_device.deviceSerial,
@@ -272,10 +267,8 @@ class Tools:
                         return True, sample_device
 
         elif c.conf.DEVICEDRIVER.Driver == c.YAPT_DEVICE_DRIVER_NAPALM:
-
             # Use the appropriate network driver to connect to the device
             driver = napalm.base.get_network_driver(c.conf.DEVICEDRIVER.Napalm.Module)
-
             # Connect
             dev_conn = driver(hostname=sample_device.deviceIP, username=c.conf.COMMON.DeviceUsr,
                               password=Tools.get_password(c.YAPT_PASSWORD_TYPE_DEVICE),
@@ -304,7 +297,6 @@ class Tools:
     def get_device_facts(cls, sample_device=None):
 
         if sample_device is not None:
-
             if isinstance(sample_device.deviceConnection, NetworkDriver):
 
                 facts = sample_device.deviceConnection.get_facts()
@@ -498,11 +490,8 @@ class Tools:
                                             logmsg.STORAGE_PLG_LOAD.format(c.conf.STORAGE.DeviceConfSrcPlugins)))
 
         if c.conf.STORAGE.DeviceConfSrcPlugins:
-
             for key, storage in storage_plgs.iteritems():
-
                 if lookup_type == c.CONFIG_LOOKUP_TYPE_GET_DEVICE_CFG:
-
                     # check ooba
                     if c.conf.STORAGE.DeviceConfOoba:
                         c.logger.info(Tools.create_log_msg(logmsg.STORAGE_PLG, sn if sn else osshid,

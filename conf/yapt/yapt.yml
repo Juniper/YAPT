@@ -1,4 +1,3 @@
----
 ########################################################################################################################
 # YAPT Global Section
 ########################################################################################################################
@@ -7,7 +6,7 @@ COMMON:
   DevicePwdIsRsa: false                           #use ssh rsa authentication
   DeviceUsr: root                                 #initial device provisioning user
                                                   #initial device provisioning user password
-  DevicePwd: gAAAAABaOtwzqu79QGrPMPK1d31hNJ4DMrMruecorE5TTBo00dzanBMK6Ld4Lvtd37ksgP7SPbkqn8ZDmzlnKUWm2WA-yz2UkQ==
+  DevicePwd: gAAAAABdAN3SEopT658UZP4jroEJs4O59RzIHnpi5qt3_SNcXRlNyCZP65kgfSVqcMUSia_RebSyy4pyQ1uMXA8vrSlFh0C1TA==
   ConnectionProbeTimeout: 90                      #initial connection probe timeout
   LogFileDirectory: logs                          #directory to keep the logs
   StartWebUi: true                                #start web interface listening on port <WebUiPort>
@@ -62,7 +61,7 @@ BACKEND:
 #Source / Service Plugins Section
 ########################################################################################################################
 SERVICES:
-  Plugins: [File]                         #Activate available services
+  Plugins: [Phs]                         #Activate available services
 
   File:
     Normalizer: [Tftp, Dhcp]
@@ -78,7 +77,7 @@ SERVICES:
 
       # HPA TFTP Pattern
       Hpa:
-        Pattern: '(\d+/\d+/\d+@\d+:\d+:\d+).*?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$)'
+        Pattern: (\d+/\d+/\d+@\d+:\d+:\d+).*?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$)
 
     Dhcp:
       Module: isc                                             #dnsmasq DHCP Server or ISC DHCP Server
@@ -96,7 +95,7 @@ SERVICES:
 
   Phs:
     Normalizer: Phs
-    ServiceBindAddress: 172.16.146.1                        #HTTP Server bind address
+    ServiceBindAddress: 192.168.2.20                        #HTTP Server bind address
     ServiceListenPort: 6583                                 #HTTP Server listen port
     InitConfPath: conf/services/phs/                        #Inital bootstrap config file directory
     EnableSSL: false                                        #HTTP or HTTPS used by PHC connection
@@ -128,6 +127,8 @@ JUNOSSPACE:
 ########################################################################################################################
 DEVICEDRIVER:
   Driver: pyez                      #pyez / napa (napalm)
+  Pyez:
+    port: 22
   Napalm:                           #Napalm specific options
     Module: junos                   #junos/ios/etc
     Port: 22                        #device port connecting to
@@ -150,4 +151,4 @@ EMITTER:
   Plugins: [local, ticket]
   MainLogFile: logs/info.log
   Local:
-    LogLevel: 20   # LogLevel info=20 // debug=10
+    LogLevel: 10   # LogLevel info=20 // debug=10
