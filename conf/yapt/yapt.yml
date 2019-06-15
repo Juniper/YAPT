@@ -61,7 +61,7 @@ BACKEND:
 #Source / Service Plugins Section
 ########################################################################################################################
 SERVICES:
-  Plugins: [Phs]                         #Activate available services
+  Plugins: [Phs, Ossh]                         #Activate available services
 
   File:
     Normalizer: [Tftp, Dhcp]
@@ -85,17 +85,17 @@ SERVICES:
 
   Ossh:
     Normalizer: Ossh
-    ServiceBindAddress: 172.16.146.1                        #SSH Server bind address
+    ServiceBindAddress: 192.168.2.23                        #SSH Server bind address
     ServiceListenPort: 7804                                 #SSH Server listen port
                                                             #DMI Shared Secret
-    SharedSecret: gAAAAABZVk8RuO9DYNhx92zfV5yypeMzFMFIkeY2T8GHWeBYs-BqAH7_oaGI7ktDdc9pQkxN9jlQSTtfbluMj0FxT5xlAKbLYA==
+    SharedSecret: gAAAAABdA8m2CWqM-RkImPEQx3dOLv0hM44AUfNFLRdYCL-4kbQhthq0U2aO6Z-H5kLgc1YCBdXXhicKIxwF2JVo32ByW-ZXHw==
     LocalConfigFile: conf/services/ossh/ossh.conf           #Contains mandatory options for device ssh deamon
     RemoteConfigFile: /mfs/var/etc/sshd_config_obssh.yapt   #SSH config file on device. For outbound-ssh should be "/mfs/var/etc/sshd_config_obssh.yapt"
     SigHubCmd: kill -HUP `cat /var/run/inetd.pid`           #Sig HUP inetd to re-read it's configuration
 
   Phs:
     Normalizer: Phs
-    ServiceBindAddress: 192.168.2.20                        #HTTP Server bind address
+    ServiceBindAddress: 192.168.2.23                        #HTTP Server bind address
     ServiceListenPort: 6583                                 #HTTP Server listen port
     InitConfPath: conf/services/phs/                        #Inital bootstrap config file directory
     EnableSSL: false                                        #HTTP or HTTPS used by PHC connection

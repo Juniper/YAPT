@@ -423,7 +423,7 @@ class Tools:
     def get_password(cls, pwd_type=None):
 
         with open(c.YAPT_MASTER_KEY_FILE, 'r') as f:
-            mkey = yaml.load(f)
+            mkey = yaml.safe_load(f)
 
         if pwd_type == c.YAPT_PASSWORD_TYPE_DEVICE:
             return Fernet(mkey['MasterKey']).decrypt(c.conf.COMMON.DevicePwd)

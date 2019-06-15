@@ -1,7 +1,7 @@
 yapt:
   device_type: srx
   device_group: srx
-  service_chain: []
+  service_chain: [ossh]
   bootstrap_template_dir: conf/vnf/template
   bootstrap_template_file: vsrx_ztp_bootstrap.j2
 

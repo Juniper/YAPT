@@ -48,7 +48,7 @@ class AMQPBlockingServerAdapter(threading.Thread):
             self._channel = self._connection.channel()
             self._channel.queue_declare(queue=self._queue, durable=False)
             self._channel.basic_qos(prefetch_count=1)
-            self._channel.basic_consume(self.receive_message, queue=self._routing_key)
+            self._channel.basic_consume(on_message_callback=self.receive_message, queue=self._routing_key)
 
         except exceptions.ConnectionClosed as err:
             print Tools.create_log_msg('AMQP', None, logmsg.AMQP_BUS_NOK.format(err))
@@ -112,8 +112,10 @@ class AMQPRpcServerAdapter(threading.Thread):
                                                       c.YAPT_PASSWORD_TYPE_AMQP))))
             self._channel = self._connection.channel()
             self._channel.queue_declare(queue=self._routing_key)
+            #self._channel.basic_qos(prefetch_count=1)
+            #self._channel.basic_consume(self.on_request, queue=self._routing_key)
             self._channel.basic_qos(prefetch_count=1)
-            self._channel.basic_consume(self.on_request, queue=self._routing_key)
+            self._channel.basic_consume(queue=self._routing_key, on_message_callback=self.on_request)
 
         except (exceptions.ProbableAuthenticationError, exceptions.ConnectionClosed) as err:
             print Tools.create_log_msg('AMQP', None, logmsg.AMQP_BUS_NOK.format(err))
@@ -172,9 +174,14 @@ class AMQPRpcClientAdapter(object):
                                                                             Tools.get_password(
                                                                                 c.YAPT_PASSWORD_TYPE_AMQP))))
             self._channel = self._connection.channel()
-            self._result = self._channel.queue_declare(exclusive=True)
+            self._result = self._channel.queue_declare(queue='', exclusive=True)
             self._callback_queue = self._result.method.queue
-            self._channel.basic_consume(self.on_response, no_ack=True, queue=self._callback_queue)
+            # self._channel.basic_consume(on_message_callback=self.on_response, no_ack=True, queue=self._callback_queue)
+            self._channel.basic_consume(
+                queue=self._callback_queue,
+                on_message_callback=self.on_response,
+                auto_ack=True)
+
             self._response = None
             self._corr_id = None
 

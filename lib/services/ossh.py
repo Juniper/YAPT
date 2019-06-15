@@ -222,7 +222,6 @@ class OSSHServiceThread(threading.Thread):
         self._normalizer.send_message(message=message)
 
     def check_for_dmi(self, conn, conn_addr):
-
         """
         Verify MSG-ID, DeviceID and HMAC. If one of the three doesn't match close connection.
         Otherwise go ahead with provisioning steps.
@@ -253,9 +252,7 @@ class OSSHServiceThread(threading.Thread):
         dmi['HOST-KEY'] = dmi['HOST-KEY'].strip('\x00')
 
         if dmi:
-
             if dmi['MSG-ID'] == c.DMI_MSGID:
-
                 self._logger.info(Tools.create_log_msg(logmsg.OSSH_SERVICE, conn_addr[0], logmsg.OSSH_DMI_RECEIVED))
 
                 if 'HMAC' in dmi:
@@ -275,12 +272,10 @@ class OSSHServiceThread(threading.Thread):
                     self._logger.info(Tools.create_log_msg(logmsg.OSSH_SERVICE, conn_addr[0], logmsg.OSSH_HMAC_EMPTY))
                     conn.close()
                     return False, None
-
             else:
                 self._logger.info(Tools.create_log_msg(logmsg.OSSH_SERVICE, conn_addr[0], logmsg.OSSH_BAD_DMI))
                 conn.close()
                 return False, None
-
         else:
             self._logger.info(Tools.create_log_msg(logmsg.OSSH_SERVICE, conn_addr[0], logmsg.OSSH_BAD_DMI))
             conn.close()

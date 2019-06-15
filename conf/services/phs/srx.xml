@@ -7,12 +7,24 @@
                 <system>
                     <host-name>init</host-name>
                     <root-authentication>
-                        <ssh-rsa>ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDNRZHZGfeKpivvJxvcLEFbn37+m9HaAAjX5yPdHR/p9YBme+S7P9OcQv3Y5aRLsDjmGI3jqnEDDtw8XxS/Ky2DQ9g/uVb++MWTOu739iJiF6wwOJXUvFLbFzG8TF1i0mrGYyZ/5UtPL1YWrKnRO86mhbQDPie9H8dIoZb1AYBEugm0GwOqA0luRuAgvoAuOr15qYu0zDcwXF3f5ZpRh8TcVgWsPQ/HQK/WaWjOyeUz6a7iC1VtcmXn3LY6RG2iTCSxQz6n1Z/JBEUQfjKG9o9XEZ7Pf3eN8tGbTWXtiQVsfJ1VXTOPm/YUaABIhY5t72K3F7mMwoQmVS2GpG2PwRgr cklewar@cklewar-mbp</ssh-rsa>
+                        <encrypted-password>$6$XKsaubpZ$5vCze3nNWbdZkVAFEkJYPWBkCMPJfLMdOxdICmgp4paiQt4sh0BeOwGigrOr472EzS9jwf/pFkbgu5.YaVfLm/</encrypted-password>
                     </root-authentication>
                     <services>
                         <netconf>
                             <ssh/>
                         </netconf>
+                        <outbound-ssh>
+                            <client>
+                                <name>yapt</name>
+                                <device-id>abc123</device-id>
+                                <secret>$9$xpA-b2ZUH5Qn4aQn/CB17-Vw4aGDi.fT</secret>
+                                <services>netconf</services>
+                                <servers>
+                                    <name>192.168.2.23</name>
+                                    <port>7804</port>
+                                </servers>
+                            </client>
+                        </outbound-ssh>
                     </services>
                 </system>
             </configuration>
