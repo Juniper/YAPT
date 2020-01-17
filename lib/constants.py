@@ -186,6 +186,7 @@ CONFIG_LOOKUP_TYPE_TEMPLATE_BOOTSTRAP = 'get_template_bootstrap_data'
 
 # PHS related stuff
 PHS_INIT_URL = '/restconf/data/juniper-zerotouch-bootstrap-server:devices/device={uid}'
+# /restconf/data/juniper-zerotouch-bootstrap-server:devices/device=CV2219AN1511
 PHS_NOTIFICATION_URL = '/restconf/data/juniper-zerotouch-bootstrap-server:devices/device={uid}/notification'
 PHS_NOTIFICATION_CONF_APPLIED = 'configuration-applied'
 PHS_NOTIFICATION_CONF_FAILED = 'configuration-failed'

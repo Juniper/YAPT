@@ -8,7 +8,7 @@
 import lib.constants as c
 
 from jnpr.junos.exception import ConnectClosedError
-from napalm_base.base import NetworkDriver
+from napalm.base import NetworkDriver
 from ncclient.operations import TimeoutExpiredError
 
 from lib.logmsg import LogCleanupTask as logmsg

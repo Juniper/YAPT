@@ -227,6 +227,7 @@ class Logphs(object):
     PHS_SSL_ENABLED = 'SSL Enabled'
     PHS_SSL_NO_CERT = 'No certificate file found'
     PHS_SSL_NO_KEY = 'No private key file found'
+    PHS_SSL_NO_CHAIN = 'No certificate chain file found'
     PHS_STOPPED = 'Stopped PHS service on <{0}:{1}>'
 
 class Logwebhook(object):

@@ -160,13 +160,10 @@ class Local(Storage):
         dev_conf_path = c.conf.STORAGE.Local.DeviceConfDataDir
 
         if serialnumber:
-
             filename = serialnumber + c.CONFIG_FILE_SUFFIX_DEVICE
 
             if os.path.exists(dev_conf_path + filename) and os.path.isfile(dev_conf_path + filename):
-
                 if isRaw:
-
                     try:
                         with open(c.conf.STORAGE.Local.DeviceConfDataDir + filename) as dfile:
                             d_data = dfile.read()
@@ -176,12 +173,9 @@ class Local(Storage):
                         return False, ioe.message
 
                 else:
-
                     try:
                         with open(c.conf.STORAGE.Local.DeviceConfDataDir + filename, 'r') as fp:
-
                             try:
-
                                 datavars = yaml.safe_load(fp)
                                 self.logger.info(Tools.create_log_msg(self.name, serialnumber,
                                                                       logmsg.LOCAL_DEV_CFG_FILE_OK.format(filename)))

@@ -102,6 +102,7 @@ class PhsInitC(object):
         rd.connect('phs', c.PHS_INIT_URL, controller=phs, action='init')
         # rd.connect('phs', '/restconf/data/juniper-zerotouch-bootstrap-server:devices/device={uid}/activation-code',
         #           controller=phs, action='activation')
+
         rd.connect('phs', c.PHS_NOTIFICATION_URL, controller=phs, action='notification')
 
         conf = {
@@ -163,6 +164,13 @@ class PhoneHomeServer(object):
             else:
                 self.logger.info(Tools.create_log_msg(logmsg.PHS_SERVICE, None, logmsg.PHS_SSL_NO_KEY))
 
+            if c.conf.SERVICES.Phs.SSLCertificateChain:
+                if os.path.isfile(c.conf.SERVICES.Phs.SSLCertificateChain):
+                    self._phs_server.ssl_certificate_chain = c.conf.SERVICES.Phs.SSLCertificateChain
+
+                else:
+                    self.logger.info(Tools.create_log_msg(logmsg.PHS_SERVICE, None, logmsg.PHS_SSL_NO_CHAIN))
+
         self._phs_server.subscribe()
         self._source_plugin = source_plugin
         self._plugin_cfg = plugin_cfg
@@ -179,9 +187,8 @@ class PhoneHomeServer(object):
                                         serialnumber=self.sn_nr, deviceOsshId=None)
 
         if status:
-
             try:
-
+                self.logger.info(Tools.create_log_msg(logmsg.PHS_SERVICE, self.sn_nr, 'DATA:'.format(data)))
                 self.device_type = data['yapt']['device_type']
                 self.service_chain = data['yapt']['service_chain']
 
@@ -240,6 +247,8 @@ class PhoneHomeServer(object):
             elif item.text == c.PHS_NOTIFICATION_BOOTSTRAP_COMPLETED:
                 self.logger.info(Tools.create_log_msg(logmsg.PHS_SERVICE, self.sn_nr,
                                                       logmsg.PHS_BOOTSTRAP_SUCCESS.format(params['uid'])))
+
+                # self.logger.info(Tools.create_log_msg(logmsg.PHS_SERVICE, self.sn_nr, 'SERVICE CHAIN:'.format(self.service_chain)))
 
                 if c.SERVICEPLUGIN_OSSH in self.service_chain:
                     self.logger.info(Tools.create_log_msg(logmsg.PHS_SERVICE, self.sn_nr,

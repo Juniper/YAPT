@@ -14,7 +14,7 @@ import jsonpickle
 import pika
 import lib.constants as c
 
-from napalm_base import NetworkDriver
+from napalm.base import NetworkDriver
 from ncclient.operations.errors import TimeoutExpiredError
 
 from lib.amqp.amqpadapter import AMQPBlockingClientAdapter

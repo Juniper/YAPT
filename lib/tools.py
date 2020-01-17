@@ -21,7 +21,7 @@ import ruamel.yaml
 import yaml
 from cryptography.fernet import Fernet
 from jnpr.junos import Device
-from napalm_base import NetworkDriver
+from napalm.base import NetworkDriver
 
 import constants as c
 from lib.logmsg import LogTools as logmsg
@@ -522,6 +522,7 @@ class Tools:
                             return response.payload[0], response.payload[1]
 
                     status, data = storage.get_device_config_data(serialnumber=sn, isRaw=isRaw)
+                    print "########## STORAGE DATA:", status, data
 
                     if status:
                         return status, data
