@@ -10,7 +10,7 @@ pika == 0.11.0
 pynipap == 0.29.5
 ruamel.yaml == 0.14.12
 jsonpickle == 0.9.5
-ansible == 2.4.4.0
+ansible == 4.2.0
 peewee == 2.10.1
 routes == 2.4.1
 napalm == 2.2.0
